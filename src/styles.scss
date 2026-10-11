@@ -1,0 +1,361 @@
+/* Font ospitati con l'app: niente richieste a Google, funzionano anche offline */
+@import '@fontsource/barlow/latin-400.css';
+@import '@fontsource/barlow/latin-500.css';
+@import '@fontsource/barlow/latin-600.css';
+@import '@fontsource/barlow-condensed/latin-500.css';
+@import '@fontsource/barlow-condensed/latin-600.css';
+@import '@fontsource/barlow-condensed/latin-700.css';
+
+/* =====================================================================
+   Calcetto del giovedì — sistema visivo
+   Erba sintetica, linee di gesso, maglie bianche e nere, fascia da capitano.
+   ===================================================================== */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #eef2ec;
+  --surface: #ffffff;
+  --surface-2: #e2e9e0;
+  --ink: #142019;
+  --muted: #55655b;
+  --line: #d2dbd0;
+  --turf: #1f6b45;
+  --turf-ink: #ffffff;
+  --turf-soft: #d6e9dc;
+  --chalk: #f1f5ef;
+  --armband: #e8a317;
+  --armband-ink: #2a1d00;
+  --kit-white: #fafaf7;
+  --kit-white-ink: #142019;
+  --kit-black: #1a1c20;
+  --kit-black-ink: #f4f4f1;
+  --danger: #b93a26;
+  --danger-soft: #f6dcd6;
+  --focus: #1f6b45;
+
+  --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+
+  --step--1: 0.8125rem;
+  --step-0: 1rem;
+  --step-1: 1.1875rem;
+  --step-2: 1.5rem;
+  --step-3: 2.125rem;
+  --step-4: 3.25rem;
+
+  --r-s: 6px;
+  --r-m: 12px;
+  --r-l: 22px;
+  --tabbar-h: 64px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c1611;
+    --surface: #13201a;
+    --surface-2: #1a2b22;
+    --ink: #e6eee8;
+    --muted: #93a79a;
+    --line: #26392e;
+    --turf: #3a9b66;
+    --turf-ink: #06140c;
+    --turf-soft: #183326;
+    --chalk: #dfe8e1;
+    --armband: #f2b53a;
+    --kit-white: #eceee9;
+    --kit-black: #050607;
+    --kit-black-ink: #eceee9;
+    --danger: #ef7a62;
+    --danger-soft: #3a1b15;
+    --focus: #7fd1a3;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: 0.005em;
+}
+h1 { font-size: var(--step-3); }
+h2 { font-size: var(--step-2); }
+h3 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; }
+
+a { color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-s);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.boot { min-height: 100vh; background: var(--turf); }
+
+/* ------------------------------------------------------------- layout */
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px calc(var(--tabbar-h) + 32px + env(safe-area-inset-bottom));
+}
+
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack-l { display: flex; flex-direction: column; gap: 24px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--muted); }
+.small { font-size: var(--step--1); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.section { display: flex; flex-direction: column; gap: 10px; }
+.section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--r-m);
+  padding: 16px;
+  border: 1px solid var(--line);
+}
+
+.note {
+  padding: 12px 14px;
+  border-radius: var(--r-m);
+  background: var(--turf-soft);
+  font-size: var(--step--1);
+}
+.note.warn { background: var(--danger-soft); }
+
+.empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+  border: 1.5px dashed var(--line);
+  border-radius: var(--r-m);
+}
+
+/* ------------------------------------------------------------ bottoni */
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 var(--step-0) / 1 var(--font-body);
+  cursor: pointer;
+  transition: transform 120ms var(--ease-out), background 160ms, border-color 160ms, color 160ms;
+  text-decoration: none;
+  user-select: none;
+}
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.primary { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
+.btn.danger { color: var(--danger); border-color: currentColor; background: transparent; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.small { min-height: 36px; padding: 0 14px; font-size: var(--step--1); }
+.btn.block { width: 100%; }
+
+.icon-btn {
+  appearance: none; border: 0; background: transparent; color: inherit;
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+}
+.icon-btn:active { background: var(--surface-2); }
+
+/* Scelta presenza: tre segmenti grandi, pensati per il pollice */
+.choice {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 8px;
+}
+.choice button {
+  appearance: none;
+  min-height: 64px;
+  border-radius: var(--r-m);
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 var(--step-1) / 1 var(--font-display);
+  cursor: pointer;
+  transition: transform 140ms var(--ease-out), background 160ms, color 160ms, border-color 160ms;
+}
+.choice button small { display: block; font: 500 var(--step--1) / 1.2 var(--font-body); margin-top: 4px; color: var(--muted); }
+.choice button:active:not(:disabled) { transform: scale(0.96); }
+.choice button:disabled { opacity: 0.5; cursor: not-allowed; }
+.choice button[aria-pressed='true'] { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
+.choice button[aria-pressed='true'] small { color: inherit; opacity: 0.85; }
+.choice button.absent[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+/* Chip / filtri */
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  appearance: none; flex: none;
+  min-height: 36px; padding: 0 14px; border-radius: 999px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+  font: 500 var(--step--1) / 1 var(--font-body); cursor: pointer; white-space: nowrap;
+}
+.chip[aria-pressed='true'] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+  background: var(--surface-2); color: var(--muted);
+}
+.tag.turf { background: var(--turf-soft); color: var(--turf); }
+.tag.armband { background: var(--armband); color: var(--armband-ink); }
+.tag.danger { background: var(--danger-soft); color: var(--danger); }
+
+/* --------------------------------------------------------------- form */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > span { font-size: var(--step--1); font-weight: 600; color: var(--muted); }
+.input, select.input, textarea.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-radius: var(--r-m);
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: 400 var(--step-0) / 1.3 var(--font-body);
+}
+.input:focus { border-color: var(--turf); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--turf) 25%, transparent); }
+textarea.input { min-height: 90px; resize: vertical; }
+
+.switch {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 52px; padding: 6px 0; border-bottom: 1px solid var(--line); cursor: pointer;
+}
+.switch:last-child { border-bottom: 0; }
+.switch input {
+  appearance: none; flex: none; width: 50px; height: 30px; border-radius: 999px;
+  background: var(--surface-2); position: relative; cursor: pointer; transition: background 160ms;
+  border: 1px solid var(--line); margin: 0;
+}
+.switch input::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--surface); box-shadow: 0 1px 3px rgb(0 0 0 / 25%); transition: transform 180ms var(--ease-spring);
+}
+.switch input:checked { background: var(--turf); border-color: var(--turf); }
+.switch input:checked::after { transform: translateX(20px); }
+
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper button {
+  appearance: none; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line);
+  background: var(--surface); color: var(--ink); font: 600 1.2rem/1 var(--font-body); cursor: pointer;
+}
+.stepper button:disabled { opacity: 0.35; }
+.stepper output { min-width: 28px; text-align: center; font: 700 var(--step-1)/1 var(--font-display); }
+
+/* ------------------------------------------------------------- liste */
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--surface); border-radius: var(--r-m); border: 1px solid var(--line); overflow: hidden; }
+.list-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); min-height: 56px; text-decoration: none; color: inherit; }
+.list-item:last-child { border-bottom: 0; }
+a.list-item:active, button.list-item:active { background: var(--surface-2); }
+button.list-item { appearance: none; width: 100%; border-left: 0; border-right: 0; border-top: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+
+.avatar {
+  flex: none; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font: 700 0.85rem/1 var(--font-display);
+  background: var(--surface-2); color: var(--ink);
+}
+.avatar.white { background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+.avatar.black { background: var(--kit-black); color: var(--kit-black-ink); }
+
+/* ----------------------------------------------------- maglie numerate */
+.jersey {
+  --kit: var(--kit-white);
+  --kit-ink: var(--kit-white-ink);
+  position: relative; flex: none;
+  width: 44px; height: 42px;
+  display: grid; place-items: center;
+}
+.jersey svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.jersey svg path { fill: var(--kit); stroke: var(--line); stroke-width: 1.5; }
+.jersey b {
+  position: relative; top: 1px;
+  font: 700 1.2rem/1 var(--font-display); color: var(--kit-ink);
+  font-variant-numeric: tabular-nums;
+}
+.jersey.black { --kit: var(--kit-black); --kit-ink: var(--kit-black-ink); }
+.jersey.mine { --kit: var(--turf); --kit-ink: var(--turf-ink); }
+.jersey.mine svg path { stroke: var(--turf); }
+.jersey.reserve svg path { fill: var(--surface); stroke: var(--muted); stroke-dasharray: 4 3; }
+.jersey.reserve b { color: var(--muted); }
+.jersey.vacant svg path { fill: transparent; stroke: var(--line); stroke-dasharray: 4 3; stroke-width: 2; }
+.jersey.vacant b { color: var(--muted); opacity: 0.7; }
+.jersey .armband {
+  position: absolute; left: 2px; top: 14px; width: 11px; height: 13px; border-radius: 2px;
+  background: var(--armband); color: var(--armband-ink);
+  font: 700 0.6rem/13px var(--font-display); text-align: center;
+}
+
+/* ------------------------------------------------------------- tabelle */
+.table-wrap { overflow-x: auto; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface); }
+table.data { border-collapse: collapse; width: 100%; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+table.data th:first-child, table.data td:first-child {
+  text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1;
+  box-shadow: 1px 0 0 var(--line);
+}
+table.data thead th { font-weight: 600; color: var(--muted); background: var(--surface); position: sticky; top: 0; }
+table.data thead th button { appearance: none; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; padding: 4px 0; }
+table.data thead th[aria-sort] { color: var(--ink); }
+table.data tbody tr:last-child td { border-bottom: 0; }
+table.data tr.me td { background: var(--turf-soft); }
+
+/* ----------------------------------------------------------- animazioni */
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-14px) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-out { to { opacity: 0; transform: scale(0.96); } }
+
+.enter-drop { animation: drop-in 420ms var(--ease-spring) both; }
+.enter-fade { animation: fade-up 260ms var(--ease-out) both; }
+.leave-fade { animation: fade-out 180ms ease-in both; }
+
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

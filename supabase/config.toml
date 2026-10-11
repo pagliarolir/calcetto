@@ -1,0 +1,11 @@
+# Configurazione minima per la Supabase CLI
+project_id = "calcetto"
+
+[functions.push-dispatch]
+verify_jwt = false   # protetta da x-dispatch-secret
+
+[functions.quick-action]
+verify_jwt = false   # protetta da token HMAC firmato
+
+[functions.admin-reset-password]
+verify_jwt = true    # serve un utente collegato; i permessi li controlla il database
