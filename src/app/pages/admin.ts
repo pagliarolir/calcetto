@@ -7,6 +7,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Icon } from '../ui/icon';
+import { scrollAppTo } from '../core/scroller';
 
 @Component({
   selector: 'app-admin',
@@ -218,7 +219,7 @@ export class AdminPage implements OnInit {
     try {
       const password = await this.api.resetMemberPassword(m.id);
       this.temp.set({ name: this.session.fullName(m.id), password });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollAppTo('start');
     } catch (e) {
       this.toasts.error(errorMessage(e));
     } finally {
