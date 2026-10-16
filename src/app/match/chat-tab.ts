@@ -7,6 +7,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { scrollAppTo } from '../core/scroller';
 
 /** Chat di partita: aperta da 24 ore prima a 24 ore dopo (REQ-025). */
 @Component({
@@ -60,7 +61,7 @@ import { MatchStore } from './match-store';
     .time { display: flex; gap: 8px; justify-content: flex-end; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
     .del { appearance: none; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
     .composer {
-      position: sticky; bottom: calc(var(--tabbar-total) + 8px);
+      position: sticky; bottom: 8px;
       display: flex; gap: 8px; align-items: flex-end; padding: 8px; border-radius: var(--r-l);
       background: var(--surface); border: 1px solid var(--line); box-shadow: 0 6px 20px rgb(0 0 0 / 10%);
     }
@@ -152,7 +153,7 @@ export class ChatTab implements OnDestroy {
   }
 
   private scroll(): void {
-    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50);
+    setTimeout(() => scrollAppTo('end'), 50);
   }
 
   ngOnDestroy(): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
@@ -13,7 +13,11 @@ import { Icon } from './ui/icon';
   imports: [RouterOutlet, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <router-outlet />
+    <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
+         elemento della colonna, quindi non dipende dall'altezza della pagina che si sta caricando. -->
+    <div class="app-scroller" #scroller>
+      <router-outlet />
+    </div>
 
     @if (showTabs()) {
       <nav class="tabbar" aria-label="Sezioni">
@@ -38,17 +42,35 @@ import { Icon } from './ui/icon';
     </div>
   `,
   styles: `
+    /* Colonna a tutto schermo, di altezza costante: contenuto che scorre sopra, barra sotto. */
+    :host {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1;
+      height: 100%;
+      height: 100dvh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    /* App installata: 100vh è l'intero schermo utile ed è stabile (non segue la tastiera né il contenuto). */
+    @media (display-mode: standalone) { :host { height: 100vh; } }
+
+    .app-scroller {
+      flex: 1 1 auto; min-height: 0;
+      overflow-y: auto; overflow-x: hidden;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .tabbar {
-      position: fixed; inset: auto 0 0 0; z-index: 50;
+      flex: none; position: relative; z-index: 2;
       display: flex; justify-content: space-around;
       height: var(--tabbar-total);
       padding-bottom: var(--tabbar-pad);
-      background: color-mix(in srgb, var(--surface) 92%, transparent);
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      background: var(--surface);
       border-top: 1px solid var(--line);
     }
+    /* icone a distanza fissa dal bordo superiore della barra */
     .tabbar a {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
+      padding-top: 10px;
       text-decoration: none; color: var(--muted); font-size: 0.72rem; font-weight: 600;
     }
     .tabbar a[aria-current='page'] { color: var(--turf); }
@@ -60,7 +82,7 @@ import { Icon } from './ui/icon';
       font: 700 0.68rem/18px var(--font-body); text-align: center;
     }
     .toasts {
-      position: fixed; z-index: 60; left: 12px; right: 12px;
+      position: absolute; z-index: 60; left: 12px; right: 12px;
       bottom: calc(var(--tabbar-total) + 12px);
       display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
     }
@@ -97,7 +119,13 @@ export class App {
     ...(this.session.isStaff() ? [{ path: '/gestione', label: 'Gestione', icon: 'whistle' }] : []),
   ]);
 
+  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+
   constructor() {
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
+      this.scroller()?.nativeElement.scrollTo({ top: 0 });
+    });
+
     // nuova versione dell'app pronta: si ricarica alla prossima apertura senza chiedere nulla
     const sw = inject(SwUpdate);
     if (sw.isEnabled) {
