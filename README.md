@@ -46,7 +46,7 @@ Serve un account GitHub e uno Supabase, entrambi gratuiti. Calcola circa mezz'or
 - In *Authentication → URL Configuration* aggiungi tra i Redirect URL anche `https://tuonome.github.io/calcetto/nuova-password`.
 
 **4. Database.** Due strade.
-- *Da GitHub (consigliata)*: crea un token in Supabase (*Account → Access Tokens*), poi nel repository aggiungi i secret `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD` e la variabile `SUPABASE_PROJECT_REF`. Lancia il workflow **Aggiorna Supabase** dalla scheda *Actions*: applica le migrazioni e pubblica le due funzioni.
+- *Da GitHub (consigliata)*: crea un token in Supabase (*Account → Access Tokens*), limitato al solo progetto di G.d.L. e con permessi minimi: Project Settings, API Keys e API Key Secrets in lettura, Edge Functions in lettura-scrittura; nulla sul Database, perché le migrazioni usano la password del database, poi nel repository aggiungi i secret `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD` e la variabile `SUPABASE_PROJECT_REF`. Lancia il workflow **Aggiorna Supabase** dalla scheda *Actions*: applica le migrazioni e pubblica le tre funzioni.
 - *A mano*: incolla nel *SQL Editor* i file di `supabase/migrations` uno alla volta, in ordine.
 
 Se `create extension pg_cron` o `pg_net` dà errore, abilitale da *Database → Extensions* e rilancia.
@@ -104,7 +104,30 @@ Test del database, con un Postgres 16 locale:
 ```
 PGHOST=localhost PGPORT=5432 bash supabase/tests/run.sh
 ```
-`supabase/tests/seed_demo.sql` carica 14 giocatori e 4 partite di esempio.
+`supabase/tests/seed_demo.sql` carica 14 giocatori e 4 partite di esempio, ma solo su un database di prova locale: non eseguirlo su quello vero.
+
+### Giocatori finti sul progetto vero
+
+Per provare l'app con un gruppo pieno, `scripts/mock-users.sql` crea fino a 24 giocatori finti (indirizzi `@mock.calcetto.test`, che non ricevono email) e, se vuoi, li prenota alla prossima partita.
+
+1. Registrati tu per primo dall'app: il primo account creato diventa Leader.
+2. Apri `scripts/mock-users.sql`, copia tutto e incollalo nel *SQL Editor* di Supabase.
+3. In cima al file puoi cambiare `n` (quanti finti) e `prenota` (quanti metterne in partita; oltre il decimo vanno tra le riserve). Premi **Run**: in basso compare un riepilogo.
+4. Quando hai finito, esegui la riga di cancellazione che trovi in fondo al file: con i finti spariscono anche prenotazioni e voti.
+
+I finti non hanno password, quindi nessuno può accedere con i loro account; si vedono nella lista, si prenotano, entrano nelle squadre e nelle statistiche. Si può rilanciare: salta chi esiste già. Se sono rimasti nel gruppo vero, compaiono nelle statistiche: cancellali subito dopo le prove.
+
+*Facoltativo, se vuoi entrare come uno dei finti per provare l'app da giocatore normale:* `scripts/mock-users.mjs` li crea con una password, usando la chiave segreta del progetto (*Project Settings → API Keys*) da un terminale.
+
+```
+npm ci
+export SUPABASE_URL="https://IDPROGETTO.supabase.co"
+export SUPABASE_SERVICE_ROLE_KEY="la-chiave-segreta"      # PowerShell: $env:NOME = "valore"
+node scripts/mock-users.mjs create --count 12 --prenota 11
+node scripts/mock-users.mjs delete --yes
+```
+
+La chiave segreta dà accesso totale al progetto: tienila solo nel terminale, mai in un file del repository.
 
 ## Requisiti e dove sono realizzati
 
@@ -124,7 +147,7 @@ PGHOST=localhost PGPORT=5432 bash supabase/tests/run.sh
 | REQ-019 Notifica speciale quando si scende a 9 | `_book`, con pulsante "Ci sono" |
 | REQ-020 Conferma delle riserve | promemoria 16 ore prima; "Disponibile" o "Non posso" (che registra come assente) |
 | REQ-021, 022 Leader numero 1; se assente si conta dal 2 all'11 | `booking_board`; il numero 1 non viene mai riassegnato |
-| REQ-023 Inserimenti diretti e finestre esclusive | `leader_book`, `set_priority_window`; Strumenti del Leader |
+| REQ-023 Inserimenti diretti e finestre esclusive | `leader_book` (il giocatore inserito, riserva o segnato assente riceve un avviso, con pulsante "Non posso"), `set_priority_window`; Strumenti del Leader |
 | REQ-024 Spostare la partita | `move_match`: le prenotazioni seguono la nuova data |
 | REQ-025 Chat da 24 ore prima a 24 ore dopo | `chat_messages` con regola di scrittura a tempo, in tempo reale |
 | REQ-026…029 Bianchi e neri, formazioni dalle 24 ore, delegato con approvazione | `save_lineup`, `review_lineup`, `set_lineup_delegate` |
