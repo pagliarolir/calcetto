@@ -44,7 +44,7 @@ import { MatchStore } from './match-store';
           </a>
         </nav>
       </header>
-      <main class="page">
+      <main class="page below-header">
         <router-outlet />
       </main>
     } @else {

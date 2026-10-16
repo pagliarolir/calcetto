@@ -60,7 +60,7 @@ import { MatchStore } from './match-store';
     .time { display: flex; gap: 8px; justify-content: flex-end; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
     .del { appearance: none; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
     .composer {
-      position: sticky; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px);
+      position: sticky; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px - var(--vp-gap, 0px));
       display: flex; gap: 8px; align-items: flex-end; padding: 8px; border-radius: var(--r-l);
       background: var(--surface); border: 1px solid var(--line); box-shadow: 0 6px 20px rgb(0 0 0 / 10%);
     }
