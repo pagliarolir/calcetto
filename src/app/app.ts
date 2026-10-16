@@ -39,7 +39,7 @@ import { Icon } from './ui/icon';
   `,
   styles: `
     .tabbar {
-      position: fixed; inset: auto 0 0 0; z-index: 50;
+      position: fixed; inset: auto 0 calc(-1 * var(--vp-gap, 0px)) 0; z-index: 50;
       display: flex; justify-content: space-around;
       height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
       padding-bottom: env(safe-area-inset-bottom);
@@ -61,7 +61,7 @@ import { Icon } from './ui/icon';
     }
     .toasts {
       position: fixed; z-index: 60; left: 12px; right: 12px;
-      bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom));
+      bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom) - var(--vp-gap, 0px));
       display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
     }
     .toast {
