@@ -23,7 +23,7 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 - Testi in italiano, tono amichevole e diretto. Niente maiuscole su intere etichette, niente separatori a punto centrale tra informazioni.
 - Accessibilità: pulsanti di almeno 44 px, etichette per i lettori di schermo, rispetto di `prefers-reduced-motion`.
 - Date sempre nel fuso Europe/Rome tramite `src/app/core/format.ts`.
-- iPhone con l'app installata (barra di stato "black-translucent"): la classe `.page` lascia già lo spazio della barra di stato; sotto un'intestazione che lo lascia da sé (pagina partita) usa `.page.below-header`. Per distanziare qualcosa dalla barra in basso usa `var(--tabbar-total)`. Niente View Transitions né animazioni con `transform` sul cambio pagina: su iPhone fanno saltare la barra. Tutto ciò che è fissato in basso deve sottrarre `var(--vp-gap)`, lo scarto del bug WebKit 236445 misurato in `src/app/core/ios-viewport.ts` (vale 0 dove il bug non c'è).
+- iPhone: la barra di stato resta "default" (in `index.html`). Non usare "black-translucent": con quella modalità Safari sposta gli elementi fissati in basso (bug WebKit 236445) e la barra di navigazione salta durante i caricamenti. La classe `.page` lascia comunque lo spazio di `env(safe-area-inset-top)`; sotto un'intestazione che lo lascia da sé (pagina partita) usa `.page.below-header`. Per distanziare qualcosa dalla barra in basso usa `var(--tabbar-total)`. Niente View Transitions né animazioni con `transform` sul cambio pagina.
 
 ## Decisioni confermate dal proprietario
 
