@@ -14,7 +14,7 @@ import { errorMessage } from '../core/supabase';
         <div class="ball"></div>
       </section>
       <section class="sheet stack">
-        <h1>Calcetto del giovedì</h1>
+        <h1>G.d.L.</h1>
         <p class="muted">Bianchi contro neri, ogni settimana. Entra per prenotare il tuo posto.</p>
 
         @if (mode() === 'reset') {

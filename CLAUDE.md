@@ -1,4 +1,4 @@
-# Calcetto del giovedì: istruzioni per chi lavora sul codice
+# G.d.L.: istruzioni per chi lavora sul codice
 
 PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'architettura e la mappa dei requisiti (REQ-001…053).
 
@@ -30,6 +30,49 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 - La riserva che risponde "Non posso" viene registrata come assente.
 - Finestra di voto di 48 ore, configurabile in Gestione.
 - Tutto deve restare gratuito: niente servizi o librerie a pagamento.
+- Delega: il Leader titolare può delegare i suoi poteri a un solo giocatore, con scadenza facoltativa, conservando i propri. Il delegato non può ridelegare né cedere il ruolo.
+- Password dimenticata: via email (serve un SMTP su Supabase) oppure password temporanea generata da Leader o Premier (i Premier solo per i giocatori semplici; il Leader titolare usa l'email). Chi la riceve deve cambiarla al primo accesso e viene avvisato, e il Leader viene avvisato se l'ha fatta un Premier.
+- Il primo account creato diventa Leader; gli altri sono giocatori. Con un codice invito impostato, chi si registra senza codice resta in attesa di approvazione.
+- I voti sono segreti per i giocatori, ma chi è proprietario del progetto Supabase li vede dal Table Editor.
+
+## Dove sono le statistiche
+
+Non sono salvate in tabelle: `stats_table()`, `player_match_facts()` e `attendance_register()` le calcolano al momento, solo dalle partite con risultato omologato. Dal SQL Editor di Supabase `stats_table()` restituisce zero righe perché controlla `auth.uid()`: per leggerla si simula un utente nello stesso Run, così:
+
+```sql
+select set_config('request.jwt.claim.sub', (select id::text from profiles where role = 'leader'), false);
+select p.first_name, s.* from stats_table() s join profiles p on p.id = s.user_id order by s.points desc;
+```
+
+`select * from player_match_facts();` funziona anche senza simulare nessun utente.
+
+## Diagnostica in produzione
+
+Cose che Claude Code non vede da solo: se serve, chiedi al proprietario di eseguire queste query nel SQL Editor di Supabase e di incollare il risultato (mai password, token o chiavi).
+
+- Scheduler attivo: `select jobname, schedule, active from cron.job;` deve mostrare `calcetto-scheduler`.
+- Ultime esecuzioni: `select status, start_time, return_message from cron.job_run_details order by start_time desc limit 10;`
+- Segreti del vault presenti (solo i nomi): `select name from vault.secrets;` devono esserci `dispatch_url` e `dispatch_secret`.
+- Notifiche accodate e non spedite: `select kind, created_at from notifications where push_claimed_at is null order by id;`
+- Log delle Edge Functions: dashboard Supabase, *Edge Functions → push-dispatch / quick-action / admin-reset-password → Logs*.
+- Esito di build e pubblicazione: scheda Actions del repository.
+
+## Stato della produzione (aggiornare quando cambia)
+
+Compilato dal proprietario. Niente password, token o chiavi: il repository può essere pubblico.
+
+- Indirizzo dell'app: https://...
+- Hosting: GitHub Pages con `.github/workflows/deploy.yml` (oppure: Vercel / Cloudflare Pages)
+- Progetto Supabase: ID `...`, regione `...`
+- Impostazioni fatte a mano su Supabase, non presenti nel codice:
+  - Confirm email: disattivato
+  - Site URL e Redirect URL impostati, compreso `.../nuova-password`
+  - SMTP per il recupero password: [provider oppure "non configurato"]
+  - Secret delle Edge Functions e segreti del vault configurati
+  - Estensioni `pg_cron` e `pg_net` attive
+- Variabili e secret del repository GitHub: [elenco dei nomi, non dei valori]
+- Leader attuale: [nome]; Primo Premier: [nome]; Secondo Premier: [nome]
+- Idee o cose rimandate: ...
 
 ## Pubblicazione
 

@@ -10,7 +10,7 @@ for f in ../migrations/*.sql; do
   sed -E 's/^create extension if not exists (pg_net|pg_cron);//' "$f" | $PSQL -d calcetto_test >/dev/null
 done
 $PSQL -d calcetto_test -c "grant all on all tables in schema public to service_role" >/dev/null
-for t in 01_slots.sql 02_partita_completa.sql 03_password.sql; do
+for t in 01_slots.sql 02_partita_completa.sql 03_password.sql 04_leader_book_notify.sql; do
   echo "== $t"
   $PSQL -d calcetto_test -f "$t" -v ON_ERROR_STOP=0 2>&1 | grep -vE "^ *as_user|^-+(\+-+)*$|^$|NOTICE|wal_level|HINT|^ *\| *\{" || true
   $PSQL -d postgres -c "drop database calcetto_test" -c "create database calcetto_test" >/dev/null
