@@ -1,4 +1,4 @@
-# Calcetto del giovedì: istruzioni per chi lavora sul codice
+# G.d.L.: istruzioni per chi lavora sul codice
 
 PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'architettura e la mappa dei requisiti (REQ-001…053).
 

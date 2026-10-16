@@ -237,7 +237,7 @@ export class AdminPage implements OnInit {
 
   protected async share(name: string, pw: string): Promise<void> {
     await navigator.share({
-      text: `Ciao ${name.split(' ')[0]}, la tua password temporanea per il Calcetto è ${pw}. Entra con la tua email e questa password: ti chiederà di sceglierne una nuova.`,
+      text: `Ciao ${name.split(' ')[0]}, la tua password temporanea per G.d.L. è ${pw}. Entra con la tua email e questa password: ti chiederà di sceglierne una nuova.`,
     }).catch(() => undefined);
   }
 

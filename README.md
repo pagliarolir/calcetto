@@ -1,4 +1,4 @@
-# Calcetto del giovedì
+# G.d.L.
 
 PWA per organizzare la partita settimanale: prenotazioni a slot con riserve, squadre bianchi contro neri disposte sul campo, risultato con omologazione, pagelle segrete, chat di partita e statistiche. Notifiche push con pulsanti di risposta rapida.
 
@@ -40,9 +40,9 @@ Serve un account GitHub e uno Supabase, entrambi gratuiti. Calcola circa mezz'or
 **3. Accessi.** In *Authentication → Sign In / Providers → Email* disattiva **Confirm email**: il servizio email incluso in Supabase consegna solo agli indirizzi del team del progetto, quindi le conferme non arriverebbero agli amici. In *Authentication → URL Configuration* imposta come Site URL e Redirect URL l'indirizzo dell'app, es. `https://tuonome.github.io/calcetto/`. Facoltativo: abilita Google come provider e imposta la variabile `GOOGLE_LOGIN=true` (punto 8).
 
 **3b. Recupero password via email (consigliato).** Senza un servizio email il recupero funziona comunque tramite il Leader (vedi più sotto), ma è comodo che ognuno possa farlo da solo.
-- Crea un account presso un servizio SMTP con piano gratuito e verifica l'indirizzo mittente (es. `calcetto.giovedi@gmail.com` o un indirizzo tuo). Controlla i limiti attuali del piano scelto: per un gruppo bastano poche email al mese.
+- Crea un account presso un servizio SMTP con piano gratuito e verifica l'indirizzo mittente (es. `gdl.gruppo@gmail.com` o un indirizzo tuo). Controlla i limiti attuali del piano scelto: per un gruppo bastano poche email al mese.
 - In Supabase, *Authentication → Emails → SMTP Settings*: attiva l'SMTP personalizzato e inserisci host, porta, utente, password e mittente forniti dal servizio.
-- In *Authentication → Emails → Templates → Reset Password* incolla `supabase/templates/recupero-password.html` (modello in italiano) e come oggetto "Recupera la password del Calcetto".
+- In *Authentication → Emails → Templates → Reset Password* incolla `supabase/templates/recupero-password.html` (modello in italiano) e come oggetto "Recupera la password di G.d.L.".
 - In *Authentication → URL Configuration* aggiungi tra i Redirect URL anche `https://tuonome.github.io/calcetto/nuova-password`.
 
 **4. Database.** Due strade.

@@ -9,7 +9,7 @@ export const routes: Routes = [
     path: '',
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home').then((m) => m.HomePage), title: 'Calcetto' },
+      { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home').then((m) => m.HomePage), title: 'G.d.L.' },
       {
         path: 'partita/:id',
         loadComponent: () => import('./match/match-page').then((m) => m.MatchPage),

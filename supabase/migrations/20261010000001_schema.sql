@@ -1,5 +1,5 @@
 -- =====================================================================
--- Calcetto del giovedì — schema
+-- G.d.L. — schema
 -- Tutte le date sono timestamptz; il fuso di riferimento è in app_settings.
 -- =====================================================================
 
