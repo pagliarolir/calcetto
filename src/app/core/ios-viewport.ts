@@ -14,16 +14,25 @@ export function watchIosViewportGap(): void {
     matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
   if (!ios || !standalone) return;
 
+  let current = -1;
+  let frame = 0;
   const update = () => {
     const portrait = window.innerHeight > window.innerWidth;
     const screenHeight = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-    const gap = screenHeight - window.innerHeight;
-    // Solo scarti plausibili per una barra di stato: con la tastiera aperta non si compensa nulla.
-    const px = gap > 0 && gap <= 80 ? gap : 0;
-    document.documentElement.style.setProperty('--vp-gap', `${px}px`);
+    const gap = Math.round(screenHeight - window.innerHeight);
+    // Si accettano solo scarti plausibili per una barra di stato (0-80 punti). Valori diversi,
+    // come con la tastiera aperta, sono momentanei: si tiene l'ultimo valore buono, così la
+    // barra non si muove.
+    if (gap < 0 || gap > 80 || gap === current) return;
+    current = gap;
+    document.documentElement.style.setProperty('--vp-gap', `${gap}px`);
+  };
+  const schedule = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(update);
   };
 
   update();
-  addEventListener('resize', update);
-  addEventListener('orientationchange', () => setTimeout(update, 300));
+  addEventListener('resize', schedule);
+  addEventListener('orientationchange', () => setTimeout(schedule, 300));
 }
