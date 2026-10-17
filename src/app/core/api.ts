@@ -277,6 +277,19 @@ export class Api {
     return must(await this.sb.rpc('can_reset_password', { p_target: userId })) as boolean;
   }
 
+  // ---------------------------------------------------------------- punizioni
+  async punishMember(userId: string, until: string | null, reason: string): Promise<{ id: number; booked_matches: number }> {
+    return must(await this.sb.rpc('punish_member', { p_user: userId, p_until: until, p_reason: reason || null }));
+  }
+
+  async pardonMember(userId: string) {
+    return must(await this.sb.rpc('pardon_member', { p_user: userId }));
+  }
+
+  async activePunishments(): Promise<{ user_id: string; ends_at: string | null; reason: string | null; since: string }[]> {
+    return must(await this.sb.rpc('active_punishments')) as { user_id: string; ends_at: string | null; reason: string | null; since: string }[];
+  }
+
   async settings(): Promise<AppSettings> {
     return must(await this.sb.from('app_settings').select('*').single()) as AppSettings;
   }

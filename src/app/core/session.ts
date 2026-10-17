@@ -21,6 +21,8 @@ export class Session {
   readonly me = signal<Me | null>(null);
   readonly members = signal<Member[]>([]);
   readonly ready = signal(false);
+  /** punizione in corso dell'utente collegato (null se non è punito) */
+  readonly punishment = signal<{ ends_at: string | null; reason: string | null; since: string } | null>(null);
   /** id utente -> link firmato della foto profilo */
   readonly avatarUrls = signal(new Map<string, string>());
   private readonly signedAvatars = new Map<string, { url: string; expires: number }>();
@@ -59,6 +61,7 @@ export class Session {
       if (event === 'SIGNED_OUT') {
         this.me.set(null);
         this.members.set([]);
+        this.punishment.set(null);
       }
     });
     // riallinea "ultimo accesso" quando l'app torna in primo piano (regola dei 15 giorni)
@@ -68,9 +71,15 @@ export class Session {
   }
 
   async refresh(): Promise<void> {
-    const { data, error } = await this.sb.rpc('touch');
+    const [{ data, error }] = await Promise.all([this.sb.rpc('touch'), this.refreshPunishment()]);
     if (!error && data) this.me.set(data as Me);
     await this.loadMembers();
+  }
+
+  async refreshPunishment(): Promise<void> {
+    if (!this.auth()) return this.punishment.set(null);
+    const { data } = await this.sb.rpc('my_punishment');
+    this.punishment.set((data as { ends_at: string | null; reason: string | null; since: string } | null) ?? null);
   }
 
   async loadMembers(): Promise<void> {

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked }
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { toSquareJpeg } from '../core/image';
+import { fmtWhen } from '../core/format';
 import { Avatar } from '../ui/avatar';
 import { Api } from '../core/api';
 import { FIELD_ROLE_LABEL, FieldRole, ROLE_LABEL, VisibilityKey } from '../core/models';
@@ -31,6 +32,9 @@ interface Form {
         <div class="stack">
           <h1>Il tuo profilo</h1>
           @if (session.profile(); as p) { <p class="muted">{{ roleLabel[p.role] }}</p> }
+          @if (session.punishment(); as pu) {
+            <p class="tag danger">In punizione {{ pu.ends_at ? 'fino a ' + when(pu.ends_at) : 'fino a nuovo ordine' }}</p>
+          }
         </div>
       </header>
 
@@ -146,6 +150,7 @@ export class ProfilePage {
   private readonly router = inject(Router);
 
   protected readonly roleLabel = ROLE_LABEL;
+  protected readonly when = fmtWhen;
   protected readonly fieldRoles = Object.entries(FIELD_ROLE_LABEL);
   protected readonly optional: { key: VisibilityKey; label: string }[] = [
     { key: 'last_name', label: 'Cognome' },

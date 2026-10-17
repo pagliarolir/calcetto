@@ -7,6 +7,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Reprimand } from '../ui/reprimand';
 import { scrollAppTo } from '../core/scroller';
 
 /** Chat di partita: aperta da 24 ore prima a 24 ore dopo (REQ-025). */
@@ -43,7 +44,7 @@ import { scrollAppTo } from '../core/scroller';
           <form class="composer" (ngSubmit)="send()">
             <label class="sr-only" for="msg">Messaggio</label>
             <textarea id="msg" class="input" name="body" [(ngModel)]="body" rows="1" maxlength="1000"
-                      placeholder="Scrivi al gruppo" (keydown.enter)="enter($event)"></textarea>
+                      placeholder="Scrivi al gruppo" (keydown.enter)="enter($event)" (focus)="onFocus($event)"></textarea>
             <button class="btn primary" type="submit" [disabled]="!body.trim() || busy()">Invia</button>
           </form>
         }
@@ -74,6 +75,7 @@ export class ChatTab implements OnDestroy {
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
+  private readonly reprimand = inject(Reprimand);
   private readonly list = viewChild<ElementRef<HTMLElement>>('list');
 
   protected readonly messages = signal<ChatMessage[]>([]);
@@ -121,6 +123,10 @@ export class ChatTab implements OnDestroy {
     return i > 0 && l[i - 1].user_id === l[i].user_id && !this.newDay(i);
   }
 
+  protected onFocus(e: FocusEvent): void {
+    if (this.reprimand.guard()) (e.target as HTMLElement).blur();
+  }
+
   protected enter(e: Event): void {
     const k = e as KeyboardEvent;
     if (!k.shiftKey && matchMedia('(pointer: fine)').matches) {
@@ -130,6 +136,7 @@ export class ChatTab implements OnDestroy {
   }
 
   protected async send(): Promise<void> {
+    if (this.reprimand.guard()) return;
     const text = this.body.trim();
     if (!text) return;
     this.busy.set(true);
@@ -137,6 +144,8 @@ export class ChatTab implements OnDestroy {
       await this.api.sendChat(this.store.match()!.id, this.session.uid()!, text);
       this.body = '';
     } catch (e) {
+      await this.session.refreshPunishment();
+      if (this.reprimand.guard()) return;
       this.toasts.error(errorMessage(e));
     } finally {
       this.busy.set(false);
@@ -144,6 +153,7 @@ export class ChatTab implements OnDestroy {
   }
 
   protected async remove(msg: ChatMessage): Promise<void> {
+    if (this.reprimand.guard()) return;
     try {
       await this.api.deleteChat(msg.id);
       this.messages.update((l) => l.filter((x) => x.id !== msg.id));

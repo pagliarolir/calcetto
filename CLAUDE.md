@@ -16,6 +16,8 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 - Notifiche: usa `notify(...)`, che accoda in `notifications`; l'invio push è automatico.
 - Aggiungi uno scenario in `supabase/tests/` per ogni regola nuova o modificata.
 
+- Punizioni: ogni nuova funzione con cui un giocatore interviene (prenota, scrive, vota, inserisce dati) deve chiamare `perform assert_not_punished();` all'inizio. Le azioni esistenti hanno un guardiano con lo stesso nome davanti alla funzione originale `*_unchecked` (privata): per cambiarne la logica modifica la `*_unchecked`, non il guardiano. Gli inviti ad agire vanno aggiunti all'elenco dei tipi filtrati in `notify()`.
+
 ## Regole del frontend
 
 - Componenti standalone, `ChangeDetectionStrategy.OnPush`, signals, niente zone.js. Negli `effect` leggi solo i segnali che devono farlo ripartire; usa `untracked` per il resto (un effect che legge e scrive lo stesso segnale blocca l'app).
@@ -23,6 +25,7 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 - Testi in italiano, tono amichevole e diretto. Niente maiuscole su intere etichette, niente separatori a punto centrale tra informazioni.
 - Accessibilità: pulsanti di almeno 44 px, etichette per i lettori di schermo, rispetto di `prefers-reduced-motion`.
 - Date sempre nel fuso Europe/Rome tramite `src/app/core/format.ts`.
+- Punizioni: ogni azione di intervento nei componenti inizia con `if (this.reprimand.guard()) return;`. Un errore `GDL01` dal server mostra comunque il rimprovero (passa da `Toasts.error`).
 - Foto profilo: mostrale sempre con `<app-avatar [userId] [size] [team]>` (usa i link firmati di `Session.avatarUrls` e ripiega sulle iniziali). Il contenitore `avatars` è privato: non renderlo pubblico e non costruire URL a mano. Per cancellare un file usa l'API dello Storage, non SQL (resterebbe orfano).
 - iPhone: la barra di stato resta "default" (in `index.html`). Non usare "black-translucent": con quella modalità Safari sposta gli elementi fissati in basso (bug WebKit 236445) e la barra di navigazione salta durante i caricamenti. La classe `.page` lascia comunque lo spazio di `env(safe-area-inset-top)`; sotto un'intestazione che lo lascia da sé (pagina partita) usa `.page.below-header`. App shell (`app.ts`): la colonna è alta `100dvh` con `max-height: 100%`, mai `100vh` (sull'iPhone con l'app installata supera l'area visibile e nasconde la barra); il documento non scorre mai; scorre solo il riquadro `.app-scroller` e la barra è l'ultimo elemento della colonna. Non rendere scorrevole la finestra e non usare `window.scrollTo`: usa `scrollAppTo` di `core/scroller.ts`. Così la barra non si muove quando una pagina carica e cambia altezza. Niente View Transitions né animazioni con `transform` sul cambio pagina.
 

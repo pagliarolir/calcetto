@@ -34,6 +34,28 @@ import { scrollAppTo } from '../core/scroller';
         </section>
       }
 
+      @if (punishing(); as target) {
+        <section class="panel stack punish enter-drop" role="dialog" aria-labelledby="pun-h">
+          <h2 id="pun-h">Metti in punizione {{ session.fullName(target) }}</h2>
+          <p class="small muted">Potrà entrare e consultare tutto, statistiche comprese, ma non prenotarsi, scrivere in chat, votare né inserire risultati. Riceverà un avviso.</p>
+          <div class="row-wrap" role="group" aria-label="Durata">
+            @for (d of durations; track d.id) {
+              <button class="chip" [attr.aria-pressed]="punishFor() === d.id" (click)="punishFor.set(d.id)">{{ d.label }}</button>
+            }
+          </div>
+          @if (punishFor() === 'custom') {
+            <label class="field"><span>Fino a</span><input class="input" type="datetime-local" [(ngModel)]="punishUntil" /></label>
+          }
+          <label class="field"><span>Motivo (facoltativo: lo vedrà)</span>
+            <input class="input" [(ngModel)]="punishReason" maxlength="200" placeholder="Es. ritardi continui" />
+          </label>
+          <div class="row-wrap">
+            <button class="btn small danger" [disabled]="busy()" (click)="confirmPunish(target)">Metti in punizione</button>
+            <button class="btn small ghost" (click)="punishing.set(null)">Annulla</button>
+          </div>
+        </section>
+      }
+
       @if (pending().length) {
         <section class="section">
           <header><h2>Richieste di accesso</h2></header>
@@ -49,6 +71,26 @@ import { scrollAppTo } from '../core/scroller';
         </section>
       }
 
+      @if (punished().length) {
+        <section class="section">
+          <header><h2>In punizione</h2></header>
+          <ul class="list">
+            @for (p of punished(); track p.user_id) {
+              <li class="list-item">
+                <app-avatar [userId]="p.user_id" />
+                <span class="grow">
+                  <strong>{{ session.fullName(p.user_id) }}</strong><br />
+                  <span class="small muted">{{ p.ends_at ? 'fino a ' + when(p.ends_at) : 'fino a nuovo ordine' }}@if (p.reason) {, {{ p.reason }}}</span>
+                </span>
+                @if (session.isLeader()) {
+                  <button class="btn small" [disabled]="busy()" (click)="pardon(p.user_id)">Revoca</button>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <section class="section">
         <header><h2>Giocatori</h2><span class="small muted">{{ active().length }}</span></header>
         <ul class="list">
@@ -57,7 +99,8 @@ import { scrollAppTo } from '../core/scroller';
               <app-avatar [userId]="m.id" />
               <span class="grow">
                 <strong>{{ session.fullName(m.id) }}</strong>
-                @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }<br />
+                @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
+                @if (isPunished(m.id)) { <span class="tag danger">in punizione</span> }<br />
                 <span class="small muted">ultimo accesso {{ m.last_seen_at ? ago(m.last_seen_at) : 'mai' }}</span>
               </span>
               @if ((session.isLeader() && m.role !== 'leader') || canRemove(m)) {
@@ -68,6 +111,9 @@ import { scrollAppTo } from '../core/scroller';
                     <option value="premier1">Primo Premier</option>
                     <option value="premier2">Secondo Premier</option>
                   </select>
+                }
+                @if (session.isLeader() && m.role !== 'leader' && m.id !== session.uid() && !isPunished(m.id)) {
+                  <button class="btn small ghost" (click)="startPunish(m)" [attr.aria-label]="'Metti in punizione ' + m.first_name">Punisci</button>
                 }
                 @if (session.isStaff() && m.avatar_path && m.id !== session.uid()) {
                   <button class="btn small ghost" (click)="removePhoto(m)" [attr.aria-label]="'Togli la foto di ' + m.first_name">Togli foto</button>
@@ -158,6 +204,7 @@ import { scrollAppTo } from '../core/scroller';
     .member .role { width: auto; min-height: 36px; padding: 4px 8px; font-size: var(--step--1); }
     summary { cursor: pointer; font-weight: 600; }
     .temp { border: 2px solid var(--armband); }
+    .punish { border: 2px solid var(--danger); }
     .pw { font: 700 var(--step-3)/1.1 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
     .plain { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   `,
@@ -173,6 +220,20 @@ export class AdminPage implements OnInit {
   protected readonly when = fmtWhen;
   protected readonly settings = signal<AppSettings | null>(null);
   protected readonly temp = signal<{ name: string; password: string } | null>(null);
+  protected readonly punished = signal<{ user_id: string; ends_at: string | null; reason: string | null; since: string }[]>([]);
+  protected readonly punishing = signal<string | null>(null);
+  protected readonly punishFor = signal('1w');
+  protected punishUntil = '';
+  protected punishReason = '';
+  protected readonly durations = [
+    { id: '1d', label: '1 giorno', days: 1 },
+    { id: '3d', label: '3 giorni', days: 3 },
+    { id: '1w', label: '1 settimana', days: 7 },
+    { id: '2w', label: '2 settimane', days: 14 },
+    { id: '1m', label: '1 mese', days: 30 },
+    { id: 'forever', label: 'Fino a revoca', days: 0 },
+    { id: 'custom', label: 'Scegli la data', days: 0 },
+  ];
   protected readonly busy = signal(false);
   protected readonly canShare = typeof navigator.share === 'function';
   protected delegateId = '';
@@ -197,6 +258,58 @@ export class AdminPage implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.session.loadMembers();
     if (this.session.isLeader()) this.settings.set(await this.api.settings());
+    await this.loadPunishments();
+  }
+
+  private async loadPunishments(): Promise<void> {
+    if (this.session.isStaff()) this.punished.set(await this.api.activePunishments().catch(() => []));
+  }
+
+  protected isPunished(id: string): boolean {
+    return this.punished().some((p) => p.user_id === id);
+  }
+
+  protected startPunish(m: Member): void {
+    this.punishFor.set('1w');
+    this.punishUntil = '';
+    this.punishReason = '';
+    this.punishing.set(m.id);
+    scrollAppTo('start');
+  }
+
+  protected async confirmPunish(userId: string): Promise<void> {
+    const choice = this.durations.find((d) => d.id === this.punishFor())!;
+    let until: string | null = null;
+    if (choice.id === 'custom') {
+      if (!this.punishUntil) return this.toasts.error('Scegli fino a quando.');
+      until = fromLocalInput(this.punishUntil);
+    } else if (choice.days) {
+      until = new Date(Date.now() + choice.days * 86_400_000).toISOString();
+    }
+    const name = this.session.name(userId);
+    this.busy.set(true);
+    try {
+      const res = await this.api.punishMember(userId, until, this.punishReason.trim());
+      this.punishing.set(null);
+      await this.loadPunishments();
+      this.toasts.show(`${name} è in punizione ${until ? 'fino a ' + fmtWhen(until) : 'fino a nuovo ordine'}.`);
+      if (res.booked_matches > 0) {
+        this.toasts.show(
+          `${name} è ancora in lista per ${res.booked_matches === 1 ? 'la prossima partita' : res.booked_matches + ' partite'}: se vuoi toglierlo usa «Assente» o «Azzera risposta» nella partita.`,
+          'info', 9000);
+      }
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async pardon(userId: string): Promise<void> {
+    const name = this.session.name(userId);
+    if (!confirm(`Revocare la punizione di ${name}?`)) return;
+    await this.run(() => this.api.pardonMember(userId), `Punizione di ${name} revocata.`);
+    await this.loadPunishments();
   }
 
   protected canRemove(m: Member): boolean {

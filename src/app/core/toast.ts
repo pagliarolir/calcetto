@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, Injector, signal } from '@angular/core';
+import { PUNISHMENT_MESSAGE, Reprimand } from '../ui/reprimand';
 
 export interface Toast {
   id: number;
@@ -9,6 +10,7 @@ export interface Toast {
 @Injectable({ providedIn: 'root' })
 export class Toasts {
   readonly items = signal<Toast[]>([]);
+  private readonly injector = inject(Injector);
   private seq = 0;
 
   show(text: string, tone: Toast['tone'] = 'ok', ms = 3200): void {
@@ -18,6 +20,10 @@ export class Toasts {
   }
 
   error(text: string): void {
+    if (text === PUNISHMENT_MESSAGE) {
+      this.injector.get(Reprimand).show();
+      return;
+    }
     this.show(text, 'error', 5000);
   }
 

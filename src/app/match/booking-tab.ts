@@ -10,6 +10,7 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Jersey } from '../ui/jersey';
 import { MatchStore } from './match-store';
+import { Reprimand } from '../ui/reprimand';
 
 interface SlotView {
   slot: number;
@@ -247,6 +248,7 @@ export class BookingTab {
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
+  private readonly reprimand = inject(Reprimand);
 
   protected readonly busy = signal(false);
   protected readonly windows = signal<{ user_id: string; opens_at: string }[]>([]);
@@ -330,6 +332,7 @@ export class BookingTab {
   }
 
   protected async book(choice: Choice): Promise<void> {
+    if (this.reprimand.guard()) return;
     await this.run(async () => {
       const res = await this.api.book(this.store.match()!.id, choice);
       await this.store.reload('bookings');
@@ -340,6 +343,7 @@ export class BookingTab {
   }
 
   protected async reply(r: 'confirmed' | 'declined'): Promise<void> {
+    if (this.reprimand.guard()) return;
     await this.run(async () => {
       await this.api.reserveReply(this.store.match()!.id, r);
       await this.store.reload('bookings');

@@ -17,6 +17,9 @@ export class Supabase {
 
 /** Messaggio leggibile da un errore Supabase/PostgREST: le funzioni SQL alzano già testi in italiano. */
 export function errorMessage(e: unknown): string {
+  if (e && typeof e === 'object' && (e as { code?: string }).code === 'GDL01') {
+    return 'Sei in punizione per ordine del Leader, rifletti sui tuoi errori';
+  }
   if (e && typeof e === 'object' && 'message' in e) {
     const m = String((e as { message: unknown }).message);
     if (m.includes('Failed to fetch') || m.includes('NetworkError')) return 'Sei offline: riprova appena torna la connessione.';

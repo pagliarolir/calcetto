@@ -7,6 +7,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 
 interface Line { goals: number; assists: number; own_goals: number }
@@ -181,6 +182,7 @@ export class ResultTab {
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
+  private readonly reprimand = inject(Reprimand);
 
   protected readonly teams: Team[] = ['white', 'black'];
   protected readonly teamLabel = TEAM_LABEL;
@@ -352,6 +354,7 @@ export class ResultTab {
   }
 
   protected async submit(): Promise<void> {
+    if (this.reprimand.guard()) return;
     await this.run(async () => {
       const id = this.store.match()!.id;
       if (this.exact()) await this.api.submitResult(id, null, this.wg(), this.bg());
@@ -365,6 +368,7 @@ export class ResultTab {
   }
 
   protected async review(agree: boolean): Promise<void> {
+    if (this.reprimand.guard()) return;
     await this.run(async () => {
       await this.api.reviewResult(this.store.match()!.id, agree, agree ? null : this.note.trim() || null);
       await Promise.all([this.store.reload('results'), this.store.reload('result_reviews')]);
@@ -382,6 +386,7 @@ export class ResultTab {
   }
 
   protected async saveScorers(): Promise<void> {
+    if (this.reprimand.guard()) return;
     const rows = [...this.lines()].map(([user_id, l]) => ({ user_id, ...l }));
     await this.run(async () => {
       await this.api.saveScorers(this.store.match()!.id, rows);

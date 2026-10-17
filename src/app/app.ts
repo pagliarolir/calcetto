@@ -7,10 +7,11 @@ import { Session } from './core/session';
 import { Toasts } from './core/toast';
 import { Unread } from './core/unread';
 import { Icon } from './ui/icon';
+import { ReprimandView } from './ui/reprimand';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
@@ -34,6 +35,8 @@ import { Icon } from './ui/icon';
         }
       </nav>
     }
+
+    <app-reprimand />
 
     <div class="toasts" role="status" aria-live="polite">
       @for (t of toasts.items(); track t.id) {
