@@ -42,15 +42,17 @@ import { Icon } from './ui/icon';
     </div>
   `,
   styles: `
-    /* Colonna a tutto schermo, di altezza costante: contenuto che scorre sopra, barra sotto. */
+    /* Colonna alta quanto l'area visibile: contenuto che scorre sopra, barra sotto.
+       100dvh e non 100vh: nell'app installata su iPhone 100vh supera l'area visibile e la barra
+       finisce sotto lo schermo. max-height: 100% è una sicurezza: la colonna non può mai essere
+       più alta dell'area della pagina, quindi la barra resta sempre visibile. */
     :host {
       position: fixed; top: 0; left: 0; right: 0; z-index: 1;
       height: 100%;
       height: 100dvh;
+      max-height: 100%;
       display: flex; flex-direction: column; overflow: hidden;
     }
-    /* App installata: 100vh è l'intero schermo utile ed è stabile (non segue la tastiera né il contenuto). */
-    @media (display-mode: standalone) { :host { height: 100vh; } }
 
     .app-scroller {
       flex: 1 1 auto; min-height: 0;
