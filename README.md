@@ -154,8 +154,8 @@ La chiave segreta dà accesso totale al progetto: tienila solo nel terminale, ma
 | REQ-021, 022 Leader numero 1; se assente si conta dal 2 all'11 | `booking_board`; il numero 1 non viene mai riassegnato |
 | REQ-023 Inserimenti diretti e finestre esclusive | `leader_book` (il giocatore inserito, riserva o segnato assente riceve un avviso, con pulsante "Non posso"), `set_priority_window`; Strumenti del Leader |
 | REQ-024 Spostare la partita | `move_match`: le prenotazioni seguono la nuova data |
-| REQ-025 Chat da 24 ore prima a 24 ore dopo | `chat_messages` con regola di scrittura a tempo, in tempo reale |
-| REQ-026…029 Bianchi e neri, formazioni dalle 24 ore, delegato con approvazione | `save_lineup`, `review_lineup`, `set_lineup_delegate` |
+| REQ-025 Chat della partita | aperta dalla creazione della partita fino a 24 ore dopo la fine (migrazione `20261010000016`), in tempo reale |
+| REQ-026…029 Squadre, formazioni, delegato con approvazione | `save_lineup`, `review_lineup`, `set_lineup_delegate`; formazioni fatte e pubblicate da subito (migrazione `20261010000016`), con promemoria a Leader e Premier a 24 ore dalla partita se non sono ancora ufficiali |
 | REQ-030, 031 Campo 5 contro 5, notifica col proprio colore | scheda Squadre: tocca il giocatore e poi la posizione |
 | REQ-032 Variazioni notificate | `notify_lineup_change`, anche per ingressi e uscite di riserve |
 | REQ-033…036 Risultato alle 21:30, differenza o punteggio, conferme | `submit_result`, `review_result`, omologazione a 5 conferme |
