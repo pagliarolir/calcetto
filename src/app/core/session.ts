@@ -21,6 +21,9 @@ export class Session {
   readonly me = signal<Me | null>(null);
   readonly members = signal<Member[]>([]);
   readonly ready = signal(false);
+  /** id utente -> link firmato della foto profilo */
+  readonly avatarUrls = signal(new Map<string, string>());
+  private readonly signedAvatars = new Map<string, { url: string; expires: number }>();
 
   readonly uid = computed(() => this.auth()?.user.id ?? null);
   readonly profile = computed<Profile | null>(() => this.me()?.profile ?? null);
@@ -72,7 +75,33 @@ export class Session {
 
   async loadMembers(): Promise<void> {
     const { data } = await this.sb.from('members').select('*');
-    if (data) this.members.set(data as Member[]);
+    if (data) {
+      this.members.set(data as Member[]);
+      await this.signAvatars(data as Member[]);
+    }
+  }
+
+  /**
+   * Le foto stanno in un contenitore privato: servono link firmati, validi 7 giorni.
+   * Si firmano solo le foto nuove o in scadenza, così il browser riusa le immagini già scaricate.
+   */
+  private async signAvatars(members: Member[]): Promise<void> {
+    const week = 7 * 24 * 3600;
+    const now = Date.now();
+    const toSign = [...new Set(members.map((m) => m.avatar_path).filter((p): p is string => !!p))]
+      .filter((p) => (this.signedAvatars.get(p)?.expires ?? 0) < now + 24 * 3600_000);
+    if (toSign.length) {
+      const { data } = await this.sb.storage.from('avatars').createSignedUrls(toSign, week);
+      for (const d of data ?? []) {
+        if (d.path && d.signedUrl) this.signedAvatars.set(d.path, { url: d.signedUrl, expires: now + week * 1000 });
+      }
+    }
+    const urls = new Map<string, string>();
+    for (const m of members) {
+      const s = m.avatar_path ? this.signedAvatars.get(m.avatar_path) : undefined;
+      if (s) urls.set(m.id, s.url);
+    }
+    this.avatarUrls.set(urls);
   }
 
   /** Nome da mostrare: soprannome se visibile, altrimenti nome. */

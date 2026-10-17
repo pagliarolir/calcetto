@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { toSquareJpeg } from '../core/image';
+import { Avatar } from '../ui/avatar';
 import { Api } from '../core/api';
 import { FIELD_ROLE_LABEL, FieldRole, ROLE_LABEL, VisibilityKey } from '../core/models';
 import { Push } from '../core/push';
@@ -20,14 +22,48 @@ interface Form {
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
-      <header class="stack">
-        <h1>Il tuo profilo</h1>
-        @if (session.profile(); as p) { <p class="muted">{{ roleLabel[p.role] }}</p> }
+      <header class="me">
+        @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="88" /> }
+        <div class="stack">
+          <h1>Il tuo profilo</h1>
+          @if (session.profile(); as p) { <p class="muted">{{ roleLabel[p.role] }}</p> }
+        </div>
       </header>
+
+      <section class="section">
+        <header><h2>Foto</h2></header>
+        <div class="panel stack">
+          @if (preview(); as pv) {
+            <div class="row">
+              <img class="preview" [src]="pv.url" alt="Anteprima della nuova foto profilo" />
+              <p class="small">Così la vedranno gli altri: ritagliata in un cerchio. Va bene?</p>
+            </div>
+            <div class="row-wrap">
+              <button class="btn small primary" [disabled]="photoBusy()" (click)="savePhoto()">{{ photoBusy() ? 'Caricamento…' : 'Salva la foto' }}</button>
+              <button class="btn small ghost" [disabled]="photoBusy()" (click)="cancelPhoto()">Annulla</button>
+            </div>
+          } @else {
+            <div class="row-wrap">
+              <label class="btn small primary">
+                {{ session.profile()?.avatar_path ? 'Cambia foto' : 'Aggiungi una foto' }}
+                <input type="file" accept="image/*" class="sr-only" (change)="pickPhoto($event)" />
+              </label>
+              @if (session.profile()?.avatar_path) {
+                <button class="btn small ghost" [disabled]="photoBusy()" (click)="removePhoto()">Rimuovi</button>
+              }
+            </div>
+          }
+          <label class="switch">
+            <span>Mostra la foto agli altri</span>
+            <input type="checkbox" [checked]="visibility().avatar" (change)="togglePhotoVisibility()" />
+          </label>
+          <p class="small muted">Compare nelle formazioni, nella classifica, nelle pagelle e nella tua scheda. Se la nascondi, gli altri vedono le tue iniziali.</p>
+        </div>
+      </section>
 
       <section class="section">
         <header><h2>Notifiche</h2></header>
@@ -86,6 +122,10 @@ interface Form {
     </main>
   `,
   styles: `
+    .me { display: flex; align-items: center; gap: 16px; }
+    .preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px var(--line); }
+    label.btn { position: relative; }
+    label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .opt { display: flex; align-items: flex-end; gap: 10px; }
     .vis { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; padding-bottom: 4px; cursor: pointer; }
     .toggle {
@@ -118,8 +158,10 @@ export class ProfilePage {
 
   protected form: Form = { first_name: '', last_name: '', nickname: '', field_role: '', birth_date: '', weight_kg: null, height_cm: null };
   protected readonly visibility = signal<Record<VisibilityKey, boolean>>({
-    last_name: true, nickname: true, field_role: true, birth_date: false, weight_kg: false, height_cm: false,
+    last_name: true, nickname: true, field_role: true, birth_date: false, weight_kg: false, height_cm: false, avatar: true,
   });
+  protected readonly preview = signal<{ blob: Blob; url: string } | null>(null);
+  protected readonly photoBusy = signal(false);
   protected readonly busy = signal(false);
 
   constructor() {
@@ -162,6 +204,74 @@ export class ProfilePage {
       this.toasts.error(errorMessage(e));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  protected async pickPhoto(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    try {
+      const blob = await toSquareJpeg(file);
+      this.cancelPhoto();
+      this.preview.set({ blob, url: URL.createObjectURL(blob) });
+    } catch (err) {
+      this.toasts.error(errorMessage(err));
+    }
+  }
+
+  protected cancelPhoto(): void {
+    const p = this.preview();
+    if (p) URL.revokeObjectURL(p.url);
+    this.preview.set(null);
+  }
+
+  protected async savePhoto(): Promise<void> {
+    const p = this.preview();
+    const uid = this.session.uid();
+    if (!p || !uid) return;
+    this.photoBusy.set(true);
+    try {
+      await this.api.setAvatar(uid, p.blob, this.session.profile()?.avatar_path ?? null);
+      this.cancelPhoto();
+      await this.session.refresh();
+      this.toasts.show('Foto aggiornata.');
+    } catch (err) {
+      this.toasts.error(errorMessage(err));
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected async removePhoto(): Promise<void> {
+    const uid = this.session.uid();
+    const path = this.session.profile()?.avatar_path;
+    if (!uid || !path || !confirm('Rimuovere la foto profilo?')) return;
+    this.photoBusy.set(true);
+    try {
+      await this.api.removeAvatar(uid, path);
+      await this.session.refresh();
+      this.toasts.show('Foto rimossa.');
+    } catch (err) {
+      this.toasts.error(errorMessage(err));
+    } finally {
+      this.photoBusy.set(false);
+    }
+  }
+
+  protected async togglePhotoVisibility(): Promise<void> {
+    const uid = this.session.uid();
+    if (!uid) return;
+    const v = { ...this.visibility(), avatar: !this.visibility().avatar };
+    this.visibility.set(v);
+    try {
+      await this.api.updateProfile(uid, { visibility: v });
+      await this.session.refresh();
+      this.toasts.show(v.avatar ? 'La foto è visibile agli altri.' : 'La foto ora la vedi solo tu.');
+    } catch (err) {
+      this.visibility.set({ ...v, avatar: !v.avatar });
+      this.toasts.error(errorMessage(err));
     }
   }
 

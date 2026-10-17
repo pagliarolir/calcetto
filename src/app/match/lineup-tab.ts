@@ -7,6 +7,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Avatar } from '../ui/avatar';
 
 interface Spot { team: Team; slot: number; x: number; y: number; label: string }
 interface Place { team: Team; slot: number | null }
@@ -22,7 +23,7 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
 
 @Component({
   selector: 'app-lineup-tab',
-  imports: [FormsModule],
+  imports: [FormsModule, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -54,7 +55,11 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
                       [style.left.%]="s.x" [style.top.%]="s.y" [disabled]="!editing()"
                       [attr.aria-label]="teamLabel[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
                       (click)="tapSpot(s)">
-                <span class="disc">{{ who ? session.initials(who) : (editing() ? '+' : '') }}</span>
+                @if (who) {
+                  <app-avatar class="pitch-photo" [userId]="who" [size]="46" [team]="s.team" />
+                } @else {
+                  <span class="disc">{{ editing() ? '+' : '' }}</span>
+                }
                 <span class="name">{{ who ? session.name(who) : s.label }}</span>
               </button>
             }
@@ -162,6 +167,11 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
     .spot.filled .disc { background: var(--kit-white); color: var(--kit-white-ink); border: 2px solid #fff; box-shadow: 0 3px 8px rgb(0 0 0 / 30%); }
     .spot.black.filled .disc { background: var(--kit-black); color: var(--kit-black-ink); border-color: #000; }
     .spot.sel .disc { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband); }
+    /* giocatore in campo: foto (o iniziali) con l'anello del colore della squadra */
+    .pitch-photo { transition: transform 200ms var(--ease-spring); font-weight: 700; }
+    .pitch-photo.white { background: var(--kit-white); color: var(--kit-white-ink); box-shadow: 0 0 0 2.5px #fff, 0 3px 8px rgb(0 0 0 / 35%); }
+    .pitch-photo.black { background: var(--kit-black); color: var(--kit-black-ink); box-shadow: 0 0 0 2.5px #000, 0 3px 8px rgb(0 0 0 / 35%); }
+    .spot.sel .pitch-photo { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband), 0 3px 8px rgb(0 0 0 / 35%); }
     .name { font-size: 0.72rem; font-weight: 600; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       text-shadow: 0 1px 2px rgb(0 0 0 / 60%); }
     .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

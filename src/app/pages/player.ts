@@ -4,17 +4,21 @@ import { Api } from '../core/api';
 import { age, fmtDate } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
 import { Session } from '../core/session';
+import { Avatar } from '../ui/avatar';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink],
+  imports: [RouterLink, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
       @if (member(); as m) {
         <header class="stack">
           <a class="small muted back" routerLink="/classifica">Classifica</a>
-          <h1>{{ session.fullName(m.id) }}</h1>
+          <div class="id">
+            <app-avatar [userId]="m.id" [size]="88" />
+            <h1>{{ session.fullName(m.id) }}</h1>
+          </div>
           <div class="row-wrap">
             @if (m.nickname) { <span class="tag">detto {{ m.nickname }}</span> }
             @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
@@ -59,6 +63,7 @@ import { Session } from '../core/session';
   `,
   styles: `
     .back { text-decoration: none; }
+    .id { display: flex; align-items: center; gap: 16px; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-m); overflow: hidden; }
     .grid > div { background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 2px; }
     .v { font-size: var(--step-2); font-weight: 700; }

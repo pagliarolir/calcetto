@@ -6,9 +6,11 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Avatar } from '../ui/avatar';
 
 @Component({
   selector: 'app-votes-tab',
+  imports: [Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -25,7 +27,7 @@ import { MatchStore } from './match-store';
                 <ol class="list">
                   @for (p of s.players; track p.user_id; let i = $index) {
                     <li class="list-item">
-                      <span class="avatar" [class.white]="team(p.user_id) === 'white'" [class.black]="team(p.user_id) === 'black'">{{ session.initials(p.user_id) }}</span>
+                      <app-avatar [userId]="p.user_id" [team]="team(p.user_id)" />
                       <span class="grow">{{ session.name(p.user_id) }}
                         @if (p.is_mvp) { <span class="tag armband">Migliore in campo</span> }
                       </span>

@@ -7,11 +7,12 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Icon } from '../ui/icon';
+import { Avatar } from '../ui/avatar';
 import { scrollAppTo } from '../core/scroller';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, Icon],
+  imports: [FormsModule, Icon, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -53,6 +54,7 @@ import { scrollAppTo } from '../core/scroller';
         <ul class="list">
           @for (m of active(); track m.id) {
             <li class="list-item member" [class.stacked]="session.isLeader()">
+              <app-avatar [userId]="m.id" />
               <span class="grow">
                 <strong>{{ session.fullName(m.id) }}</strong>
                 @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }<br />
@@ -66,6 +68,9 @@ import { scrollAppTo } from '../core/scroller';
                     <option value="premier1">Primo Premier</option>
                     <option value="premier2">Secondo Premier</option>
                   </select>
+                }
+                @if (session.isStaff() && m.avatar_path && m.id !== session.uid()) {
+                  <button class="btn small ghost" (click)="removePhoto(m)" [attr.aria-label]="'Togli la foto di ' + m.first_name">Togli foto</button>
                 }
                 @if (canRemove(m)) {
                   <button class="icon-btn" (click)="resetPassword(m)" [disabled]="busy()" [attr.aria-label]="'Reimposta la password di ' + m.first_name" title="Reimposta password">
@@ -148,7 +153,7 @@ import { scrollAppTo } from '../core/scroller';
   `,
   styles: `
     .member { flex-wrap: wrap; row-gap: 4px; }
-    .member.stacked > .grow { flex: 1 1 100%; }
+    .member.stacked > .grow { flex: 1 1 calc(100% - 48px); }
     .tools { display: flex; align-items: center; gap: 2px; margin-left: auto; }
     .member .role { width: auto; min-height: 36px; padding: 4px 8px; font-size: var(--step--1); }
     summary { cursor: pointer; font-weight: 600; }
@@ -225,6 +230,11 @@ export class AdminPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected async removePhoto(m: Member): Promise<void> {
+    if (!confirm(`Togliere la foto profilo di ${m.first_name}? Riceverà un avviso e potrà caricarne un'altra.`)) return;
+    await this.run(() => this.api.removeMemberAvatar(m.id), 'Foto rimossa.');
   }
 
   protected async copy(pw: string): Promise<void> {
