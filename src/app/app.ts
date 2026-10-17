@@ -54,10 +54,16 @@ import { ReprimandView } from './ui/reprimand';
       height: 100%;
       height: 100dvh;
       max-height: 100%;
-      display: flex; flex-direction: column; overflow: hidden;
+      display: flex; flex-direction: column;
+      /* clip e non solo hidden: la colonna non deve mai poter scorrere, nemmeno quando il browser
+         porta in vista un elemento con il fuoco (altrimenti tutto scivola fuori e resta lo sfondo) */
+      overflow: hidden;
+      overflow: clip;
     }
 
     .app-scroller {
+      /* contenitore di riferimento per gli elementi posizionati (anche quelli nascosti, come le caselle dei chip) */
+      position: relative;
       flex: 1 1 auto; min-height: 0;
       overflow-y: auto; overflow-x: hidden;
       overscroll-behavior-y: contain;
@@ -127,6 +133,11 @@ export class App {
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   constructor() {
+    // rete di sicurezza: se un browser facesse comunque scorrere la colonna, torna subito a posto
+    const host = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
+    host.addEventListener('scroll', () => {
+      if (host.scrollTop || host.scrollLeft) host.scrollTo(0, 0);
+    });
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
       this.scroller()?.nativeElement.scrollTo({ top: 0 });
     });
