@@ -10,7 +10,7 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { scrollAppTo } from '../core/scroller';
 
-/** Chat di partita: aperta da 24 ore prima a 24 ore dopo (REQ-025). */
+/** Chat di partita: aperta dalla creazione della partita fino a 24 ore dopo la fine. */
 @Component({
   selector: 'app-chat-tab',
   imports: [FormsModule],
