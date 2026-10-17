@@ -127,17 +127,23 @@ interface SlotView {
             <header><h2 id="lead-h">Strumenti del Leader</h2></header>
 
             <div class="panel stack">
-              <h3>Prenota per qualcuno</h3>
-              <p class="small muted">Chi metti tra i presenti entra nei 10 anche se la lista è piena: l'ultimo arrivato passa in testa alle riserve.</p>
+              <h3>Cambia la risposta di un giocatore</h3>
+              <p class="small muted">In squadra entra nei 10 anche se la lista è piena: l'ultimo arrivato passa in testa alle riserve. «Azzera risposta» lo riporta tra chi non ha risposto. In ogni caso il giocatore riceve un avviso.</p>
               <select class="input" [(ngModel)]="placeUser" aria-label="Giocatore">
                 <option value="">Scegli un giocatore</option>
-                @for (mb of session.activeMembers(); track mb.id) { <option [value]="mb.id">{{ session.name(mb.id) }}</option> }
+                @for (mb of session.activeMembers(); track mb.id) {
+                  <option [value]="mb.id">{{ session.name(mb.id) }} ({{ statusOf(mb.id) }})</option>
+                }
               </select>
               <div class="row-wrap">
-                <button class="btn small primary" [disabled]="!placeUser" (click)="place('present')">Mettilo dentro</button>
-                <button class="btn small" [disabled]="!placeUser" (click)="place('reserve')">Tra le riserve</button>
-                <button class="btn small" [disabled]="!placeUser" (click)="place('absent')">Toglilo</button>
+                <button class="btn small primary" [disabled]="!placeUser || busy()" (click)="place('present')">In squadra</button>
+                <button class="btn small" [disabled]="!placeUser || busy() || isTitular(placeUser)" (click)="place('reserve')">Riserva</button>
+                <button class="btn small" [disabled]="!placeUser || busy()" (click)="place('absent')">Assente</button>
+                <button class="btn small danger" [disabled]="!placeUser || busy() || !canReset(placeUser)" (click)="resetAnswer()">Azzera risposta</button>
               </div>
+              @if (placeUser && isTitular(placeUser)) {
+                <p class="small muted">Il Leader è sempre il numero 1: si può solo segnare presente o assente.</p>
+              }
             </div>
 
             <div class="panel stack">
@@ -287,12 +293,43 @@ export class BookingTab {
     });
   }
 
+  /** Risposta attuale di un giocatore, mostrata accanto al nome nel menu del Leader. */
+  protected statusOf(userId: string): string {
+    const b = this.store.board().find((r) => r.user_id === userId);
+    if (!b) return 'non ha risposto';
+    if (b.list === 'team') return `in squadra, n. ${b.slot}`;
+    if (b.list === 'reserve') return `riserva n. ${b.slot}`;
+    return 'assente';
+  }
+
+  protected isTitular(userId: string): boolean {
+    return userId === this.session.me()?.titular_leader;
+  }
+
+  protected canReset(userId: string): boolean {
+    return !this.isTitular(userId) && this.store.board().some((r) => r.user_id === userId);
+  }
+
   protected async place(choice: Choice): Promise<void> {
+    const id = this.placeUser;
     await this.run(async () => {
-      await this.api.leaderBook(this.store.match()!.id, this.placeUser, choice);
+      const res = await this.api.leaderBook(this.store.match()!.id, id, choice);
       await this.store.reload('bookings');
-      this.toasts.show(`${this.session.name(this.placeUser)} aggiornato.`);
-      this.placeUser = '';
+      const where = res.list === 'team' ? `in squadra con il numero ${res.slot}`
+        : res.list === 'reserve' ? `riserva numero ${res.slot}` : 'assente';
+      this.toasts.show(`${this.session.name(id)}: ${where}.`);
+    });
+  }
+
+  protected async resetAnswer(): Promise<void> {
+    const id = this.placeUser;
+    const name = this.session.name(id);
+    if (!confirm(`Azzerare la risposta di ${name}? Tornerà tra chi non ha risposto e riceverà un avviso per rispondere di nuovo.`)) return;
+    await this.run(async () => {
+      const res = await this.api.leaderResetBooking(this.store.match()!.id, id);
+      await this.store.reload('bookings');
+      const extra = res.promoted ? ` Entra ${this.session.name(res.promoted)} dalle riserve.` : '';
+      this.toasts.show(`${name}: risposta azzerata.${extra}`);
     });
   }
 

@@ -133,6 +133,7 @@ La chiave segreta dà accesso totale al progetto: tienila solo nel terminale, ma
 
 | Requisito | Realizzazione |
 |---|---|
+| Azzeramento della risposta (aggiunta) | `leader_reset_booking` (migrazione `20261010000012`): il Leader riporta un giocatore a "non ha risposto"; se era in squadra sale la prima riserva, a 9 parte "manca un giocatore", con formazioni ufficiali esce dalle squadre; nessun forfait tardivo; il giocatore riceve un avviso con i pulsanti per rispondere (o con la data di apertura). Strumenti del Leader: stato attuale accanto a ogni nome |
 | Foto profilo (aggiunta) | Storage di Supabase, contenitore privato `avatars` (migrazione `20261010000011`): ognuno carica solo nella propria cartella, le vedono solo i membri attivi con link firmati, si possono nascondere; ritaglio a 320 px nel browser senza metadati (`core/image.ts`); componente `<app-avatar>` in campo, classifica, pagelle, marcatori, scheda giocatore, profilo e gestione; Leader e Premier possono toglierne una (`remove_member_avatar`) |
 | Recupero password (aggiunta) | email via Supabase Auth con modello italiano; password temporanea dal Leader con `admin-reset-password`, `can_reset_password`, obbligo di cambio al primo accesso |
 | REQ-001…003 Dati utente, solo nome obbligatorio, visibilità | `profiles`, vista `members` che nasconde i campi privati; pagina Profilo |
