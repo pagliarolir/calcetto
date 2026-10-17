@@ -16,7 +16,7 @@ import { Match, Result } from '../core/models';
           <li>
             <a class="list-item" [routerLink]="['/partita', m.id]">
               <span class="grow"><span class="day">{{ day(m.starts_at) }}</span><br />
-                <span class="small muted">{{ time(m.starts_at) }}@if (m.moved) {, spostata}@if (m.status === 'cancelled') {, annullata}</span></span>
+                <span class="small muted">{{ time(m.starts_at) }}@if (m.venue_name) {, {{ m.venue_name }}}@if (m.moved) {, spostata}@if (m.status === 'cancelled') {, annullata}</span></span>
               @if (m.results; as r) { <span class="num score">{{ text(r.diff, r.white_goals, r.black_goals) }}</span> }
               @else if (m.status === 'scheduled') { <span class="tag turf">in programma</span> }
             </a>
