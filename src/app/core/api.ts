@@ -43,8 +43,13 @@ export class Api {
     return must(await this.sb.rpc('book', { p_match: matchId, p_choice: choice }));
   }
 
-  async leaderBook(matchId: string, userId: string, choice: Choice) {
+  async leaderBook(matchId: string, userId: string, choice: Choice): Promise<{ list: string; slot: number | null }> {
     return must(await this.sb.rpc('leader_book', { p_match: matchId, p_user: userId, p_choice: choice }));
+  }
+
+  /** Il Leader riporta un giocatore a "non ha risposto". */
+  async leaderResetBooking(matchId: string, userId: string): Promise<{ previous: string; promoted: string | null }> {
+    return must(await this.sb.rpc('leader_reset_booking', { p_match: matchId, p_user: userId }));
   }
 
   async reserveReply(matchId: string, reply: 'confirmed' | 'declined') {
