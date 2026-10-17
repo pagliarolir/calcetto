@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { fmtAgo, fmtWhen, fromLocalInput } from '../core/format';
 import { AppSettings, Member, Role, ROLE_LABEL } from '../core/models';
@@ -12,7 +13,7 @@ import { scrollAppTo } from '../core/scroller';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, Icon, Avatar],
+  imports: [FormsModule, Icon, Avatar, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -179,18 +180,11 @@ import { scrollAppTo } from '../core/scroller';
           <div class="panel stack">
             <label class="field"><span>Codice invito (chi si registra senza resta in attesa di approvazione)</span>
               <input class="input" name="invite" [(ngModel)]="s.invite_code" autocomplete="off" /></label>
-            <div class="row">
-              <label class="field grow"><span>Giorno</span>
-                <select class="input" name="wd" [(ngModel)]="s.game_weekday">
-                  @for (d of weekdays; track $index) { <option [ngValue]="$index">{{ d }}</option> }
-                </select></label>
-              <label class="field grow"><span>Ora</span><input class="input" type="time" name="gt" [(ngModel)]="s.game_time" /></label>
-            </div>
+            <p class="small muted">Giorno, ora, numero di giocatori, colori e orari di prenotazioni e votazioni si impostano in <a routerLink="/partite">Partite</a>, nella configurazione predefinita.</p>
             <div class="row">
               <label class="field grow"><span>Conferme per omologare</span><input class="input" type="number" min="1" max="9" name="q" [(ngModel)]="s.quorum" /></label>
               <label class="field grow"><span>Votanti per le medie</span><input class="input" type="number" min="1" max="9" name="vm" [(ngModel)]="s.vote_min_voters" /></label>
             </div>
-            <label class="field"><span>Ore per votare dopo la partita</span><input class="input" type="number" min="2" max="144" name="vh" [(ngModel)]="s.vote_hours" /></label>
             <button class="btn primary" type="submit">Salva le regole</button>
           </div>
         </form>
@@ -379,8 +373,7 @@ export class AdminPage implements OnInit {
   protected async saveSettings(): Promise<void> {
     const s = this.settings()!;
     await this.run(() => this.api.updateSettings({
-      invite_code: s.invite_code?.trim() || null, game_weekday: s.game_weekday, game_time: s.game_time,
-      quorum: s.quorum, vote_min_voters: s.vote_min_voters, vote_hours: s.vote_hours,
+      invite_code: s.invite_code?.trim() || null, quorum: s.quorum, vote_min_voters: s.vote_min_voters,
     }), 'Regole salvate.');
   }
 

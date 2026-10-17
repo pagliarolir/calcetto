@@ -74,6 +74,20 @@ export interface Match {
   venue_name: string | null;
   venue_address: string | null;
   venue_url: string | null;
+  /** configurazione della partita */
+  players_per_team: number;
+  team_a_kit: string;
+  team_b_kit: string;
+  booking_open_days: number;
+  booking_open_time: string;
+  booking_close_days: number;
+  booking_close_time: string;
+  votes_open_after_min: number;
+  votes_hours: number;
+  /** orari calcolati dalla configurazione */
+  bookings_close_at: string;
+  votes_opens_at: string;
+  votes_closes_at: string;
 }
 
 export interface BoardRow {
@@ -235,6 +249,12 @@ export interface AppSettings {
   vote_hours: number;
   inactivity_days: number;
   invite_code: string | null;
+  players_per_team: number;
+  team_a_kit: string;
+  team_b_kit: string;
+  booking_close_days: number;
+  booking_close_time: string;
+  votes_open_after_min: number;
   venue_name: string | null;
   venue_address: string | null;
   venue_url: string | null;

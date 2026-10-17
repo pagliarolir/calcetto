@@ -5,6 +5,7 @@ import {
   PlayerVote, Result, ResultReview, Role, Scorer, StatsRow, Team, VoteSummary,
 } from './models';
 import { Supabase } from './supabase';
+import { ConfigField, MatchConfig } from './match-config';
 
 const MATCH_COLS = '*,ends_at,result_opens_at,lock_at,votes_close_at,lineup_opens_at,chat_opens_at,chat_closes_at';
 
@@ -77,6 +78,26 @@ export class Api {
     return must(await this.sb.rpc('set_match_venue', {
       p_match: matchId, p_name: name, p_address: address, p_url: url, p_as_default: asDefault,
     }));
+  }
+
+  async upcomingMatches(): Promise<Match[]> {
+    const res = await this.sb.from('matches').select(MATCH_COLS).eq('status', 'scheduled')
+      .gt('starts_at', new Date().toISOString()).order('starts_at');
+    return must(res) as unknown as Match[];
+  }
+
+  /** Crea una o più partite: date di calendario (AAAA-MM-GG), ora locale, configurazione. */
+  async createMatches(dates: string[], time: string, config: MatchConfig, saveDefault: boolean): Promise<{ created: string[]; skipped: string[] }> {
+    return must(await this.sb.rpc('leader_create_matches', { p_dates: dates, p_time: time, p_config: config, p_save_default: saveDefault }));
+  }
+
+  async updateDefaultConfig(config: MatchConfig, weekday: number, time: string) {
+    return must(await this.sb.rpc('update_default_match_config', { p_config: config, p_weekday: weekday, p_time: time }));
+  }
+
+  /** Applica i campi indicati della configurazione alle partite scelte; restituisce quante ne ha aggiornate. */
+  async updateMatchesConfig(matchIds: string[], config: MatchConfig, fields: ConfigField[], time: string | null): Promise<number> {
+    return must(await this.sb.rpc('update_matches_config', { p_matches: matchIds, p_config: config, p_fields: fields, p_time: time })) as number;
   }
 
   async cancelMatch(matchId: string) {

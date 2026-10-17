@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { fmtWhen } from '../core/format';
-import { FIELD_SLOTS, Team, TEAM_LABEL } from '../core/models';
+import { Team } from '../core/models';
+import { formation } from '../core/formations';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -10,17 +11,9 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 
-interface Spot { team: Team; slot: number; x: number; y: number; label: string }
+interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string }
 interface Place { team: Team; slot: number | null }
 
-/** Coordinate sul campo (percentuali): i Bianchi in alto, i Neri in basso. */
-const LAYOUT: Record<number, { x: number; y: number }> = {
-  1: { x: 50, y: 8 },
-  2: { x: 50, y: 22 },
-  3: { x: 20, y: 33 },
-  4: { x: 80, y: 33 },
-  5: { x: 50, y: 42 },
-};
 
 @Component({
   selector: 'app-lineup-tab',
@@ -41,27 +34,27 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
           <section class="stack">
             <h2>{{ statusTitle() }}</h2>
             @if (myTeam(); as t) {
-              <p class="mine" [class.black]="t === 'black'">Giochi con i {{ teamLabel[t] }}</p>
+              <p class="mine" [class.black]="t === 'black'">Giochi con i {{ teamLabel()[t] }}</p>
             }
           </section>
         }
 
         @if (visible()) {
-          <div class="pitch" role="group" aria-label="Campo da calcio a 5">
+          <div class="pitch" [class.tall]="perTeam() >= 7" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
             <div class="lines" aria-hidden="true"></div>
-            @for (s of spots; track s.team + s.slot) {
+            @for (s of spots(); track s.team + s.slot) {
               @let who = occupant(s);
               <button class="spot" [class.black]="s.team === 'black'" [class.filled]="!!who"
                       [class.sel]="!!who && who === selected()"
                       [style.left.%]="s.x" [style.top.%]="s.y" [disabled]="!editing()"
-                      [attr.aria-label]="teamLabel[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
+                      [attr.aria-label]="teamLabel()[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
                       (click)="tapSpot(s)">
                 @if (who) {
                   <app-avatar class="pitch-photo" [userId]="who" [size]="46" [team]="s.team" />
                 } @else {
                   <span class="disc">{{ editing() ? '+' : '' }}</span>
                 }
-                <span class="name">{{ who ? session.name(who) : s.label }}</span>
+                <span class="name">{{ who ? session.name(who) : s.short }}</span>
               </button>
             }
           </div>
@@ -96,7 +89,7 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
             <div class="teams">
               @for (t of teams; track t) {
                 <div class="panel">
-                  <h3>{{ teamLabel[t] }}</h3>
+                  <h3>{{ teamLabel()[t] }}</h3>
                   <ul>
                     @for (l of byTeam(t); track l.user_id) {
                       <li>{{ session.name(l.user_id) }} <span class="muted small">{{ slotLabel(l.field_slot) }}</span></li>
@@ -140,12 +133,13 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
   `,
   styles: `
     .mine { display: inline-flex; align-self: flex-start; padding: 10px 16px; border-radius: 999px; font: 700 var(--step-1)/1 var(--font-display);
-      background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
-    .mine.black { background: var(--kit-black); color: var(--kit-black-ink); box-shadow: none; }
+      background: var(--team-a); color: var(--team-a-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+    .mine.black { background: var(--team-b); color: var(--team-b-ink); box-shadow: none; }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
       background: repeating-linear-gradient(180deg, #24774c 0 10%, #1f6b45 10% 20%);
     }
+    .pitch.tall { aspect-ratio: 3 / 5.2; }
     .lines { position: absolute; inset: 10px; border: 2px solid rgb(255 255 255 / 75%); border-radius: 4px; }
     .lines::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px solid rgb(255 255 255 / 75%); }
     .lines::after { content: ''; position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%);
@@ -170,8 +164,8 @@ const LAYOUT: Record<number, { x: number; y: number }> = {
     .spot.sel .disc { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband); }
     /* giocatore in campo: foto (o iniziali) con l'anello del colore della squadra */
     .pitch-photo { transition: transform 200ms var(--ease-spring); font-weight: 700; }
-    .pitch-photo.white { background: var(--kit-white); color: var(--kit-white-ink); box-shadow: 0 0 0 2.5px #fff, 0 3px 8px rgb(0 0 0 / 35%); }
-    .pitch-photo.black { background: var(--kit-black); color: var(--kit-black-ink); box-shadow: 0 0 0 2.5px #000, 0 3px 8px rgb(0 0 0 / 35%); }
+    .pitch-photo.white { background: var(--team-a); color: var(--team-a-ink); box-shadow: 0 0 0 3px var(--team-a), 0 0 0 4px rgb(0 0 0 / 25%), 0 3px 8px rgb(0 0 0 / 35%); }
+    .pitch-photo.black { background: var(--team-b); color: var(--team-b-ink); box-shadow: 0 0 0 3px var(--team-b), 0 0 0 4px rgb(0 0 0 / 25%), 0 3px 8px rgb(0 0 0 / 35%); }
     .spot.sel .pitch-photo { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband), 0 3px 8px rgb(0 0 0 / 35%); }
     .name { font-size: 0.72rem; font-weight: 600; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       text-shadow: 0 1px 2px rgb(0 0 0 / 60%); }
@@ -187,14 +181,14 @@ export class LineupTab {
   private readonly reprimand = inject(Reprimand);
 
   protected readonly teams: Team[] = ['white', 'black'];
-  protected readonly teamLabel = TEAM_LABEL;
+  protected readonly teamLabel = computed(() => this.store.teamNames());
   protected readonly when = fmtWhen;
-  protected readonly spots: Spot[] = this.teams.flatMap((team) =>
-    FIELD_SLOTS.map(({ slot, label }) => ({
-      team, slot, label,
-      x: LAYOUT[slot].x,
-      y: team === 'white' ? LAYOUT[slot].y : 100 - LAYOUT[slot].y,
-    })),
+  /** posizioni in campo per il numero di giocatori della partita: squadra A in alto, B speculare in basso */
+  protected readonly perTeam = computed(() => this.store.match()?.players_per_team ?? 5);
+  protected readonly spots = computed<Spot[]>(() =>
+    this.teams.flatMap((team) =>
+      formation(this.perTeam()).map(({ slot, label, short, x, y }) => ({ team, slot, label, short, x, y: team === 'white' ? y : 100 - y })),
+    ),
   );
 
   protected readonly draft = signal(new Map<string, Place>());
@@ -252,7 +246,7 @@ export class LineupTab {
   }
 
   protected slotLabel(slot: number | null): string {
-    return FIELD_SLOTS.find((f) => f.slot === slot)?.label ?? '';
+    return formation(this.perTeam()).find((f) => f.slot === slot)?.label ?? '';
   }
 
   protected select(id: string): void {
@@ -290,7 +284,7 @@ export class LineupTab {
   protected shuffle(): void {
     const ids = this.store.team().map((b) => b.user_id).sort(() => Math.random() - 0.5);
     const d = new Map<string, Place>();
-    ids.forEach((id, i) => d.set(id, { team: i % 2 === 0 ? 'white' : 'black', slot: i < 10 ? Math.floor(i / 2) + 1 : null }));
+    ids.forEach((id, i) => d.set(id, { team: i % 2 === 0 ? 'white' : 'black', slot: i < this.perTeam() * 2 ? Math.floor(i / 2) + 1 : null }));
     this.draft.set(d);
     this.selected.set(null);
   }

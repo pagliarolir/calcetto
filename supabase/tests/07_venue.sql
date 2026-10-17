@@ -6,7 +6,7 @@ create temp table ids as select first_name n, id from profiles; grant select on 
 create function as_user(p text) returns void language sql as $$ select set_config('request.jwt.claim.sub', (select id::text from ids where n = p), false) $$;
 create function mid() returns uuid language sql as $$ select id from matches order by starts_at limit 1 $$;
 grant execute on function as_user(text), mid() to authenticated;
-update matches set bookings_open_at = now() - interval '1 day', starts_at = now() + interval '3 days';
+update matches set bookings_open_at = now() - interval '1 day', starts_at = now() + interval '3 days', bookings_close_at = now() + interval '3 days';
 set role authenticated;
 select as_user('P'||g), book(mid(), 'present') from generate_series(2,4) g;
 select as_user('P5'), book(mid(), 'reserve');

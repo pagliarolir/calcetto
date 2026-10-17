@@ -25,7 +25,7 @@ set role authenticated; select as_user('P1'); select delegate_leadership((select
 select as_user('P7'); select has_leader_powers() as p7_delegate_powers; reset role;
 
 -- partita a 10 ore: siamo nelle 24 ore
-update matches set bookings_open_at = now() - interval '2 days', starts_at = now() + interval '10 hours';
+update matches set bookings_open_at = now() - interval '2 days', starts_at = now() + interval '10 hours', bookings_close_at = now() + interval '10 hours';
 set role authenticated;
 select as_user('P'||g), book(mid(), 'present') from generate_series(2,10) g;
 \echo '--- P4 rinuncia a 10 ore, nessuna riserva: atteso late_withdrawal + avviso need_one'
@@ -93,7 +93,7 @@ select count(*) as dispatcher_calls from net.calls;
 reset role;
 insert into auth.users (email, raw_user_meta_data) values ('r1@x.it', '{"first_name":"R1"}');
 insert into ids select first_name, id from profiles where first_name = 'R1';
-update matches set status = 'scheduled', locked = false, bookings_open_at = now() - interval '1 day', starts_at = now() + interval '10 hours' where id = mid();
+update matches set status = 'scheduled', locked = false, bookings_open_at = now() - interval '1 day', starts_at = now() + interval '10 hours', bookings_close_at = now() + interval '10 hours' where id = mid();
 set role authenticated;
 select as_user('R1'), book(mid(), 'reserve');
 select as_user('R1'), reserve_reply(mid(), 'declined');

@@ -55,10 +55,11 @@ export function age(birth: string | null): number | null {
   return a;
 }
 
-export function diffText(diff: number, white: number | null, black: number | null): string {
+export function diffText(diff: number, white: number | null, black: number | null,
+                         names: { white: string; black: string } = { white: 'Bianchi', black: 'Neri' }): string {
   if (white !== null && black !== null) return `${white} – ${black}`;
   if (diff === 0) return 'Pareggio';
-  return diff > 0 ? `Bianchi +${diff}` : `Neri +${-diff}`;
+  return diff > 0 ? `${names.white} +${diff}` : `${names.black} +${-diff}`;
 }
 
 const weekday = fmt({ weekday: 'long' });

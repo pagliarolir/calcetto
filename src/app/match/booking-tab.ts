@@ -2,9 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { fmtWeekday, fmtWhen, fromLocalInput, mapsUrl, toLocalInput } from '../core/format';
+import { fmtTime, fmtWeekday, fmtWhen, fromLocalInput, mapsUrl, toLocalInput } from '../core/format';
+import { changedFields, ConfigField, configOfMatch, MatchConfig } from '../core/match-config';
+import { MatchConfigForm } from '../ui/match-config-form';
+import { ApplyDialog } from '../ui/apply-dialog';
 import { Icon } from '../ui/icon';
-import { BoardRow, Choice } from '../core/models';
+import { BoardRow, Choice, Match } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -19,7 +22,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Jersey, FormsModule, RouterLink, Icon],
+  imports: [Jersey, FormsModule, RouterLink, Icon, MatchConfigForm, ApplyDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -31,6 +34,8 @@ interface SlotView {
             <p class="muted">Questa partita è stata annullata.</p>
           } @else if (store.t()?.started) {
             <p class="muted">La partita è iniziata: le prenotazioni sono chiuse.</p>
+          } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
+            <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
           } @else if (!canBook()) {
             <p class="note">Le prenotazioni aprono {{ when(m.bookings_open_at) }}. Ti arriva una notifica.</p>
           } @else {
@@ -51,6 +56,9 @@ interface SlotView {
             } @else if (!store.t()?.within24h) {
               <p class="small muted">Puoi cambiare idea liberamente fino a {{ when(changeDeadline()) }}.</p>
             }
+            <p class="small muted">Le prenotazioni si chiudono {{ when(m.bookings_close_at) }}.</p>
+          }
+          @if (m.status === 'scheduled' && !store.t()?.started) {
             @if (store.mine()?.list === 'reserve' && store.t()?.within24h) {
               <div class="panel stack">
                 <p><strong>Sei di riserva.</strong> Facci sapere entro 12 ore dalla partita se sarai disponibile.</p>
@@ -86,7 +94,7 @@ interface SlotView {
         <section class="section" aria-labelledby="team-h">
           <header>
             <h2 id="team-h">In campo</h2>
-            <span class="muted small num">{{ store.team().length }}/10</span>
+            <span class="muted small num">{{ store.team().length }}/{{ store.size() }}</span>
           </header>
           <ol class="board">
             @for (s of slots(); track s.slot + ':' + (s.row?.user_id ?? '-')) {
@@ -144,6 +152,22 @@ interface SlotView {
         @if (session.isLeader() && m.status === 'scheduled' && !store.t()?.started) {
           <section class="section" aria-labelledby="lead-h">
             <header><h2 id="lead-h">Strumenti del Leader</h2></header>
+
+            @if (applyNext(); as a) {
+              <app-apply-dialog [matches]="a.matches" [fields]="a.fields" [busy]="busy()"
+                                title="Applicare anche alle partite successive?" cancelLabel="Solo a questa partita"
+                                (confirm)="applyNextTo($event)" (cancel)="applyNext.set(null)" />
+            }
+
+            <details class="panel settings">
+              <summary><h3>Impostazioni di questa partita</h3></summary>
+              <div class="stack-l">
+                <p class="small muted">Ora, giocatori, colori, prenotazioni e votazioni. Dopo il salvataggio puoi applicarle anche alle partite successive già create.</p>
+                <label class="field"><span>Ora della partita</span><input class="input" type="time" [(ngModel)]="mTime" /></label>
+                @if (mConfig(); as c) { <app-match-config-form [config]="c" (configChange)="mConfig.set($event)" /> }
+                <button class="btn small primary" [disabled]="busy()" (click)="saveMatchSettings()">Salva le impostazioni</button>
+              </div>
+            </details>
 
             <div class="panel stack">
               <h3>Cambia la risposta di un giocatore</h3>
@@ -237,6 +261,10 @@ interface SlotView {
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
     .venue-card { display: flex; flex-direction: column; gap: 12px; }
+    .settings summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
+    .settings summary::after { content: '+'; font: 600 1.4rem/1 var(--font-display); color: var(--muted); }
+    .settings[open] summary::after { content: '−'; }
+    .settings[open] summary { margin-bottom: 12px; }
     .venue-card h2 { font-size: var(--step-1); }
     .pin { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--turf-soft); color: var(--turf); }
     .pick .chip { display: inline-flex; align-items: center; }
@@ -262,6 +290,10 @@ export class BookingTab {
   protected venueAsDefault = true;
 
   /** Riquadro "Dove si gioca": compare solo se c'è almeno un dato. */
+  protected readonly mConfig = signal<MatchConfig | null>(null);
+  protected mTime = '';
+  protected readonly applyNext = signal<{ matches: Match[]; fields: ConfigField[]; config: MatchConfig; time: string } | null>(null);
+
   protected readonly venue = computed(() => {
     const m = this.store.match();
     if (!m || !(m.venue_name || m.venue_address || m.venue_url)) return null;
@@ -277,20 +309,20 @@ export class BookingTab {
     if (!t) return false;
     if (t.bookingOpen || this.amLeaderTitular()) return true;
     const mine = this.windows().find((w) => w.user_id === this.session.uid());
-    return !!mine && new Date(mine.opens_at).getTime() <= this.store.now();
+    return !!mine && new Date(mine.opens_at).getTime() <= this.store.now() && !t.bookingClosed;
   });
 
   protected readonly changeDeadline = computed(() =>
     new Date(new Date(this.store.match()!.starts_at).getTime() - 24 * 3600_000).toISOString(),
   );
 
-  /** Dieci posti: 1..10 con il Leader, 2..11 se il Leader è assente (REQ-022). */
+  /** Posti in lista (10 per il 5 contro 5, 12 per il 6 contro 6, ...): dall'1 con il Leader, dal 2 se il Leader è assente (REQ-022). */
   protected readonly slots = computed<SlotView[]>(() => {
     const first = this.store.leaderIn() ? 1 : 2;
     const bySlot = new Map(this.store.team().map((r) => [r.slot!, r]));
     const out: SlotView[] = [];
     if (!this.store.leaderIn()) out.push({ slot: 1, row: null });
-    for (let s = first; s < first + 10; s++) out.push({ slot: s, row: bySlot.get(s) ?? null });
+    for (let s = first; s < first + this.store.size(); s++) out.push({ slot: s, row: bySlot.get(s) ?? null });
     return out;
   });
 
@@ -308,7 +340,7 @@ export class BookingTab {
   });
 
   protected readonly presentHint = computed(() => {
-    const free = 10 - this.store.team().length;
+    const free = this.store.size() - this.store.team().length;
     if (this.store.mine()?.list === 'team') return 'sei in lista';
     return free > 0 ? (free === 1 ? 'ultimo posto' : `${free} posti liberi`) : 'vai in coda';
   });
@@ -317,13 +349,15 @@ export class BookingTab {
     // si riallinea solo quando cambia partita, non a ogni aggiornamento in tempo reale
     const matchKey = computed(() => {
       const m = this.store.match();
-      return m ? `${m.id}|${m.starts_at}|${m.bookings_open_at}` : null;
+      return m ? `${m.id}|${m.starts_at}|${m.bookings_open_at}|${JSON.stringify(configOfMatch(m))}` : null;
     });
     effect(() => {
       if (!matchKey()) return;
       const m = untracked(() => this.store.match()!);
       void this.api.priorityWindows(m.id).then((w) => this.windows.set(w)).catch(() => undefined);
       this.moveAt = toLocalInput(m.starts_at);
+      this.mConfig.set(configOfMatch(m));
+      this.mTime = fmtTime(m.starts_at);
       this.venueName = m.venue_name ?? '';
       this.venueAddress = m.venue_address ?? '';
       this.venueUrl = m.venue_url ?? '';
@@ -415,6 +449,30 @@ export class BookingTab {
       const id = this.store.match()!.id;
       await this.api.clearPriorityWindow(id, userId);
       this.windows.set(await this.api.priorityWindows(id));
+    });
+  }
+
+  /** Salva le impostazioni di questa partita e propone di applicarle alle successive. */
+  protected async saveMatchSettings(): Promise<void> {
+    const m = this.store.match()!;
+    const cfg = this.mConfig()!;
+    const fields = changedFields(configOfMatch(m), cfg, fmtTime(m.starts_at), this.mTime);
+    if (!fields.length) return this.toasts.show('Nessuna modifica da salvare.', 'info');
+    await this.run(async () => {
+      await this.api.updateMatchesConfig([m.id], cfg, fields, fields.includes('time') ? this.mTime : null);
+      await Promise.all([this.store.reload('matches'), this.store.reload('bookings'), this.store.reload('lineup')]);
+      this.toasts.show('Impostazioni della partita salvate.');
+      const next = (await this.api.upcomingMatches()).filter((x) => x.id !== m.id && x.starts_at > m.starts_at);
+      if (next.length) this.applyNext.set({ matches: next, fields, config: cfg, time: this.mTime });
+    });
+  }
+
+  protected async applyNextTo(ids: string[]): Promise<void> {
+    const a = this.applyNext()!;
+    await this.run(async () => {
+      const n = await this.api.updateMatchesConfig(ids, a.config, a.fields, a.fields.includes('time') ? a.time : null);
+      this.toasts.show(n === 1 ? 'Applicate anche a 1 partita successiva.' : `Applicate anche a ${n} partite successive.`);
+      this.applyNext.set(null);
     });
   }
 
