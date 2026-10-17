@@ -7,13 +7,14 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Avatar } from '../ui/avatar';
 
 interface Line { goals: number; assists: number; own_goals: number }
 type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [FormsModule],
+  imports: [FormsModule, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -145,7 +146,7 @@ type Field = keyof Line;
                 <ul class="list">
                   @for (s of store.scorers(); track s.user_id) {
                     <li class="list-item">
-                      <span class="avatar" [class.white]="store.teamOf().get(s.user_id) === 'white'" [class.black]="store.teamOf().get(s.user_id) === 'black'">{{ session.initials(s.user_id) }}</span>
+                      <app-avatar [userId]="s.user_id" [team]="store.teamOf().get(s.user_id)" />
                       <span class="grow">{{ session.name(s.user_id) }}</span>
                       <span class="small">{{ summary(s.goals, s.assists, s.own_goals) }}</span>
                     </li>

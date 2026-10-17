@@ -7,6 +7,7 @@ import { AttendanceRow, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
+import { Avatar } from '../ui/avatar';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
 type Col = { key: keyof StatsRow; label: string; title: string; fmt?: 'dec' | 'pct' | 'form'; asc?: boolean };
@@ -58,7 +59,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -116,7 +117,7 @@ const RECORDS: Record[] = [
               <tbody>
                 @for (r of sorted(); track r.user_id) {
                   <tr [class.me]="r.user_id === session.uid()">
-                    <td><a [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a></td>
+                    <td><a class="who" [routerLink]="['/giocatore', r.user_id]"><app-avatar [userId]="r.user_id" [size]="26" />{{ session.name(r.user_id) }}</a></td>
                     @for (c of columns; track c.key) { <td>{{ cell(r, c) }}</td> }
                   </tr>
                 }
@@ -138,7 +139,7 @@ const RECORDS: Record[] = [
               <tbody>
                 @for (u of registerUsers(); track u) {
                   <tr [class.me]="u === session.uid()">
-                    <td>{{ session.name(u) }}</td>
+                    <td><span class="who"><app-avatar [userId]="u" [size]="22" />{{ session.name(u) }}</span></td>
                     @for (m of registerMatches(); track m.id) { <td>{{ mark(u, m.id) }}</td> }
                   </tr>
                 }
@@ -153,6 +154,7 @@ const RECORDS: Record[] = [
     .big { font-size: var(--step-2); font-weight: 700; margin-left: 8px; }
     .list-item .small.muted:last-child { margin-left: 4px; min-width: 52px; }
     td a { text-decoration: none; font-weight: 600; }
+    .who { display: inline-flex; align-items: center; gap: 8px; }
     .register td:not(:first-child), .register th:not(:first-child) { text-align: center; }
   `,
 })

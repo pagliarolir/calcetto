@@ -4,7 +4,7 @@ export type Choice = 'present' | 'absent' | 'reserve';
 export type List = 'team' | 'reserve' | 'out';
 export type Team = 'white' | 'black';
 
-export type VisibilityKey = 'last_name' | 'nickname' | 'field_role' | 'birth_date' | 'weight_kg' | 'height_cm';
+export type VisibilityKey = 'last_name' | 'nickname' | 'field_role' | 'birth_date' | 'weight_kg' | 'height_cm' | 'avatar';
 
 export interface Profile {
   id: string;
@@ -21,6 +21,7 @@ export interface Profile {
   active: boolean;
   pending: boolean;
   must_change_password: boolean;
+  avatar_path: string | null;
 }
 
 /** Profilo visto dagli altri: i campi nascosti arrivano null. */
@@ -38,6 +39,8 @@ export interface Member {
   pending: boolean;
   created_at: string;
   last_seen_at: string | null;
+  /** percorso nello Storage; null se manca o se l'utente la nasconde */
+  avatar_path: string | null;
 }
 
 export interface Me {

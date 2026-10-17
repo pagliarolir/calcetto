@@ -202,6 +202,31 @@ export class Api {
     return must(await this.sb.from('profiles').update(patch).eq('id', id));
   }
 
+  // ------------------------------------------------------------- foto profilo
+  /** Carica la foto (già ritagliata) nella cartella dell'utente, la collega al profilo e cancella la precedente. */
+  async setAvatar(userId: string, photo: Blob, oldPath: string | null): Promise<void> {
+    const path = `${userId}/${crypto.randomUUID()}.jpg`;
+    const up = await this.sb.storage.from('avatars').upload(path, photo, { contentType: 'image/jpeg', cacheControl: '604800', upsert: false });
+    if (up.error) throw up.error;
+    const res = await this.sb.from('profiles').update({ avatar_path: path }).eq('id', userId);
+    if (res.error) {
+      await this.sb.storage.from('avatars').remove([path]);
+      throw res.error;
+    }
+    if (oldPath) await this.sb.storage.from('avatars').remove([oldPath]);
+  }
+
+  async removeAvatar(userId: string, path: string): Promise<void> {
+    must(await this.sb.from('profiles').update({ avatar_path: null }).eq('id', userId));
+    await this.sb.storage.from('avatars').remove([path]);
+  }
+
+  /** Leader e Premier: toglie la foto di un altro (l'interessato riceve un avviso). */
+  async removeMemberAvatar(userId: string): Promise<void> {
+    const path = must(await this.sb.rpc('remove_member_avatar', { p_user: userId })) as string | null;
+    if (path) await this.sb.storage.from('avatars').remove([path]);
+  }
+
   async setRole(userId: string, role: Exclude<Role, 'leader'>) {
     return must(await this.sb.rpc('set_member_role', { p_user: userId, p_role: role }));
   }

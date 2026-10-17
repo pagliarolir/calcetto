@@ -13,3 +13,13 @@ grant usage on schema public to authenticated, anon, service_role;
 insert into vault.decrypted_secrets values ('dispatch_url','https://x.supabase.co/functions/v1/push-dispatch'),('dispatch_secret','s');
 do $$ begin create role authenticator login noinherit; exception when duplicate_object then null; end $$;
 grant anon, authenticated, service_role to authenticator;
+-- Storage di Supabase (contenitori e oggetti), per le foto profilo
+create schema if not exists storage;
+create table if not exists storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+create table if not exists storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets(id), name text, owner uuid default auth.uid());
+alter table storage.objects enable row level security;
+create or replace function storage.foldername(name text) returns text[] language sql immutable as
+  $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+grant usage on schema storage to authenticated, anon, service_role;
+grant select, insert, update, delete on storage.objects to authenticated;
+grant select on storage.buckets to authenticated;

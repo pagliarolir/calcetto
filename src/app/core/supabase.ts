@@ -25,6 +25,8 @@ export function errorMessage(e: unknown): string {
     if (m.includes('Password should be')) return 'La password deve avere almeno 6 caratteri.';
     if (m.includes('should be different from the old')) return 'La nuova password deve essere diversa da quella attuale.';
     if (m.toLowerCase().includes('rate limit')) return 'Troppe richieste ravvicinate: riprova tra qualche minuto.';
+    if (m.includes('exceeded the maximum allowed size') || m.includes('Payload too large')) return 'La foto è troppo grande.';
+    if (m.toLowerCase().includes('mime type')) return 'Formato della foto non supportato.';
     if (m.includes('Auth session missing')) return 'Il link è scaduto o è già stato usato: richiedine uno nuovo.';
     if (m.toLowerCase().includes('weak password') || m.includes('pwned')) return 'Questa password è troppo debole o compare in elenchi di password rubate: scegline un\'altra.';
     return m;
