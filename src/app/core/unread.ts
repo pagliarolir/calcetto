@@ -18,7 +18,10 @@ export class Unread {
       this.stop = null;
       if (uid && active) {
         void this.refresh();
-        this.stop = this.api.watchNotifications(uid, () => void this.refresh());
+        this.stop = this.api.watchNotifications(uid, () => {
+          void this.refresh();
+          void this.session.refreshPunishment();
+        });
       } else {
         this.count.set(0);
       }

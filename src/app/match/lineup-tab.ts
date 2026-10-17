@@ -7,6 +7,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 
 interface Spot { team: Team; slot: number; x: number; y: number; label: string }
@@ -183,6 +184,7 @@ export class LineupTab {
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
+  private readonly reprimand = inject(Reprimand);
 
   protected readonly teams: Team[] = ['white', 'black'];
   protected readonly teamLabel = TEAM_LABEL;
@@ -294,6 +296,7 @@ export class LineupTab {
   }
 
   protected async save(publish: boolean): Promise<void> {
+    if (this.reprimand.guard()) return;
     const entries = [...this.draft()].map(([user_id, p]) => ({ user_id, team: p.team, field_slot: p.slot }));
     if (publish && this.bench().length && !confirm(`${this.bench().length} giocatori non hanno un posto in campo. Procedo lo stesso?`)) return;
     await this.run(async () => {

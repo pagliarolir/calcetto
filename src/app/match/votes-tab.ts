@@ -6,6 +6,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
+import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 
 @Component({
@@ -141,6 +142,7 @@ export class VotesTab {
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
+  private readonly reprimand = inject(Reprimand);
 
   protected readonly teams: Team[] = ['white', 'black'];
   protected readonly teamLabel = TEAM_LABEL;
@@ -237,6 +239,7 @@ export class VotesTab {
   }
 
   protected async submit(): Promise<void> {
+    if (this.reprimand.guard()) return;
     const id = this.store.match()!.id;
     this.busy.set(true);
     try {
