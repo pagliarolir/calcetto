@@ -10,7 +10,7 @@ create function as_user(p text) returns void language sql as $$ select set_confi
 create function pid(p text) returns uuid language sql as $$ select id from ids where n = p $$;
 create function mid() returns uuid language sql as $$ select id from matches order by starts_at limit 1 $$;
 grant execute on function as_user(text), pid(text), mid() to authenticated, service_role;
-update matches set bookings_open_at = now() - interval '1 day', starts_at = now() + interval '10 hours';
+update matches set bookings_open_at = now() - interval '1 day', starts_at = now() + interval '10 hours', bookings_close_at = now() + interval '10 hours';
 set role authenticated;
 select as_user('P3'), book(mid(), 'present');
 
@@ -25,7 +25,7 @@ set role authenticated;
 select as_user('P3'), book(mid(), 'absent');
 select as_user('P3'), submit_votes(mid(), '[]'::jsonb, null, null);
 select as_user('P3'), save_scorers(mid(), '[]'::jsonb);
-update matches set starts_at = now() + interval '3 hours' where id = mid();
+update matches set starts_at = now() + interval '3 hours', bookings_close_at = now() + interval '3 hours' where id = mid();
 insert into chat_messages (match_id, user_id, body) values (mid(), pid('P3'), 'ciao');
 \echo '--- 3) le funzioni originali non sono richiamabili direttamente (atteso: permesso negato)'
 select as_user('P3'), book_unchecked(mid(), 'absent');

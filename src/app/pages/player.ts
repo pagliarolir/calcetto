@@ -4,6 +4,7 @@ import { Api } from '../core/api';
 import { age, fmtDate } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
 import { Session } from '../core/session';
+import { teamNames } from '../core/kits';
 import { Avatar } from '../ui/avatar';
 
 @Component({
@@ -50,7 +51,7 @@ import { Avatar } from '../ui/avatar';
             <li>
               <a class="list-item" [routerLink]="['/partita', f.match_id, 'risultato']">
                 <span class="res" [class.w]="f.outcome === 'W'" [class.l]="f.outcome === 'L'">{{ outcome[f.outcome] }}</span>
-                <span class="grow">{{ date(f.starts_at) }} <span class="small muted">con i {{ f.team === 'white' ? 'Bianchi' : 'Neri' }}</span><br />
+                <span class="grow">{{ date(f.starts_at) }} <span class="small muted">con i {{ teamOf(f) }}</span><br />
                   <span class="small muted">{{ line(f) }}</span></span>
                 @if (f.is_mvp) { <span class="tag armband">MVP</span> }
                 @if (f.avg_vote !== null) { <span class="num">{{ dec(f.avg_vote) }}</span> }
@@ -97,7 +98,15 @@ export class PlayerPage {
       const id = this.id();
       void this.api.stats(null, null).then((rows) => this.stats.set(rows.find((r) => r.user_id === id) ?? null));
       void this.api.history(id, null, null).then((h) => this.history.set(h));
+      void this.api.matches(300).then((ms) => this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)]))));
     });
+  }
+
+  /** nomi delle squadre per partita (le divise cambiano da partita a partita) */
+  private readonly names = signal(new Map<string, Record<'white' | 'black', string>>());
+
+  protected teamOf(f: MatchFact): string {
+    return (this.names().get(f.match_id) ?? { white: 'Bianchi', black: 'Neri' })[f.team];
   }
 
   protected dec(n: number): string {

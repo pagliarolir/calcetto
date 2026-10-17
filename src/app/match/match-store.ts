@@ -2,6 +2,7 @@ import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
 import { Api } from '../core/api';
 import { BoardRow, LineupRow, Match, Result, ResultReview, Scorer, Team } from '../core/models';
 import { Session } from '../core/session';
+import { teamNames } from '../core/kits';
 
 /** Stato di una partita condiviso tra le schede (lista, squadre, risultato, voti, chat). */
 @Injectable()
@@ -21,6 +22,10 @@ export class MatchStore implements OnDestroy {
   readonly loading = signal(true);
   readonly notFound = signal(false);
 
+  /** posti in lista: 5 contro 5 = 10, 6 contro 6 = 12, ... */
+  readonly size = computed(() => (this.match()?.players_per_team ?? 5) * 2);
+  /** nomi delle due squadre della partita */
+  readonly teamNames = computed(() => teamNames(this.match()));
   readonly team = computed(() => this.board().filter((b) => b.list === 'team').sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0)));
   readonly reserves = computed(() => this.board().filter((b) => b.list === 'reserve').sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0)));
   readonly absents = computed(() => this.board().filter((b) => b.list === 'out'));
@@ -35,15 +40,17 @@ export class MatchStore implements OnDestroy {
     if (!m) return null;
     const at = (iso: string) => new Date(iso).getTime();
     return {
-      bookingOpen: now >= at(m.bookings_open_at) && now < at(m.starts_at) && m.status === 'scheduled',
+      bookingOpen: now >= at(m.bookings_open_at) && now < at(m.bookings_close_at) && m.status === 'scheduled',
+      bookingClosed: now >= at(m.bookings_close_at) && now < at(m.starts_at),
       beforeOpen: now < at(m.bookings_open_at),
       started: now >= at(m.starts_at),
       within24h: now >= at(m.starts_at) - 24 * 3600_000,
       lineupOpen: now >= at(m.lineup_opens_at),
       resultOpen: now >= at(m.result_opens_at),
       locked: m.locked || now >= at(m.lock_at),
-      votesOpen: now >= at(m.result_opens_at) && now <= at(m.votes_close_at),
-      votesClosed: now > at(m.votes_close_at),
+      votesOpen: now >= at(m.votes_opens_at) && now <= at(m.votes_closes_at),
+      votesBefore: now < at(m.votes_opens_at),
+      votesClosed: now > at(m.votes_closes_at),
       chatOpen: now >= at(m.chat_opens_at) && now <= at(m.chat_closes_at),
     };
   });

@@ -33,6 +33,11 @@
   --danger: #b93a26;
   --danger-soft: #f6dcd6;
   --focus: #1f6b45;
+  /* divise delle due squadre: la pagina della partita le sostituisce con quelle scelte */
+  --team-a: var(--kit-white);
+  --team-a-ink: var(--kit-white-ink);
+  --team-b: var(--kit-black);
+  --team-b-ink: var(--kit-black-ink);
 
   --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
@@ -312,8 +317,8 @@ button.list-item { appearance: none; width: 100%; border-left: 0; border-right: 
   font: 700 0.85rem/1 var(--font-display);
   background: var(--surface-2); color: var(--ink);
 }
-.avatar.white { background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
-.avatar.black { background: var(--kit-black); color: var(--kit-black-ink); }
+.avatar.white { background: var(--team-a); color: var(--team-a-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
+.avatar.black { background: var(--team-b); color: var(--team-b-ink); }
 
 /* ----------------------------------------------------- maglie numerate */
 .jersey {
@@ -385,5 +390,5 @@ router-outlet + * { display: block; animation: page-in 160ms ease-out both; }
 .avatar { overflow: hidden; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar.has-photo { background: var(--surface-2); }
-.avatar.has-photo.white { box-shadow: 0 0 0 2px var(--kit-white), 0 0 0 3px var(--line); }
-.avatar.has-photo.black { box-shadow: 0 0 0 2px var(--kit-black); }
+.avatar.has-photo.white { box-shadow: 0 0 0 2px var(--team-a), 0 0 0 3px var(--line); }
+.avatar.has-photo.black { box-shadow: 0 0 0 2px var(--team-b), 0 0 0 3px var(--line); }

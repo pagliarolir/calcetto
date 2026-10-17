@@ -7,7 +7,7 @@ select first_name, role, active from profiles order by first_name limit 2;
 update profiles set role='premier1' where first_name='P2';
 update profiles set role='premier2' where first_name='P3';
 -- la partita esiste già (creata dalla migrazione) col Leader dentro: apriamo le prenotazioni
-update matches set bookings_open_at = now() - interval '1 hour', starts_at = now() + interval '3 days';
+update matches set bookings_open_at = now() - interval '1 hour', starts_at = now() + interval '3 days', bookings_close_at = now() + interval '3 days';
 create temp table ids as select first_name n, id from profiles;
 grant select on ids to authenticated;
 create or replace function as_user(p text) returns void language sql as $$

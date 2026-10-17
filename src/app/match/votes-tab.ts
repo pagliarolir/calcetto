@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Api } from '../core/api';
 import { fmtWhen } from '../core/format';
-import { MvpVote, PlayerVote, Team, TEAM_LABEL, VoteSummary } from '../core/models';
+import { MvpVote, PlayerVote, Team, VoteSummary } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -16,8 +16,8 @@ import { Avatar } from '../ui/avatar';
   template: `
     @if (store.match(); as m) {
       <div class="stack-l">
-        @if (!store.t()?.resultOpen) {
-          <p class="empty">Le pagelle si aprono a fine partita, da {{ when(m.result_opens_at) }}.</p>
+        @if (store.t()?.votesBefore) {
+          <p class="empty">Le pagelle si aprono {{ when(m.votes_opens_at) }}.</p>
         } @else {
           <!-- Medie (REQ-043) -->
           <section class="section">
@@ -45,16 +45,16 @@ import { Avatar } from '../ui/avatar';
           <!-- Il mio voto (REQ-041, REQ-042, REQ-044) -->
           @if (store.amParticipant() && store.t()?.votesOpen) {
             <section class="section">
-              <header><h2>I tuoi voti</h2><span class="small muted">segreti, fino a {{ when(m.votes_close_at) }}</span></header>
+              <header><h2>I tuoi voti</h2><span class="small muted">segreti, fino a {{ when(m.votes_closes_at) }}</span></header>
               @for (t of teams; track t) {
                 <div class="panel stack">
-                  <h3>{{ teamLabel[t] }}</h3>
+                  <h3>{{ teamLabel()[t] }}</h3>
                   @for (id of others(t); track id) {
                     <div class="vote">
                       <div class="spread">
                         <span class="grow ellipsis">{{ session.name(id) }}</span>
                         <button class="star" [attr.aria-pressed]="mvp()[t] === id" (click)="pickMvp(t, id)"
-                                [attr.aria-label]="'Migliore in campo dei ' + teamLabel[t] + ': ' + session.name(id)">★</button>
+                                [attr.aria-label]="'Migliore in campo dei ' + teamLabel()[t] + ': ' + session.name(id)">★</button>
                         <output class="num score" [class.unset]="scores().get(id) == null">{{ scoreText(id) }}</output>
                       </div>
                       <input type="range" min="1" max="10" step="0.5" [value]="scores().get(id) ?? 6"
@@ -145,7 +145,7 @@ export class VotesTab {
   private readonly reprimand = inject(Reprimand);
 
   protected readonly teams: Team[] = ['white', 'black'];
-  protected readonly teamLabel = TEAM_LABEL;
+  protected readonly teamLabel = computed(() => this.store.teamNames());
   protected readonly when = fmtWhen;
 
   protected readonly summary = signal<VoteSummary | null>(null);
@@ -159,7 +159,7 @@ export class VotesTab {
   protected readonly participants = computed(() => this.store.team().map((b) => b.user_id).filter((id) => id !== this.session.uid()));
   // segnali "stretti": l'orologio interno non deve ricaricare i voti e cancellare quelli non inviati
   private readonly matchId = computed(() => this.store.match()?.id ?? null);
-  private readonly resultOpen = computed(() => this.store.t()?.resultOpen ?? false);
+  private readonly resultOpen = computed(() => !(this.store.t()?.votesBefore ?? true));
   protected readonly unassigned = computed(() => this.participants().filter((id) => !this.store.teamOf().has(id)));
   protected readonly voters = computed(() => {
     const a = this.all();

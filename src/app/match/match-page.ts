@@ -2,12 +2,17 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, un
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { fmtCountdown, fmtDayLong, fmtTime, diffText, mapsUrl } from '../core/format';
 import { Icon } from '../ui/icon';
+import { kit } from '../core/kits';
 import { MatchStore } from './match-store';
 
 @Component({
   selector: 'app-match-page',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
   providers: [MatchStore],
+  host: {
+    '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
+    '[style.--team-b]': 'kitB().color', '[style.--team-b-ink]': 'kitB().ink',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.notFound()) {
@@ -103,6 +108,9 @@ export class MatchPage {
     return `${fmtTime(m.starts_at)} – ${fmtTime(m.ends_at)}`;
   });
 
+  protected readonly kitA = computed(() => kit(this.store.match()?.team_a_kit ?? 'white'));
+  protected readonly kitB = computed(() => kit(this.store.match()?.team_b_kit ?? 'black'));
+
   protected readonly maps = computed(() => {
     const m = this.store.match();
     return m ? mapsUrl(m.venue_name, m.venue_address) : null;
@@ -110,7 +118,7 @@ export class MatchPage {
 
   protected readonly scoreText = computed(() => {
     const r = this.store.result();
-    return r ? diffText(r.diff, r.white_goals, r.black_goals) : '';
+    return r ? diffText(r.diff, r.white_goals, r.black_goals, this.store.teamNames()) : '';
   });
 
   protected readonly status = computed(() => {
@@ -122,7 +130,7 @@ export class MatchPage {
     if (t.beforeOpen) return `Prenotazioni ${fmtCountdown(m.bookings_open_at)}`;
     if (!t.started) {
       const n = this.store.team().length;
-      return `${n} su 10, si gioca ${fmtCountdown(m.starts_at)}`;
+      return `${n} su ${this.store.size()}, si gioca ${fmtCountdown(m.starts_at)}`;
     }
     if (!t.resultOpen) return 'Si sta giocando';
     if (!t.locked) return 'Risultato e pagelle aperti';

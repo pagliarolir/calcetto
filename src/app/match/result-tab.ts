@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { diffText, fmtWhen } from '../core/format';
-import { Team, TEAM_LABEL } from '../core/models';
+import { Team } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -28,7 +28,7 @@ type Field = keyof Line;
             @if (store.result(); as r) {
               <div class="panel stack result">
                 <div class="spread">
-                  <h2 class="num big">{{ text(r.diff, r.white_goals, r.black_goals) }}</h2>
+                  <h2 class="num big">{{ text(r.diff, r.white_goals, r.black_goals, teamLabel()) }}</h2>
                   <span class="tag" [class.turf]="r.status === 'homologated'">{{ r.status === 'homologated' ? 'Omologato' : 'Da omologare' }}</span>
                 </div>
                 <p class="small muted">Inserito da {{ session.name(r.entered_by) }}.
@@ -82,9 +82,9 @@ type Field = keyof Line;
                 </div>
                 @if (!exact()) {
                   <div class="choice three">
-                    <button [attr.aria-pressed]="winner() === 'white'" (click)="winner.set('white')">Bianchi</button>
+                    <button [attr.aria-pressed]="winner() === 'white'" (click)="winner.set('white')">{{ teamLabel().white }}</button>
                     <button [attr.aria-pressed]="winner() === 'draw'" (click)="winner.set('draw')">Pari</button>
-                    <button [attr.aria-pressed]="winner() === 'black'" (click)="winner.set('black')">Neri</button>
+                    <button [attr.aria-pressed]="winner() === 'black'" (click)="winner.set('black')">{{ teamLabel().black }}</button>
                   </div>
                   @if (winner() !== 'draw') {
                     <div class="spread">
@@ -98,12 +98,12 @@ type Field = keyof Line;
                   }
                 } @else {
                   <div class="score-in">
-                    <div class="stack"><span class="small muted">Bianchi</span>
-                      <div class="stepper"><button (click)="wg.set(dec(wg()))" aria-label="Bianchi meno">−</button><output>{{ wg() }}</output><button (click)="wg.set(wg() + 1)" aria-label="Bianchi più">+</button></div>
+                    <div class="stack"><span class="small muted">{{ teamLabel().white }}</span>
+                      <div class="stepper"><button (click)="wg.set(dec(wg()))" [attr.aria-label]="teamLabel().white + ' meno'">−</button><output>{{ wg() }}</output><button (click)="wg.set(wg() + 1)" [attr.aria-label]="teamLabel().white + ' più'">+</button></div>
                     </div>
                     <span class="num dash">–</span>
-                    <div class="stack"><span class="small muted">Neri</span>
-                      <div class="stepper"><button (click)="bg.set(dec(bg()))" aria-label="Neri meno">−</button><output>{{ bg() }}</output><button (click)="bg.set(bg() + 1)" aria-label="Neri più">+</button></div>
+                    <div class="stack"><span class="small muted">{{ teamLabel().black }}</span>
+                      <div class="stepper"><button (click)="bg.set(dec(bg()))" [attr.aria-label]="teamLabel().black + ' meno'">−</button><output>{{ bg() }}</output><button (click)="bg.set(bg() + 1)" [attr.aria-label]="teamLabel().black + ' più'">+</button></div>
                     </div>
                   </div>
                 }
@@ -120,7 +120,7 @@ type Field = keyof Line;
               @for (t of teams; track t) {
                 <div class="panel stack">
                   <div class="spread">
-                    <h3>{{ teamLabel[t] }}</h3>
+                    <h3>{{ teamLabel()[t] }}</h3>
                     <span class="small" [class.warn]="over(t)">{{ creditText(t) }}</span>
                   </div>
                   @for (id of players(t); track id) {
@@ -185,7 +185,7 @@ export class ResultTab {
   private readonly reprimand = inject(Reprimand);
 
   protected readonly teams: Team[] = ['white', 'black'];
-  protected readonly teamLabel = TEAM_LABEL;
+  protected readonly teamLabel = computed(() => this.store.teamNames());
   protected readonly when = fmtWhen;
   protected readonly text = diffText;
   protected readonly quorum = 5;
@@ -249,7 +249,7 @@ export class ResultTab {
   protected readonly previewText = computed(() => {
     if (this.exact()) return `${this.wg()} – ${this.bg()}`;
     if (this.winner() === 'draw') return 'pareggio';
-    return `${this.winner() === 'white' ? 'Bianchi' : 'Neri'} +${this.margin()}`;
+    return `${this.teamLabel()[this.winner() === 'white' ? 'white' : 'black']} +${this.margin()}`;
   });
 
   /** Gol "accreditati" a una squadra: gol dei suoi più autogol degli avversari. */
@@ -268,11 +268,12 @@ export class ResultTab {
     const r = this.store.result();
     const c = this.credit();
     const out: string[] = [];
-    if (c.wAst > c.wGoals) out.push('I Bianchi hanno più assist che gol segnati dai loro giocatori.');
-    if (c.bAst > c.bGoals) out.push('I Neri hanno più assist che gol segnati dai loro giocatori.');
+    const n = this.teamLabel();
+    if (c.wAst > c.wGoals) out.push(`I ${n.white} hanno più assist che gol segnati dai loro giocatori.`);
+    if (c.bAst > c.bGoals) out.push(`I ${n.black} hanno più assist che gol segnati dai loro giocatori.`);
     if (r && r.white_goals !== null && r.black_goals !== null) {
-      if (c.white > r.white_goals) out.push(`Ai Bianchi risultano ${c.white} gol, ma ne hanno fatti ${r.white_goals}.`);
-      if (c.black > r.black_goals!) out.push(`Ai Neri risultano ${c.black} gol, ma ne hanno fatti ${r.black_goals}.`);
+      if (c.white > r.white_goals) out.push(`Ai ${n.white} risultano ${c.white} gol, ma ne hanno fatti ${r.white_goals}.`);
+      if (c.black > r.black_goals!) out.push(`Ai ${n.black} risultano ${c.black} gol, ma ne hanno fatti ${r.black_goals}.`);
     }
     return out;
   });
@@ -312,7 +313,7 @@ export class ResultTab {
     return t === 'white' ? r.white_goals : r.black_goals;
   }
 
-  /** Impedisce di superare il risultato mentre si inserisce (es. 4-0: nessun gol ai Neri). */
+  /** Impedisce di superare il risultato mentre si inserisce (es. 4-0: nessun gol alla squadra che non ha segnato). */
   protected canAdd(id: string, f: Field): boolean {
     const t = this.store.teamOf().get(id);
     if (!t) return false;

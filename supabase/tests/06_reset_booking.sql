@@ -8,7 +8,7 @@ create function pid(p text) returns uuid language sql as $$ select id from ids w
 create function mid() returns uuid language sql as $$ select id from matches order by starts_at limit 1 $$;
 create or replace view board as select bb.slot, i.n, bb.list from booking_board bb join ids i on i.id = bb.user_id where bb.match_id = mid() order by bb.list desc, bb.slot;
 grant execute on function as_user(text), pid(text), mid() to authenticated; grant select on board to authenticated;
-update matches set bookings_open_at = now() - interval '1 day', starts_at = now() + interval '3 days';
+update matches set bookings_open_at = now() - interval '1 day', starts_at = now() + interval '3 days', bookings_close_at = now() + interval '3 days';
 
 set role authenticated;
 select as_user('P'||g), book(mid(), 'present') from generate_series(2,11) g;   -- Leader + P2..P10 in squadra, P11 riserva
