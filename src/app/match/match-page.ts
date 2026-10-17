@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { fmtCountdown, fmtDayLong, fmtTime, diffText } from '../core/format';
+import { fmtCountdown, fmtDayLong, fmtTime, diffText, mapsUrl } from '../core/format';
 import { Icon } from '../ui/icon';
 import { MatchStore } from './match-store';
 
@@ -28,6 +28,11 @@ import { MatchStore } from './match-store';
             @if (m.moved) { <span class="tag armband">Spostata</span> }
             @if (m.status === 'cancelled') { <span class="tag danger">Annullata</span> }
           </p>
+          @if (m.venue_name || m.venue_address) {
+            <a class="venue" [href]="maps()" target="_blank" rel="noopener">
+              <app-icon name="pin" [size]="18" /> {{ m.venue_name || m.venue_address }}
+            </a>
+          }
           @if (store.result(); as r) {
             <p class="score num" aria-label="Risultato">{{ scoreText() }}
               @if (r.status === 'pending') { <span class="tag">da omologare</span> }
@@ -67,6 +72,10 @@ import { MatchStore } from './match-store';
     h1 { font-size: var(--step-4); line-height: 0.92; }
     h1::first-letter { text-transform: uppercase; }
     .when { display: flex; align-items: center; gap: 10px; font-size: var(--step-2); }
+    .venue {
+      align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
+      color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+    }
     .score { font-size: var(--step-3); font-weight: 700; display: flex; align-items: center; gap: 10px; }
     .score .tag { font-family: var(--font-body); }
     .tabs {
@@ -92,6 +101,11 @@ export class MatchPage {
     const m = this.store.match();
     if (!m) return '';
     return `${fmtTime(m.starts_at)} – ${fmtTime(m.ends_at)}`;
+  });
+
+  protected readonly maps = computed(() => {
+    const m = this.store.match();
+    return m ? mapsUrl(m.venue_name, m.venue_address) : null;
   });
 
   protected readonly scoreText = computed(() => {

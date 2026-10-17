@@ -71,6 +71,9 @@ export interface Match {
   lineup_opens_at: string;
   chat_opens_at: string;
   chat_closes_at: string;
+  venue_name: string | null;
+  venue_address: string | null;
+  venue_url: string | null;
 }
 
 export interface BoardRow {
@@ -232,6 +235,9 @@ export interface AppSettings {
   vote_hours: number;
   inactivity_days: number;
   invite_code: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  venue_url: string | null;
 }
 
 export const ROLE_LABEL: Record<Role, string> = {

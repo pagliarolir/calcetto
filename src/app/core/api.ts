@@ -72,6 +72,13 @@ export class Api {
     return must(await this.sb.rpc('move_match', { p_match: matchId, p_starts: startsAt }));
   }
 
+  /** Il Leader imposta il campo della partita; con asDefault diventa anche il campo abituale. */
+  async setMatchVenue(matchId: string, name: string, address: string, url: string, asDefault: boolean) {
+    return must(await this.sb.rpc('set_match_venue', {
+      p_match: matchId, p_name: name, p_address: address, p_url: url, p_as_default: asDefault,
+    }));
+  }
+
   async cancelMatch(matchId: string) {
     return must(await this.sb.rpc('cancel_match', { p_match: matchId }));
   }

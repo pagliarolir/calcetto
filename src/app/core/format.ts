@@ -63,3 +63,12 @@ export function diffText(diff: number, white: number | null, black: number | nul
 
 const weekday = fmt({ weekday: 'long' });
 export const fmtWeekday = (iso: string) => weekday.format(new Date(iso));
+
+/** Collegamento alle mappe: Mappe di Apple su iPhone e iPad, Google Maps altrove. */
+export function mapsUrl(name: string | null, address: string | null): string | null {
+  const q = [name, address].filter((x) => !!x && x.trim()).join(', ');
+  if (!q) return null;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent)
+    ? `https://maps.apple.com/?q=${encodeURIComponent(q)}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}

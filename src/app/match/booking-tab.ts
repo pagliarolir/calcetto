@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { fmtWeekday, fmtWhen, fromLocalInput, toLocalInput } from '../core/format';
+import { fmtWeekday, fmtWhen, fromLocalInput, mapsUrl, toLocalInput } from '../core/format';
+import { Icon } from '../ui/icon';
 import { BoardRow, Choice } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
@@ -17,7 +18,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Jersey, FormsModule, RouterLink],
+  imports: [Jersey, FormsModule, RouterLink, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -62,6 +63,23 @@ interface SlotView {
             }
           }
         </section>
+
+        <!-- Dove si gioca -->
+        @if (venue(); as v) {
+          <section class="panel venue-card" aria-labelledby="venue-h">
+            <div class="row">
+              <span class="pin" aria-hidden="true"><app-icon name="pin" /></span>
+              <div class="grow">
+                <h2 id="venue-h">{{ v.name || 'Dove si gioca' }}</h2>
+                @if (v.address) { <p class="small muted">{{ v.address }}</p> }
+              </div>
+            </div>
+            <div class="row-wrap">
+              @if (v.maps) { <a class="btn small primary" [href]="v.maps" target="_blank" rel="noopener">Apri nelle mappe</a> }
+              @if (v.url) { <a class="btn small" [href]="v.url" target="_blank" rel="noopener">Sito del circolo</a> }
+            </div>
+          </section>
+        }
 
         <!-- Tabellone -->
         <section class="section" aria-labelledby="team-h">
@@ -174,6 +192,25 @@ interface SlotView {
             </div>
 
             <div class="panel stack">
+              <h3>Dove si gioca</h3>
+              <p class="small muted">Nome, indirizzo e sito del circolo compaiono nella partita, con il collegamento alle mappe. Se cambi il campo di una partita già in programma, chi è in lista riceve un avviso.</p>
+              <label class="field"><span>Campo o circolo</span>
+                <input class="input" [(ngModel)]="venueName" maxlength="80" placeholder="Es. Centro Sportivo Aurora" />
+              </label>
+              <label class="field"><span>Indirizzo</span>
+                <input class="input" [(ngModel)]="venueAddress" maxlength="200" autocomplete="street-address" placeholder="Via, numero, città" />
+              </label>
+              <label class="field"><span>Sito del circolo (facoltativo)</span>
+                <input class="input" type="url" inputmode="url" autocapitalize="off" [(ngModel)]="venueUrl" maxlength="300" placeholder="www.circolo.it" />
+              </label>
+              <label class="switch">
+                <span>Usalo anche per le prossime partite</span>
+                <input type="checkbox" [(ngModel)]="venueAsDefault" />
+              </label>
+              <button class="btn small primary" [disabled]="busy()" (click)="saveVenue()">Salva il campo</button>
+            </div>
+
+            <div class="panel stack">
               <h3>Sposta la partita</h3>
               <p class="small muted">Le prenotazioni seguono la nuova data: aprono sempre 3 giorni prima a mezzogiorno. Tutti ricevono un avviso.</p>
               <input class="input" type="datetime-local" [(ngModel)]="moveAt" aria-label="Nuova data e ora" />
@@ -198,6 +235,9 @@ interface SlotView {
     .who .tag { font-weight: 600; }
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .venue-card { display: flex; flex-direction: column; gap: 12px; }
+    .venue-card h2 { font-size: var(--step-1); }
+    .pin { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--turf-soft); color: var(--turf); }
     .pick .chip { display: inline-flex; align-items: center; }
     @media (max-width: 360px) { .board { grid-template-columns: 1fr; } }
   `,
@@ -214,6 +254,17 @@ export class BookingTab {
   protected placeUser = '';
   protected priorityAt = '';
   protected moveAt = '';
+  protected venueName = '';
+  protected venueAddress = '';
+  protected venueUrl = '';
+  protected venueAsDefault = true;
+
+  /** Riquadro "Dove si gioca": compare solo se c'è almeno un dato. */
+  protected readonly venue = computed(() => {
+    const m = this.store.match();
+    if (!m || !(m.venue_name || m.venue_address || m.venue_url)) return null;
+    return { name: m.venue_name, address: m.venue_address, url: m.venue_url, maps: mapsUrl(m.venue_name, m.venue_address) };
+  });
 
   protected readonly when = fmtWhen;
 
@@ -271,6 +322,9 @@ export class BookingTab {
       const m = untracked(() => this.store.match()!);
       void this.api.priorityWindows(m.id).then((w) => this.windows.set(w)).catch(() => undefined);
       this.moveAt = toLocalInput(m.starts_at);
+      this.venueName = m.venue_name ?? '';
+      this.venueAddress = m.venue_address ?? '';
+      this.venueUrl = m.venue_url ?? '';
       this.priorityAt = toLocalInput(new Date(new Date(m.bookings_open_at).getTime() - 24 * 3600_000).toISOString());
     });
   }
@@ -357,6 +411,16 @@ export class BookingTab {
       const id = this.store.match()!.id;
       await this.api.clearPriorityWindow(id, userId);
       this.windows.set(await this.api.priorityWindows(id));
+    });
+  }
+
+  protected async saveVenue(): Promise<void> {
+    await this.run(async () => {
+      await this.api.setMatchVenue(this.store.match()!.id, this.venueName, this.venueAddress, this.venueUrl, this.venueAsDefault);
+      await this.store.reload('matches');
+      const m = this.store.match()!;
+      this.venueUrl = m.venue_url ?? '';
+      this.toasts.show(this.venueAsDefault ? 'Campo salvato, anche per le prossime partite.' : 'Campo salvato per questa partita.');
     });
   }
 
