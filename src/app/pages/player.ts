@@ -1,7 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { errorMessage } from '../core/supabase';
+import { Toasts } from '../core/toast';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { age, fmtDate } from '../core/format';
+import { age, fmtDate, fmtWhen } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { teamNames } from '../core/kits';
@@ -9,7 +12,7 @@ import { Avatar } from '../ui/avatar';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar],
+  imports: [RouterLink, Avatar, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -27,6 +30,7 @@ import { Avatar } from '../ui/avatar';
             @if (!m.active) { <span class="tag danger">non più nel gruppo</span> }
           </div>
           @if (bio()) { <p class="muted">{{ bio() }}</p> }
+          @if (since(); as d) { <p class="note">Statistiche dal {{ when(d) }}: le partite precedenti non contano.</p> }
         </header>
       }
 
@@ -60,11 +64,31 @@ import { Avatar } from '../ui/avatar';
           } @empty { <li class="empty">Ancora nessuna partita omologata.</li> }
         </ol>
       </section>
+      <!-- Leader: azzerare, ripristinare o eliminare le statistiche di questo giocatore -->
+      @if (session.isLeader() && member(); as m) {
+        <section class="panel stack" aria-labelledby="pstats-h">
+          <h2 id="pstats-h">Statistiche di {{ session.name(m.id) }}</h2>
+          @if (info()?.player; as d) {
+            <p class="small">Azzerate {{ when(d) }}: contano solo le partite successive.</p>
+            <button class="btn small" [disabled]="busy()" (click)="restore()">Ripristina</button>
+          } @else {
+            <p class="small muted"><strong>Azzera</strong>: da adesso riparte da zero; le partite giocate restano nello storico e puoi ripristinare in ogni momento.</p>
+            <button class="btn small" [disabled]="busy()" (click)="reset()">Azzera le statistiche</button>
+          }
+          <hr />
+          <p class="small muted"><strong>Elimina definitivamente</strong>: cancella presenze, gol, assist, voti ricevuti e scelte come migliore in campo nelle partite giocate. I voti che ha dato agli altri restano. Non si può annullare.</p>
+          <label class="field"><span>Per confermare scrivi «elimina»</span>
+            <input class="input" [(ngModel)]="confirmText" autocomplete="off" autocapitalize="off" />
+          </label>
+          <button class="btn small danger" [disabled]="busy() || confirmText.trim().toLowerCase() !== 'elimina'" (click)="erase()">Elimina definitivamente</button>
+        </section>
+      }
     </main>
   `,
   styles: `
     .back { text-decoration: none; }
     .id { display: flex; align-items: center; gap: 16px; }
+    hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-m); overflow: hidden; }
     .grid > div { background: var(--surface); padding: 12px; display: flex; flex-direction: column; gap: 2px; }
     .v { font-size: var(--step-2); font-weight: 700; }
@@ -77,11 +101,22 @@ export class PlayerPage {
   readonly id = input.required<string>();
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
+  private readonly toasts = inject(Toasts);
 
   protected readonly roleLabel = ROLE_LABEL;
   protected readonly fieldRole = FIELD_ROLE_LABEL;
   protected readonly outcome = { W: 'V', D: 'N', L: 'P' };
   protected readonly date = fmtDate;
+  protected readonly when = fmtWhen;
+  protected readonly info = signal<{ global: string | null; player: string | null } | null>(null);
+  protected readonly busy = signal(false);
+  protected confirmText = '';
+  /** da quando contano le statistiche di questo giocatore (azzeramento generale o suo, il più recente) */
+  protected readonly since = computed(() => {
+    const i = this.info();
+    const dates = [i?.global, i?.player].filter((d): d is string => !!d).sort();
+    return dates.length ? dates[dates.length - 1] : null;
+  });
   protected readonly stats = signal<StatsRow | null>(null);
   protected readonly history = signal<MatchFact[]>([]);
 
@@ -96,10 +131,45 @@ export class PlayerPage {
   constructor() {
     effect(() => {
       const id = this.id();
-      void this.api.stats(null, null).then((rows) => this.stats.set(rows.find((r) => r.user_id === id) ?? null));
-      void this.api.history(id, null, null).then((h) => this.history.set(h));
-      void this.api.matches(300).then((ms) => this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)]))));
+      untracked(() => void this.load(id));
     });
+  }
+
+  private async load(id: string): Promise<void> {
+    void this.api.stats(null, null).then((rows) => this.stats.set(rows.find((r) => r.user_id === id) ?? null));
+    void this.api.history(id, null, null).then((h) => this.history.set(h));
+    void this.api.matches(300).then((ms) => this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)]))));
+    void this.api.statsResetInfo(id).then((i) => this.info.set(i)).catch(() => undefined);
+  }
+
+  protected async reset(): Promise<void> {
+    const name = this.session.name(this.id());
+    if (!confirm(`Azzerare le statistiche di ${name}? Da adesso riparte da zero; potrai ripristinarle.`)) return;
+    await this.run(() => this.api.resetStats(this.id()), `Statistiche di ${name} azzerate.`);
+  }
+
+  protected async restore(): Promise<void> {
+    await this.run(() => this.api.restoreStats(this.id()), `Statistiche di ${this.session.name(this.id())} ripristinate.`);
+  }
+
+  protected async erase(): Promise<void> {
+    const name = this.session.name(this.id());
+    if (!confirm(`Eliminare definitivamente le statistiche di ${name}? Non si può annullare.`)) return;
+    await this.run(() => this.api.deletePlayerStats(this.id(), this.confirmText), `Statistiche di ${name} eliminate.`);
+    this.confirmText = '';
+  }
+
+  private async run(fn: () => Promise<unknown>, ok: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await fn();
+      this.toasts.show(ok);
+      await this.load(this.id());
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   /** nomi delle squadre per partita (le divise cambiano da partita a partita) */

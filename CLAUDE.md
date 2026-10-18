@@ -27,6 +27,7 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 - Testi in italiano, tono amichevole e diretto. Niente maiuscole su intere etichette, niente separatori a punto centrale tra informazioni.
 - Accessibilità: pulsanti di almeno 44 px, etichette per i lettori di schermo, rispetto di `prefers-reduced-motion`.
 - Date sempre nel fuso Europe/Rome tramite `src/app/core/format.ts`.
+- Statistiche: ogni nuova statistica calcolata deve rispettare l'azzeramento, cioè contare solo le partite con `starts_at >= coalesce(greatest(app_settings.stats_since, profiles.stats_since), '-infinity')`, come fanno `player_match_facts`, `stats_table` e `attendance_register`.
 - Squadre e posti: usa `store.size()` per i posti in lista, `store.teamNames()` (o `teamNames()` di `core/kits.ts`) per i nomi, `formation(n)` di `core/formations.ts` per le posizioni in campo. I colori delle divise arrivano come variabili CSS `--team-a`/`--team-b` (e `-ink`) impostate dalla pagina della partita.
 - Punizioni: ogni azione di intervento nei componenti inizia con `if (this.reprimand.guard()) return;`. Un errore `GDL01` dal server mostra comunque il rimprovero (passa da `Toasts.error`).
 - Foto profilo: mostrale sempre con `<app-avatar [userId] [size] [team]>` (usa i link firmati di `Session.avatarUrls` e ripiega sulle iniziali). Il contenitore `avatars` è privato: non renderlo pubblico e non costruire URL a mano. Per cancellare un file usa l'API dello Storage, non SQL (resterebbe orfano).
