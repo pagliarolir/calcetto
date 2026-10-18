@@ -249,6 +249,8 @@ export interface AppSettings {
   vote_hours: number;
   inactivity_days: number;
   invite_code: string | null;
+  /** classifica azzerata: contano solo le partite da questa data */
+  stats_since: string | null;
   players_per_team: number;
   team_a_kit: string;
   team_b_kit: string;

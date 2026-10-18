@@ -311,6 +311,28 @@ export class Api {
     return must(await this.sb.rpc('active_punishments')) as { user_id: string; ends_at: string | null; reason: string | null; since: string }[];
   }
 
+  // ------------------------------------------------- azzeramento statistiche
+  /** userId null = tutta la classifica */
+  async resetStats(userId: string | null) {
+    return must(await this.sb.rpc('reset_stats', { p_user: userId }));
+  }
+
+  async restoreStats(userId: string | null) {
+    return must(await this.sb.rpc('restore_stats', { p_user: userId }));
+  }
+
+  async deletePlayerStats(userId: string, confirm: string): Promise<{ scorers: number; votes: number; lineup: number; bookings: number }> {
+    return must(await this.sb.rpc('delete_player_stats', { p_user: userId, p_confirm: confirm }));
+  }
+
+  async deleteAllStats(confirm: string): Promise<number> {
+    return must(await this.sb.rpc('delete_all_stats', { p_confirm: confirm })) as number;
+  }
+
+  async statsResetInfo(userId: string | null): Promise<{ global: string | null; player: string | null }> {
+    return must(await this.sb.rpc('stats_reset_info', { p_user: userId }));
+  }
+
   async settings(): Promise<AppSettings> {
     return must(await this.sb.from('app_settings').select('*').single()) as AppSettings;
   }

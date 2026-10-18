@@ -99,7 +99,7 @@ import { scrollAppTo } from '../core/scroller';
             <li class="list-item member" [class.stacked]="session.isLeader()">
               <app-avatar [userId]="m.id" />
               <span class="grow">
-                <strong>{{ session.fullName(m.id) }}</strong>
+                <a class="who" [routerLink]="['/giocatore', m.id]"><strong>{{ session.fullName(m.id) }}</strong></a>
                 @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
                 @if (isPunished(m.id)) { <span class="tag danger">in punizione</span> }<br />
                 <span class="small muted">ultimo accesso {{ m.last_seen_at ? ago(m.last_seen_at) : 'mai' }}</span>
@@ -175,6 +175,28 @@ import { scrollAppTo } from '../core/scroller';
       }
 
       @if (session.isLeader() && settings(); as s) {
+        <section class="section" aria-labelledby="stats-h">
+          <header><h2 id="stats-h">Statistiche</h2></header>
+          <div class="panel stack">
+            @if (s.stats_since) {
+              <p class="small">Classifica azzerata {{ when(s.stats_since) }}: contano solo le partite successive.</p>
+              <button class="btn small" [disabled]="busy()" (click)="restoreAll()">Ripristina tutte le statistiche</button>
+            } @else {
+              <p class="small muted"><strong>Azzera</strong>: la classifica riparte da zero da adesso, per tutti. Le partite giocate restano nello storico e puoi ripristinare in ogni momento.</p>
+              <button class="btn small" [disabled]="busy()" (click)="resetAll()">Azzera tutta la classifica</button>
+            }
+            <p class="small muted">Per un solo giocatore, apri la sua scheda toccando il nome nell'elenco qui sopra.</p>
+          </div>
+          <div class="panel stack danger-zone">
+            <h3>Elimina tutto lo storico</h3>
+            <p class="small muted">Cancella definitivamente le partite giocate con risultati, formazioni, marcatori, voti, presenze e chat. Le partite in programma restano. Non si può annullare.</p>
+            <label class="field"><span>Per confermare scrivi «elimina»</span>
+              <input class="input" [(ngModel)]="deleteAllText" autocomplete="off" autocapitalize="off" />
+            </label>
+            <button class="btn small danger" [disabled]="busy() || deleteAllText.trim().toLowerCase() !== 'elimina'" (click)="deleteAll()">Elimina tutto lo storico</button>
+          </div>
+        </section>
+
         <form class="section" (ngSubmit)="saveSettings()">
           <header><h2>Regole del gruppo</h2></header>
           <div class="panel stack">
@@ -199,6 +221,8 @@ import { scrollAppTo } from '../core/scroller';
     summary { cursor: pointer; font-weight: 600; }
     .temp { border: 2px solid var(--armband); }
     .punish { border: 2px solid var(--danger); }
+    .danger-zone { border-color: var(--danger); }
+    .who { color: inherit; text-decoration: none; }
     .pw { font: 700 var(--step-3)/1.1 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
     .plain { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   `,
@@ -297,6 +321,29 @@ export class AdminPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected deleteAllText = '';
+
+  protected async resetAll(): Promise<void> {
+    if (!confirm('Azzerare la classifica di tutti? Da adesso si riparte da zero; potrai ripristinarla.')) return;
+    await this.run(() => this.api.resetStats(null), 'Classifica azzerata.');
+    this.settings.set(await this.api.settings());
+  }
+
+  protected async restoreAll(): Promise<void> {
+    await this.run(() => this.api.restoreStats(null), 'Classifica ripristinata.');
+    this.settings.set(await this.api.settings());
+  }
+
+  protected async deleteAll(): Promise<void> {
+    if (!confirm('Eliminare definitivamente tutto lo storico delle partite giocate? Non si può annullare.')) return;
+    await this.run(async () => {
+      const n = await this.api.deleteAllStats(this.deleteAllText);
+      this.deleteAllText = '';
+      this.toasts.show(n === 1 ? 'Eliminata 1 partita dallo storico.' : `Eliminate ${n} partite dallo storico.`, 'info');
+    }, 'Storico eliminato: la classifica riparte da zero.');
+    this.settings.set(await this.api.settings());
   }
 
   protected async pardon(userId: string): Promise<void> {

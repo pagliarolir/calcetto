@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { fmtDate } from '../core/format';
+import { fmtDate, fmtWhen } from '../core/format';
 import { AttendanceRow, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
@@ -77,6 +77,7 @@ const RECORDS: Record[] = [
           </div>
         }
         <p class="small muted">{{ rangeText() }}. Contano solo le partite con risultato omologato.</p>
+        @if (statsSince(); as d) { <p class="note">Classifica azzerata {{ whenFull(d) }}: contano solo le partite successive.</p> }
       </header>
 
       @if (loading()) {
@@ -172,6 +173,8 @@ export class StatsPage {
   ];
   protected readonly columns = COLUMNS;
   protected readonly date = fmtDate;
+  protected readonly whenFull = fmtWhen;
+  protected readonly statsSince = signal<string | null>(null);
 
   protected readonly period = signal<Period>('year');
   protected readonly rows = signal<StatsRow[]>([]);
@@ -246,6 +249,7 @@ export class StatsPage {
       this.range.set(r);
       const [rows, reg] = await Promise.all([this.api.stats(r.from, r.to), this.api.attendance(r.from, r.to)]);
       this.rows.set(rows);
+      void this.api.statsResetInfo(null).then((i) => this.statsSince.set(i.global)).catch(() => undefined);
       this.register.set(reg);
     } catch (e) {
       this.toasts.error(errorMessage(e));
