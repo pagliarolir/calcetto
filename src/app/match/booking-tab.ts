@@ -175,7 +175,7 @@ interface SlotView {
               <select class="input" [(ngModel)]="placeUser" aria-label="Giocatore">
                 <option value="">Scegli un giocatore</option>
                 @for (mb of session.activeMembers(); track mb.id) {
-                  <option [value]="mb.id">{{ session.name(mb.id) }} ({{ statusOf(mb.id) }})</option>
+                  <option [value]="mb.id">{{ session.name(mb.id) }}{{ mb.guest ? ', senza account' : '' }} ({{ statusOf(mb.id) }})</option>
                 }
               </select>
               <div class="row-wrap">
@@ -191,9 +191,9 @@ interface SlotView {
 
             <div class="panel stack">
               <h3>Precedenza</h3>
-              <p class="small muted">Apri le prenotazioni prima degli altri a chi vuoi tu. Ricevono una notifica quando si apre la loro finestra.</p>
+              <p class="small muted">Apri le prenotazioni prima degli altri a chi vuoi tu. Ricevono una notifica quando si apre la loro finestra. I giocatori senza account li metti in lista tu, qui sopra.</p>
               <div class="pick">
-                @for (mb of session.activeMembers(); track mb.id) {
+                @for (mb of session.accountMembers(); track mb.id) {
                   <label class="chip" [attr.aria-pressed]="priorityPick().has(mb.id)">
                     <input type="checkbox" class="sr-only" [checked]="priorityPick().has(mb.id)" (change)="togglePriority(mb.id)" />
                     {{ session.name(mb.id) }}
@@ -328,7 +328,8 @@ export class BookingTab {
 
   protected readonly silent = computed(() => {
     const answered = new Set(this.store.board().map((b) => b.user_id));
-    return this.session.activeMembers().map((m) => m.id).filter((id) => !answered.has(id));
+    // chi non ha un account non può rispondere: lo gestisce il Leader
+    return this.session.accountMembers().map((m) => m.id).filter((id) => !answered.has(id));
   });
 
   protected readonly myHeadline = computed(() => {

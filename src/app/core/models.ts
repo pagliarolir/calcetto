@@ -41,6 +41,8 @@ export interface Member {
   last_seen_at: string | null;
   /** percorso nello Storage; null se manca o se l'utente la nasconde */
   avatar_path: string | null;
+  /** giocatore senza account (creato dal Leader, si collega con un invito) */
+  guest: boolean;
 }
 
 export interface Me {

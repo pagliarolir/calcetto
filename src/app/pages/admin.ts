@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { fmtAgo, fmtWhen, fromLocalInput } from '../core/format';
-import { AppSettings, Member, Role, ROLE_LABEL } from '../core/models';
+import { AppSettings, Member, Role, ROLE_LABEL, FIELD_ROLE_LABEL } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -31,6 +31,42 @@ import { scrollAppTo } from '../core/scroller';
             <button class="btn small primary" (click)="copy(t.password)">Copia</button>
             @if (canShare) { <button class="btn small" (click)="share(t.name, t.password)">Condividi</button> }
             <button class="btn small ghost" (click)="temp.set(null)">Fatto</button>
+          </div>
+        </section>
+      }
+
+      @if (inviteLink(); as il) {
+        <section class="panel stack temp enter-drop" role="dialog" aria-labelledby="inv-h">
+          <h2 id="inv-h">Invito per {{ il.name }}</h2>
+          <p class="small">Mandagli questo link: creando l'account (o entrando con quello che ha già) si ritrova il profilo con presenze, gol e voti. Vale fino a {{ when(il.expires) }} e una sola volta.</p>
+          <input class="input" readonly [value]="il.url" aria-label="Link d'invito" (focus)="selectAll($event)" />
+          <div class="row-wrap">
+            <button class="btn small primary" (click)="copyInvite(il.url)">Copia il link</button>
+            @if (canShare) { <button class="btn small" (click)="shareInvite(il.name, il.url)">Condividi</button> }
+            <button class="btn small ghost" (click)="inviteLink.set(null)">Chiudi</button>
+          </div>
+        </section>
+      }
+
+      @if (editingGuest(); as gid) {
+        <section class="panel stack enter-drop" role="dialog" aria-labelledby="eg-h">
+          <h2 id="eg-h">Modifica {{ session.fullName(gid) }}</h2>
+          <div class="pair">
+            <label class="field"><span>Nome</span><input class="input" [(ngModel)]="gFirst" maxlength="40" /></label>
+            <label class="field"><span>Cognome</span><input class="input" [(ngModel)]="gLast" maxlength="40" /></label>
+          </div>
+          <div class="pair">
+            <label class="field"><span>Soprannome</span><input class="input" [(ngModel)]="gNick" maxlength="30" /></label>
+            <label class="field"><span>Ruolo in campo</span>
+              <select class="input" [(ngModel)]="gRole">
+                <option value="">—</option>
+                @for (r of fieldRoles; track r.key) { <option [value]="r.key">{{ r.label }}</option> }
+              </select>
+            </label>
+          </div>
+          <div class="row-wrap">
+            <button class="btn small primary" [disabled]="busy() || !gFirst.trim()" (click)="saveGuest(gid)">Salva</button>
+            <button class="btn small ghost" (click)="closeGuestEdit()">Annulla</button>
           </div>
         </section>
       }
@@ -92,6 +128,29 @@ import { scrollAppTo } from '../core/scroller';
         </section>
       }
 
+      @if (session.isLeader() && !editingGuest()) {
+        <section class="section" aria-labelledby="guest-h">
+          <header><h2 id="guest-h">Giocatore senza account</h2></header>
+          <div class="panel stack">
+            <p class="small muted">Per chi non usa l'app: lo metti tu in lista, entra nelle formazioni, viene votato e resta nelle statistiche. Quando vuole, con <strong>Invita</strong> gli mandi un link per collegare un account.</p>
+            <div class="pair">
+              <label class="field"><span>Nome</span><input class="input" [(ngModel)]="gFirst" maxlength="40" /></label>
+              <label class="field"><span>Cognome</span><input class="input" [(ngModel)]="gLast" maxlength="40" /></label>
+            </div>
+            <div class="pair">
+              <label class="field"><span>Soprannome</span><input class="input" [(ngModel)]="gNick" maxlength="30" /></label>
+              <label class="field"><span>Ruolo in campo</span>
+                <select class="input" [(ngModel)]="gRole">
+                  <option value="">—</option>
+                  @for (r of fieldRoles; track r.key) { <option [value]="r.key">{{ r.label }}</option> }
+                </select>
+              </label>
+            </div>
+            <button class="btn small primary" [disabled]="busy() || !gFirst.trim()" (click)="addGuest()">Aggiungi il giocatore</button>
+          </div>
+        </section>
+      }
+
       <section class="section">
         <header><h2>Giocatori</h2><span class="small muted">{{ active().length }}</span></header>
         <ul class="list">
@@ -101,10 +160,18 @@ import { scrollAppTo } from '../core/scroller';
               <span class="grow">
                 <a class="who" [routerLink]="['/giocatore', m.id]"><strong>{{ session.fullName(m.id) }}</strong></a>
                 @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
-                @if (isPunished(m.id)) { <span class="tag danger">in punizione</span> }<br />
-                <span class="small muted">ultimo accesso {{ m.last_seen_at ? ago(m.last_seen_at) : 'mai' }}</span>
+                @if (isPunished(m.id)) { <span class="tag danger">in punizione</span> }
+                @if (m.guest) { <span class="tag">senza account</span> }<br />
+                @if (m.guest) { <span class="small muted">lo metti in lista tu</span> }
+                @else { <span class="small muted">ultimo accesso {{ m.last_seen_at ? ago(m.last_seen_at) : 'mai' }}</span> }
               </span>
-              @if ((session.isLeader() && m.role !== 'leader') || canRemove(m)) {
+              @if (m.guest && session.isLeader()) {
+                <div class="tools">
+                  <button class="btn small" [disabled]="busy()" (click)="invite(m)" [attr.aria-label]="'Invita ' + m.first_name + ' a collegare un account'">Invita</button>
+                  <button class="btn small ghost" (click)="startGuestEdit(m)" [attr.aria-label]="'Modifica ' + m.first_name">Modifica</button>
+                  <button class="icon-btn" (click)="removeGuest(m)" [attr.aria-label]="'Elimina ' + m.first_name" title="Elimina">✕</button>
+                </div>
+              } @else if (!m.guest && ((session.isLeader() && m.role !== 'leader') || canRemove(m))) {
                 <div class="tools">
                 @if (session.isLeader() && m.role !== 'leader') {
                   <select class="input role" [ngModel]="m.role" (ngModelChange)="setRole(m, $event)" [attr.aria-label]="'Ruolo di ' + m.first_name">
@@ -222,6 +289,7 @@ import { scrollAppTo } from '../core/scroller';
     .temp { border: 2px solid var(--armband); }
     .punish { border: 2px solid var(--danger); }
     .danger-zone { border-color: var(--danger); }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .who { color: inherit; text-decoration: none; }
     .pw { font: 700 var(--step-3)/1.1 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
     .plain { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -261,7 +329,15 @@ export class AdminPage implements OnInit {
   protected readonly pending = computed(() => this.session.members().filter((m) => m.pending));
   protected readonly active = computed(() => this.session.activeMembers());
   protected readonly removed = computed(() => this.session.members().filter((m) => !m.active && !m.pending));
-  protected readonly others = computed(() => this.active().filter((m) => m.id !== this.session.uid()));
+  /** per delega e passaggio di ruolo servono un account */
+  protected readonly others = computed(() => this.active().filter((m) => m.id !== this.session.uid() && !m.guest));
+  protected readonly fieldRoles = Object.entries(FIELD_ROLE_LABEL).map(([key, label]) => ({ key, label }));
+  protected readonly editingGuest = signal<string | null>(null);
+  protected readonly inviteLink = signal<{ name: string; url: string; expires: string } | null>(null);
+  protected gFirst = '';
+  protected gLast = '';
+  protected gNick = '';
+  protected gRole = '';
   protected readonly isTitular = computed(() => this.session.me()?.titular_leader === this.session.uid());
 
   protected readonly leadershipText = computed(() => {
@@ -321,6 +397,69 @@ export class AdminPage implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  // ------------------------------------------------ giocatori senza account
+  private clearGuestForm(): void {
+    this.gFirst = this.gLast = this.gNick = this.gRole = '';
+  }
+
+  protected async addGuest(): Promise<void> {
+    const name = this.gFirst.trim();
+    await this.run(() => this.api.createGuest(name, this.gLast.trim(), this.gNick.trim(), this.gRole),
+      `${name} aggiunto: mettilo in lista dalla partita, negli Strumenti del Leader.`);
+    this.clearGuestForm();
+  }
+
+  protected startGuestEdit(m: Member): void {
+    this.gFirst = m.first_name;
+    this.gLast = m.last_name ?? '';
+    this.gNick = m.nickname ?? '';
+    this.gRole = m.field_role ?? '';
+    this.editingGuest.set(m.id);
+    scrollAppTo('start');
+  }
+
+  protected closeGuestEdit(): void {
+    this.editingGuest.set(null);
+    this.clearGuestForm();
+  }
+
+  protected async saveGuest(id: string): Promise<void> {
+    await this.run(() => this.api.updateGuest(id, this.gFirst.trim(), this.gLast.trim(), this.gNick.trim(), this.gRole), 'Giocatore aggiornato.');
+    this.closeGuestEdit();
+  }
+
+  protected async removeGuest(m: Member): Promise<void> {
+    if (!confirm(`Eliminare ${m.first_name}? Spariscono anche le sue presenze, i gol e i voti ricevuti. Per conservarli, invitalo a collegare un account.`)) return;
+    await this.run(() => this.api.deleteGuest(m.id), `${m.first_name} eliminato.`);
+  }
+
+  protected async invite(m: Member): Promise<void> {
+    try {
+      const r = await this.api.createGuestInvite(m.id);
+      this.inviteLink.set({ name: m.first_name, url: new URL(`invito/${r.token}`, document.baseURI).href, expires: r.expires_at });
+      scrollAppTo('start');
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    }
+  }
+
+  protected selectAll(e: Event): void {
+    (e.target as HTMLInputElement).select();
+  }
+
+  protected async copyInvite(url: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(url);
+      this.toasts.show('Link copiato.');
+    } catch {
+      this.toasts.error('Copia non riuscita: tieni premuto sul link per copiarlo.');
+    }
+  }
+
+  protected shareInvite(name: string, url: string): void {
+    void navigator.share({ title: 'G.d.L.', text: `Ciao ${name}! Collega il tuo profilo del calcetto:`, url }).catch(() => undefined);
   }
 
   protected deleteAllText = '';

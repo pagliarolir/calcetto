@@ -311,6 +311,32 @@ export class Api {
     return must(await this.sb.rpc('active_punishments')) as { user_id: string; ends_at: string | null; reason: string | null; since: string }[];
   }
 
+  // ------------------------------------------------- giocatori senza account
+  async createGuest(first: string, last: string, nickname: string, fieldRole: string): Promise<string> {
+    return must(await this.sb.rpc('create_guest', { p_first: first, p_last: last || null, p_nickname: nickname || null, p_field_role: fieldRole || null })) as string;
+  }
+
+  async updateGuest(id: string, first: string, last: string, nickname: string, fieldRole: string) {
+    return must(await this.sb.rpc('update_guest', { p_user: id, p_first: first, p_last: last || null, p_nickname: nickname || null, p_field_role: fieldRole || null }));
+  }
+
+  async deleteGuest(id: string) {
+    return must(await this.sb.rpc('delete_guest', { p_user: id }));
+  }
+
+  async createGuestInvite(id: string): Promise<{ token: string; expires_at: string }> {
+    return must(await this.sb.rpc('create_guest_invite', { p_user: id }));
+  }
+
+  /** Funziona anche senza essere collegati: mostra a chi è rivolto l'invito. */
+  async inviteInfo(token: string): Promise<{ first_name: string; nickname: string | null; expires_at: string } | null> {
+    return must(await this.sb.rpc('invite_info', { p_token: token })) as { first_name: string; nickname: string | null; expires_at: string } | null;
+  }
+
+  async claimGuestProfile(token: string): Promise<string> {
+    return must(await this.sb.rpc('claim_guest_profile', { p_token: token })) as string;
+  }
+
   // ------------------------------------------------- azzeramento statistiche
   /** userId null = tutta la classifica */
   async resetStats(userId: string | null) {

@@ -35,6 +35,8 @@ export class Session {
   readonly activeMembers = computed(() =>
     this.members().filter((m) => m.active).sort((a, b) => this.name(a.id).localeCompare(this.name(b.id), 'it')),
   );
+  /** membri attivi con un account: gli unici che possono agire (prenotarsi, ricevere deleghe, ...) */
+  readonly accountMembers = computed(() => this.activeMembers().filter((m) => !m.guest));
 
   private readyPromise: Promise<void>;
 
@@ -136,12 +138,13 @@ export class Session {
     return this.sb.auth.signInWithPassword({ email, password });
   }
 
-  async signUp(email: string, password: string, firstName: string, inviteCode: string) {
+  /** linkToken: invito personale a collegarsi a un giocatore senza account */
+  async signUp(email: string, password: string, firstName: string, inviteCode: string, linkToken: string | null = null) {
     return this.sb.auth.signUp({
       email,
       password,
       options: {
-        data: { first_name: firstName, invite_code: inviteCode || null },
+        data: { first_name: firstName, invite_code: inviteCode || null, link_token: linkToken },
         emailRedirectTo: location.origin + document.baseURI.replace(location.origin, ''),
       },
     });
