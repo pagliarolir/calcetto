@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard, guestGuard, staffGuard } from './core/guards';
 
 export const routes: Routes = [
+  { path: 'invito/:token', loadComponent: () => import('./pages/invite').then((m) => m.InvitePage), title: 'Invito' },
   { path: 'accesso', canActivate: [guestGuard], loadComponent: () => import('./pages/login').then((m) => m.LoginPage), title: 'Accedi' },
   { path: 'nuova-password', loadComponent: () => import('./pages/new-password').then((m) => m.NewPasswordPage), title: 'Nuova password' },
   { path: 'in-attesa', loadComponent: () => import('./pages/pending').then((m) => m.PendingPage), title: 'In attesa' },

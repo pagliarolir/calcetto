@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Session } from '../core/session';
+import { Api } from '../core/api';
 import { errorMessage } from '../core/supabase';
 
 @Component({
@@ -31,6 +32,9 @@ import { errorMessage } from '../core/supabase';
             <button class="btn ghost block" type="button" (click)="setMode('in')">Torna all'accesso</button>
           </form>
         } @else {
+        @if (invite(); as iv) {
+          <p class="note invite" role="status">Ciao <strong>{{ iv.first_name }}</strong>! Il Leader ha già creato il tuo profilo: {{ inviteAction() }} e ritrovi presenze, gol e voti.</p>
+        }
         <div class="chips" role="tablist">
           <button class="chip" role="tab" [attr.aria-pressed]="mode() === 'in'" (click)="setMode('in')">Ho già un account</button>
           <button class="chip" role="tab" [attr.aria-pressed]="mode() === 'up'" (click)="setMode('up')">Sono nuovo</button>
@@ -49,7 +53,7 @@ import { errorMessage } from '../core/supabase';
             <input class="input" name="password" type="password" [(ngModel)]="password" required minlength="6"
                    [attr.autocomplete]="mode() === 'in' ? 'current-password' : 'new-password'" />
           </label>
-          @if (mode() === 'up') {
+          @if (mode() === 'up' && !invite()) {
             <label class="field"><span>Codice invito (se te l'hanno dato)</span>
               <input class="input" name="code" [(ngModel)]="code" autocomplete="off" />
             </label>
@@ -103,6 +107,7 @@ export class LoginPage implements OnInit {
   private readonly router = inject(Router);
 
   private readonly route = inject(ActivatedRoute);
+  private readonly api = inject(Api);
   protected readonly mode = signal<'in' | 'up' | 'reset'>('in');
   protected readonly busy = signal(false);
   protected readonly error = signal('');
@@ -111,9 +116,23 @@ export class LoginPage implements OnInit {
   protected password = '';
   protected firstName = '';
   protected code = '';
+  /** invito personale a collegarsi a un giocatore creato dal Leader */
+  private inviteToken: string | null = null;
+  protected readonly invite = signal<{ first_name: string } | null>(null);
+  protected readonly inviteAction = computed(() => (this.mode() === 'up' ? "crea l'account" : 'entra con il tuo account'));
 
   ngOnInit(): void {
-    if (this.route.snapshot.queryParamMap.has('recupero')) this.mode.set('reset');
+    const q = this.route.snapshot.queryParamMap;
+    if (q.has('recupero')) this.mode.set('reset');
+    this.inviteToken = q.get('invito');
+    if (this.inviteToken) {
+      if (q.get('modo') === 'nuovo') this.mode.set('up');
+      void this.api.inviteInfo(this.inviteToken).then((i) => {
+        this.invite.set(i);
+        if (i && !this.firstName) this.firstName = i.first_name;
+        if (!i) this.inviteToken = null;
+      }).catch(() => (this.inviteToken = null));
+    }
   }
 
   protected setMode(m: 'in' | 'up' | 'reset'): void {
@@ -146,9 +165,14 @@ export class LoginPage implements OnInit {
       if (this.mode() === 'in') {
         const { error } = await this.session.signIn(this.email.trim(), this.password);
         if (error) throw error;
+        // account già esistente: si unisce al profilo creato dal Leader
+        if (this.inviteToken) {
+          await this.session.refresh();
+          await this.api.claimGuestProfile(this.inviteToken);
+        }
       } else {
         if (!this.firstName.trim()) throw new Error('Scrivi il tuo nome.');
-        const { data, error } = await this.session.signUp(this.email.trim(), this.password, this.firstName.trim(), this.code.trim());
+        const { data, error } = await this.session.signUp(this.email.trim(), this.password, this.firstName.trim(), this.code.trim(), this.inviteToken);
         if (error) throw error;
         if (!data.session) {
           this.info.set('Controlla la tua email per confermare l\'account, poi torna qui ed entra.');

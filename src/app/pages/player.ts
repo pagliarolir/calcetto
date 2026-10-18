@@ -22,6 +22,7 @@ import { Avatar } from '../ui/avatar';
           <div class="id">
             <app-avatar [userId]="m.id" [size]="88" />
             <h1>{{ session.fullName(m.id) }}</h1>
+            @if (m.guest) { <span class="tag">senza account</span> }
           </div>
           <div class="row-wrap">
             @if (m.nickname) { <span class="tag">detto {{ m.nickname }}</span> }

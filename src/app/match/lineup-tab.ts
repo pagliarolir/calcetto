@@ -124,7 +124,7 @@ interface Place { team: Team; slot: number | null }
             <p class="small muted">Di norma Leader e Premier. Puoi affidarle a un giocatore solo per questa partita: la sua proposta andrà approvata.</p>
             <select class="input" [ngModel]="m.lineup_delegate ?? ''" (ngModelChange)="setDelegate($event)" aria-label="Delegato">
               <option value="">Solo Leader e Premier</option>
-              @for (mb of session.activeMembers(); track mb.id) { <option [value]="mb.id">{{ session.name(mb.id) }}</option> }
+              @for (mb of session.accountMembers(); track mb.id) { <option [value]="mb.id">{{ session.name(mb.id) }}</option> }
             </select>
           </section>
         }

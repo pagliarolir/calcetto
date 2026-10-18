@@ -110,7 +110,7 @@ import { Avatar } from '../ui/avatar';
               <h3>Mostra i voti a qualcuno</h3>
               <p class="small muted">Potranno vedere tutti i voti di questa partita fino a 24 ore prima della prossima.</p>
               <div class="row-wrap">
-                @for (id of participants(); track id) {
+                @for (id of participantsWithAccount(); track id) {
                   <button class="chip" [attr.aria-pressed]="grantPick().has(id)" (click)="toggleGrant(id)">{{ session.name(id) }}</button>
                 }
               </div>
@@ -160,6 +160,8 @@ export class VotesTab {
   // segnali "stretti": l'orologio interno non deve ricaricare i voti e cancellare quelli non inviati
   private readonly matchId = computed(() => this.store.match()?.id ?? null);
   private readonly resultOpen = computed(() => !(this.store.t()?.votesBefore ?? true));
+  /** solo chi ha un account può vedere i voti */
+  protected readonly participantsWithAccount = computed(() => this.participants().filter((id) => !this.session.memberMap().get(id)?.guest));
   protected readonly unassigned = computed(() => this.participants().filter((id) => !this.store.teamOf().has(id)));
   protected readonly voters = computed(() => {
     const a = this.all();
