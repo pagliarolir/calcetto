@@ -294,3 +294,15 @@ export const FIELD_SLOTS: { slot: number; label: string }[] = [
 ];
 
 export const TEAM_LABEL: Record<Team, string> = { white: 'Bianchi', black: 'Neri' };
+
+/** Punti Leader: assegnazioni del Leader con motivazione */
+export interface LeaderPointsEntry { id: number; user_id: string; points: number; reason: string; created_by: string | null; created_at: string }
+export interface LeaderPointsRow { user_id: string; total: number; awards: number; last_at: string }
+/** Vittorie per colore della divisa (di squadra o di un giocatore) */
+export interface KitStatsRow { kit: string; played: number; wins: number; draws: number; losses: number; goals_for?: number; goals_against?: number; user_id?: string }
+/** Una coppia di giocatori (a_id < b_id): da compagni e da avversari */
+export interface PairRow {
+  a_id: string; b_id: string;
+  together: number; together_wins: number; together_draws: number;
+  against: number; a_wins: number; b_wins: number; against_draws: number;
+}
