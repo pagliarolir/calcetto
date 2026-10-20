@@ -130,6 +130,10 @@ export class MatchPage {
     if (t.beforeOpen) return `Prenotazioni ${fmtCountdown(m.bookings_open_at)}`;
     if (!t.started) {
       const n = this.store.team().length;
+      if (this.store.free() && !m.lists_confirmed_at) {
+        const avail = this.store.team().length + this.store.pending().length + this.store.reserves().length;
+        return `${avail} disponibili, si gioca ${fmtCountdown(m.starts_at)}`;
+      }
       return `${n} su ${this.store.size()}, si gioca ${fmtCountdown(m.starts_at)}`;
     }
     if (!t.resultOpen) return 'Si sta giocando';

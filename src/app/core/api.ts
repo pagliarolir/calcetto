@@ -48,6 +48,23 @@ export class Api {
     return must(await this.sb.rpc('leader_book', { p_match: matchId, p_user: userId, p_choice: choice }));
   }
 
+  // -------------------------------------------- modalità "sceglie il Leader"
+  async leaderAssign(matchId: string, userId: string, list: 'team' | 'reserve' | 'pending') {
+    return must(await this.sb.rpc('leader_assign', { p_match: matchId, p_user: userId, p_list: list }));
+  }
+
+  async leaderConfirmLists(matchId: string): Promise<{ team: number; reserve: number }> {
+    return must(await this.sb.rpc('leader_confirm_lists', { p_match: matchId }));
+  }
+
+  async closeBookings(matchId: string) {
+    return must(await this.sb.rpc('leader_close_bookings', { p_match: matchId }));
+  }
+
+  async reopenBookings(matchId: string) {
+    return must(await this.sb.rpc('leader_reopen_bookings', { p_match: matchId }));
+  }
+
   /** Il Leader riporta un giocatore a "non ha risposto". */
   async leaderResetBooking(matchId: string, userId: string): Promise<{ previous: string; promoted: string | null }> {
     return must(await this.sb.rpc('leader_reset_booking', { p_match: matchId, p_user: userId }));
