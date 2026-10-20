@@ -73,3 +73,11 @@ export function mapsUrl(name: string | null, address: string | null): string | n
     ? `https://maps.apple.com/?q=${encodeURIComponent(q)}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 }
+
+/** Iniziale maiuscola per ogni parola, anche dopo apostrofo, trattino o barra: «via d'azeglio 12» → «Via D'Azeglio 12». */
+export function titleCase(text: string | null | undefined): string {
+  return (text ?? '')
+    .trim()
+    .toLocaleLowerCase('it')
+    .replace(/(^|[\s'’\-\/(.,])(\p{L})/gu, (_m, before: string, letter: string) => before + letter.toLocaleUpperCase('it'));
+}

@@ -25,6 +25,8 @@ const PATHS: Record<string, string> = {
   share: 'M12 3v12 M7 8l5-5l5 5 M5 14v6h14v-6',
   key: 'M8 15m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M11 12l9-9 M17 6l3 3 M15 8l2 2',
   pin: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z M12 9.5m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0',
+  map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
+  external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
 };
 
 @Component({
