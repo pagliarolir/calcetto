@@ -35,6 +35,7 @@ const COLUMNS: Col[] = [
   { key: 'mvp_count', label: 'MVP', title: 'Volte migliore in campo' },
   { key: 'best_win_streak', label: 'Serie V', title: 'Più vittorie di fila' },
   { key: 'attendances', label: 'Pres', title: 'Presenze' },
+  { key: 'withdrawals', label: 'Rin', title: 'Rinunce (in qualsiasi momento)', asc: true },
   { key: 'late_withdrawals', label: 'Forf', title: 'Rinunce nelle 24 ore', asc: true },
   { key: 'current_form', label: 'Forma', title: 'Ultime 5 partite', fmt: 'form' },
 ];
@@ -215,7 +216,7 @@ const RECORDS: Record[] = [
           @case ('presenze') {
         <section class="section">
           <header><h2>Registro presenze</h2></header>
-          <p class="small muted">● in campo, ○ riserva, × assente, ! rinuncia nelle 24 ore</p>
+          <p class="small muted">● in campo, ○ riserva, × assente, r rinuncia, ! rinuncia nelle 24 ore</p>
           <div class="table-wrap">
             <table class="data register">
               <thead>
@@ -450,7 +451,8 @@ export class StatsPage {
   });
 
   protected readonly registerUsers = computed(() => {
-    const ids = new Set(this.register().filter((r) => r.list === 'team').map((r) => r.user_id));
+    // anche chi ha soltanto rinunciato compare nel registro
+    const ids = new Set(this.register().filter((r) => r.list === 'team' || r.withdrew).map((r) => r.user_id));
     return [...ids].sort((a, b) => this.session.name(a).localeCompare(this.session.name(b), 'it'));
   });
 
@@ -648,7 +650,9 @@ export class StatsPage {
   protected mark(u: string, m: string): string {
     const r = this.registerIndex().get(`${u}:${m}`);
     if (!r) return '';
+    if (r.list === 'team') return '●';          // alla fine ha giocato
     if (r.late_withdrawal) return '!';
-    return r.list === 'team' ? '●' : r.list === 'reserve' ? '○' : '×';
+    if (r.withdrew) return 'r';
+    return r.list === 'reserve' ? '○' : '×';
   }
 }
