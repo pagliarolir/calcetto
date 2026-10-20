@@ -2,11 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { fmtTime, fmtWeekday, fmtWhen, fromLocalInput, mapsUrl, toLocalInput } from '../core/format';
+import { fmtTime, fmtWeekday, fmtWhen, fromLocalInput, toLocalInput } from '../core/format';
 import { changedFields, ConfigField, configOfMatch, MatchConfig } from '../core/match-config';
 import { MatchConfigForm } from '../ui/match-config-form';
 import { ApplyDialog } from '../ui/apply-dialog';
-import { Icon } from '../ui/icon';
 import { BoardRow, Choice, Match } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
@@ -23,7 +22,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Jersey, FormsModule, RouterLink, Icon, MatchConfigForm, ApplyDialog, Avatar],
+  imports: [Jersey, FormsModule, RouterLink, MatchConfigForm, ApplyDialog, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -75,23 +74,6 @@ interface SlotView {
             }
           }
         </section>
-
-        <!-- Dove si gioca -->
-        @if (venue(); as v) {
-          <section class="panel venue-card" aria-labelledby="venue-h">
-            <div class="row">
-              <span class="pin" aria-hidden="true"><app-icon name="pin" /></span>
-              <div class="grow">
-                <h2 id="venue-h">{{ v.name || 'Dove si gioca' }}</h2>
-                @if (v.address) { <p class="small muted">{{ v.address }}</p> }
-              </div>
-            </div>
-            <div class="row-wrap">
-              @if (v.maps) { <a class="btn small primary" [href]="v.maps" target="_blank" rel="noopener">Apri nelle mappe</a> }
-              @if (v.url) { <a class="btn small" [href]="v.url" target="_blank" rel="noopener">Sito del circolo</a> }
-            </div>
-          </section>
-        }
 
         <!-- Tabellone -->
         @if (store.free()) {
@@ -353,7 +335,6 @@ interface SlotView {
     .who .tag { font-weight: 600; }
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
-    .venue-card { display: flex; flex-direction: column; gap: 12px; }
     .people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .people li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
     .people li.me { box-shadow: inset 0 0 0 2px var(--turf); }
@@ -367,8 +348,6 @@ interface SlotView {
     .settings summary::after { content: '+'; font: 600 1.4rem/1 var(--font-display); color: var(--muted); }
     .settings[open] summary::after { content: '−'; }
     .settings[open] summary { margin-bottom: 12px; }
-    .venue-card h2 { font-size: var(--step-1); }
-    .pin { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--turf-soft); color: var(--turf); }
     .pick .chip { display: inline-flex; align-items: center; }
     @media (max-width: 360px) { .board { grid-template-columns: 1fr; } }
   `,
@@ -395,12 +374,6 @@ export class BookingTab {
   protected readonly mConfig = signal<MatchConfig | null>(null);
   protected mTime = '';
   protected readonly applyNext = signal<{ matches: Match[]; fields: ConfigField[]; config: MatchConfig; time: string } | null>(null);
-
-  protected readonly venue = computed(() => {
-    const m = this.store.match();
-    if (!m || !(m.venue_name || m.venue_address || m.venue_url)) return null;
-    return { name: m.venue_name, address: m.venue_address, url: m.venue_url, maps: mapsUrl(m.venue_name, m.venue_address) };
-  });
 
   protected readonly when = fmtWhen;
 

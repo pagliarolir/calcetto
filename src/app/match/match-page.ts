@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { fmtCountdown, fmtDayLong, fmtTime, diffText, mapsUrl } from '../core/format';
+import { fmtCountdown, fmtDayLong, fmtTime, diffText, mapsUrl, titleCase } from '../core/format';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 import { MatchStore } from './match-store';
@@ -34,9 +34,22 @@ import { MatchStore } from './match-store';
             @if (m.status === 'cancelled') { <span class="tag danger">Annullata</span> }
           </p>
           @if (m.venue_name || m.venue_address) {
-            <a class="venue" [href]="maps()" target="_blank" rel="noopener">
-              <app-icon name="pin" [size]="18" /> {{ m.venue_name || m.venue_address }}
-            </a>
+            <div class="venue">
+              @if (m.venue_name) {
+                @if (m.venue_url) {
+                  <a class="venue-name" [href]="m.venue_url" target="_blank" rel="noopener" [attr.aria-label]="m.venue_name + ': sito del circolo'">
+                    {{ m.venue_name }} <app-icon name="external" [size]="14" />
+                  </a>
+                } @else {
+                  <span class="venue-name">{{ m.venue_name }}</span>
+                }
+              }
+              @if (maps(); as href) {
+                <a class="venue-addr" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'Apri nelle mappe: ' + (address() || m.venue_name)">
+                  <app-icon name="map" [size]="16" /> <span>{{ address() || 'Apri nelle mappe' }}</span>
+                </a>
+              }
+            </div>
           }
           @if (store.result(); as r) {
             <p class="score num" aria-label="Risultato">{{ scoreText() }}
@@ -77,10 +90,14 @@ import { MatchStore } from './match-store';
     h1 { font-size: var(--step-4); line-height: 0.92; }
     h1::first-letter { text-transform: uppercase; }
     .when { display: flex; align-items: center; gap: 10px; font-size: var(--step-2); }
-    .venue {
-      align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px;
-      color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+    .venue { align-self: flex-start; display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+    .venue-name { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; color: inherit; font-weight: 600; text-decoration: none; }
+    a.venue-name { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .venue-addr {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: inherit; opacity: 0.88;
+      font-size: var(--step--1); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
     }
+    .venue-addr app-icon { flex: none; }
     .score { font-size: var(--step-3); font-weight: 700; display: flex; align-items: center; gap: 10px; }
     .score .tag { font-family: var(--font-body); }
     .tabs {
@@ -107,6 +124,9 @@ export class MatchPage {
     if (!m) return '';
     return `${fmtTime(m.starts_at)} – ${fmtTime(m.ends_at)}`;
   });
+
+  /** indirizzo con le iniziali maiuscole (solo in visualizzazione) */
+  protected readonly address = computed(() => titleCase(this.store.match()?.venue_address));
 
   protected readonly kitA = computed(() => kit(this.store.match()?.team_a_kit ?? 'white'));
   protected readonly kitB = computed(() => kit(this.store.match()?.team_b_kit ?? 'black'));
