@@ -8,12 +8,13 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
+import { Avatar } from '../ui/avatar';
 import { scrollAppTo } from '../core/scroller';
 
 /** Chat di partita: aperta dalla creazione della partita fino a 24 ore dopo la fine. */
 @Component({
   selector: 'app-chat-tab',
-  imports: [FormsModule],
+  imports: [FormsModule, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -27,14 +28,19 @@ import { scrollAppTo } from '../core/scroller';
         <ol class="msgs" #list aria-live="polite">
           @for (msg of messages(); track msg.id; let i = $index) {
             @if (newDay(i)) { <li class="day">{{ day(msg.created_at) }}</li> }
-            <li class="msg enter-fade" [class.mine]="msg.user_id === session.uid()">
-              @if (msg.user_id !== session.uid() && !sameAuthor(i)) { <span class="who">{{ session.name(msg.user_id) }}</span> }
-              <p>{{ msg.body }}</p>
-              <span class="time">{{ time(msg.created_at) }}
-                @if (msg.user_id === session.uid() || session.isStaff()) {
-                  <button class="del" (click)="remove(msg)" aria-label="Elimina messaggio">Elimina</button>
-                }
-              </span>
+            <li class="row" [class.mine]="msg.user_id === session.uid()" [class.first]="!sameAuthor(i)">
+              @if (msg.user_id !== session.uid()) {
+                @if (!sameAuthor(i)) { <app-avatar [userId]="msg.user_id" [size]="30" /> } @else { <span class="av-space" aria-hidden="true"></span> }
+              }
+              <div class="msg enter-fade" [class.mine]="msg.user_id === session.uid()">
+                @if (msg.user_id !== session.uid() && !sameAuthor(i)) { <span class="who">{{ session.name(msg.user_id) }}</span> }
+                <p>{{ msg.body }}</p>
+                <span class="time">{{ time(msg.created_at) }}
+                  @if (msg.user_id === session.uid() || session.isStaff()) {
+                    <button class="del" (click)="remove(msg)" aria-label="Elimina messaggio">Elimina</button>
+                  }
+                </span>
+              </div>
             </li>
           } @empty {
             @if (store.t()?.chatOpen) { <li class="empty">Nessun messaggio. Rompi il ghiaccio.</li> }
@@ -55,8 +61,12 @@ import { scrollAppTo } from '../core/scroller';
     .chat { display: flex; flex-direction: column; gap: 12px; }
     .msgs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
     .day { align-self: center; font-size: var(--step--1); color: var(--muted); padding: 10px 0 4px; }
-    .msg { align-self: flex-start; max-width: 82%; padding: 8px 12px; border-radius: 16px 16px 16px 4px; background: var(--surface); border: 1px solid var(--line); }
-    .msg.mine { align-self: flex-end; background: var(--turf); color: var(--turf-ink); border-color: var(--turf); border-radius: 16px 16px 4px 16px; }
+    .row { display: flex; align-items: flex-start; gap: 8px; }
+    .row.first { margin-top: 6px; }
+    .row.mine { justify-content: flex-end; }
+    .av-space { width: 30px; flex: none; }
+    .msg { max-width: 78%; padding: 8px 12px; border-radius: 16px 16px 16px 4px; background: var(--surface); border: 1px solid var(--line); }
+    .msg.mine { background: var(--turf); color: var(--turf-ink); border-color: var(--turf); border-radius: 16px 16px 4px 16px; }
     .msg p { white-space: pre-wrap; overflow-wrap: anywhere; }
     .who { display: block; font-size: 0.75rem; font-weight: 700; color: var(--turf); margin-bottom: 2px; }
     .time { display: flex; gap: 8px; justify-content: flex-end; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }

@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { fmtTime, fmtWeekday, fmtWhen, fromLocalInput, toLocalInput } from '../core/format';
 import { changedFields, ConfigField, configOfMatch, MatchConfig } from '../core/match-config';
@@ -10,7 +9,7 @@ import { BoardRow, Choice, Match } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
-import { Jersey } from '../ui/jersey';
+import { Figurina } from '../ui/figurina';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
@@ -22,7 +21,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Jersey, FormsModule, RouterLink, MatchConfigForm, ApplyDialog, Avatar],
+  imports: [Figurina, FormsModule, MatchConfigForm, ApplyDialog, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -83,25 +82,18 @@ interface SlotView {
               <span class="muted small num">{{ store.team().length }}/{{ store.size() }}</span>
             </header>
             @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
-            <ul class="people">
+            <ul class="people board">
               @for (r of byName(store.team()); track r.user_id) {
-                <li [class.me]="r.user_id === session.uid()">
-                  <app-avatar [userId]="r.user_id" [size]="32" />
-                  <a class="ellipsis" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a>
-                  @if (r.is_leader) { <span class="tag armband">Leader</span> }
-                </li>
+                <li><app-figurina variant="free" [userId]="r.user_id" [captain]="r.is_leader" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'capitano' : 'titolare'" [noteTone]="'turf'" /></li>
               }
             </ul>
           </section>
           @if (store.reserves().length) {
             <section class="section" aria-labelledby="res-h">
               <header><h2 id="res-h">Riserve</h2><span class="muted small">senza ordine</span></header>
-              <ul class="people">
+              <ul class="people board">
                 @for (r of byName(store.reserves()); track r.user_id) {
-                  <li [class.me]="r.user_id === session.uid()">
-                    <app-avatar [userId]="r.user_id" [size]="32" />
-                    <a class="ellipsis" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a>
-                  </li>
+                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 }
               </ul>
             </section>
@@ -109,12 +101,9 @@ interface SlotView {
           @if (store.pending().length) {
             <section class="section" aria-labelledby="pend-h">
               <header><h2 id="pend-h">Disponibili</h2><span class="muted small">{{ store.pending().length }}, in attesa della scelta</span></header>
-              <ul class="people">
+              <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li [class.me]="r.user_id === session.uid()">
-                    <app-avatar [userId]="r.user_id" [size]="32" />
-                    <a class="ellipsis" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a>
-                  </li>
+                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 }
               </ul>
             </section>
@@ -127,16 +116,12 @@ interface SlotView {
           </header>
           <ol class="board">
             @for (s of slots(); track s.slot + ':' + (s.row?.user_id ?? '-')) {
-              <li [class.me]="s.row?.user_id === session.uid()" [class.enter-drop]="s.row?.user_id === session.uid()">
+              <li [class.enter-drop]="s.row?.user_id === session.uid()">
                 @if (s.row; as r) {
-                  <app-jersey [number]="s.slot" [mine]="r.user_id === session.uid()" [captain]="r.is_leader" />
-                  <a class="who" [routerLink]="['/giocatore', r.user_id]">
-                    <span class="ellipsis">{{ session.name(r.user_id) }}</span>
-                    @if (r.placed_by) { <span class="tag">messo dal Leader</span> }
-                  </a>
+                  <app-figurina [userId]="r.user_id" [number]="s.slot" [captain]="r.is_leader" [mine]="r.user_id === session.uid()"
+                                [note]="r.is_leader ? 'capitano' : r.placed_by ? 'messo dal Leader' : null" />
                 } @else {
-                  <app-jersey [number]="s.slot" variant="empty" />
-                  <span class="who muted">{{ s.slot === 1 ? 'Leader assente' : 'Posto libero' }}</span>
+                  <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
                 }
               </li>
             }
@@ -148,13 +133,10 @@ interface SlotView {
             <header><h2 id="res-h">Riserve</h2><span class="muted small">entrano in quest'ordine</span></header>
             <ol class="board">
               @for (r of store.reserves(); track r.user_id + ':' + r.slot) {
-                <li [class.me]="r.user_id === session.uid()" [class.enter-drop]="r.user_id === session.uid()">
-                  <app-jersey [number]="r.slot" variant="reserve" [mine]="r.user_id === session.uid()" />
-                  <a class="who" [routerLink]="['/giocatore', r.user_id]">
-                    <span class="ellipsis">{{ session.name(r.user_id) }}</span>
-                    @if (r.choice === 'present') { <span class="tag">in coda</span> }
-                    @if (r.reserve_reply === 'confirmed') { <span class="tag turf">disponibile</span> }
-                  </a>
+                <li [class.enter-drop]="r.user_id === session.uid()">
+                  <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
+                                [note]="r.reserve_reply === 'confirmed' ? 'disponibile' : r.choice === 'present' ? 'in coda' : 'se serve'"
+                                [noteTone]="r.reserve_reply === 'confirmed' ? 'turf' : 'muted'" />
                 </li>
               }
             </ol>
@@ -326,19 +308,14 @@ interface SlotView {
   `,
   styles: `
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .board li {
-      display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 6px 10px 6px 6px;
-      border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--line);
-    }
-    .board li.me { border-color: var(--turf); box-shadow: inset 0 0 0 1px var(--turf); }
+    .board { gap: 8px; }
+    .board li { display: grid; min-width: 0; }
     .who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-decoration: none; color: inherit; font-weight: 600; }
     .who .tag { font-weight: 600; }
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
     .people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .people li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
-    .people li.me { box-shadow: inset 0 0 0 2px var(--turf); }
-    .people a { color: inherit; text-decoration: none; font-weight: 600; min-width: 0; }
+    .people li { display: grid; min-width: 0; }
     .assign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .assign li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
     .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
