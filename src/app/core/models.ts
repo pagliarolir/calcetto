@@ -215,6 +215,8 @@ export interface StatsRow {
   worst_winless: number;
   attendances: number;
   late_withdrawals: number;
+  /** rinunce in qualsiasi momento (anche prima delle 24 ore) */
+  withdrawals: number;
 }
 
 export interface MatchFact {
@@ -240,6 +242,7 @@ export interface AttendanceRow {
   choice: Choice;
   list: List;
   late_withdrawal: boolean;
+  withdrew: boolean;
 }
 
 export interface AppSettings {
