@@ -112,7 +112,7 @@ type Panel = 'none' | 'create' | 'defaults';
           <li>
             <a class="list-item" [routerLink]="['/partita', m.id]">
               <span class="grow"><span class="day">{{ day(m.starts_at) }}</span><br />
-                <span class="small muted">{{ time2(m.starts_at) }}@if (m.venue_name) {, {{ m.venue_name }}}, {{ m.players_per_team }} contro {{ m.players_per_team }}@if (m.moved) {, spostata}@if (m.status === 'cancelled') {, annullata}</span>
+                <span class="small muted">{{ time2(m.starts_at) }}@if (m.venue_name) {, {{ m.venue_name }}}, {{ m.players_per_team }} contro {{ m.players_per_team }}@if (m.booking_mode === 'free') {, sceglie il Leader}@if (m.moved) {, spostata}@if (m.status === 'cancelled') {, annullata}</span>
                 <span class="kits" aria-hidden="true"><i [style.background]="kitColor(m.team_a_kit)"></i><i [style.background]="kitColor(m.team_b_kit)"></i></span>
               </span>
               @if (m.results; as r) { <span class="num score">{{ text(r.diff, r.white_goals, r.black_goals, names(m)) }}</span> }

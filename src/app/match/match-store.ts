@@ -22,6 +22,10 @@ export class MatchStore implements OnDestroy {
   readonly loading = signal(true);
   readonly notFound = signal(false);
 
+  /** modalità "sceglie il Leader": nessun ordine, decide il Leader */
+  readonly free = computed(() => this.match()?.booking_mode === 'free');
+  /** disponibili in attesa della scelta del Leader (solo modalità "sceglie il Leader") */
+  readonly pending = computed(() => this.board().filter((b) => b.list === 'pending'));
   /** posti in lista: 5 contro 5 = 10, 6 contro 6 = 12, ... */
   readonly size = computed(() => (this.match()?.players_per_team ?? 5) * 2);
   /** nomi delle due squadre della partita */
@@ -83,6 +87,8 @@ export class MatchStore implements OnDestroy {
   }
 
   async reload(table: string): Promise<void> {
+    // dati nuovi, orari nuovi: si riallinea subito l'ora usata per aperture e chiusure
+    this.now.set(Date.now());
     const id = this.match()?.id;
     if (!id) return;
     switch (table) {

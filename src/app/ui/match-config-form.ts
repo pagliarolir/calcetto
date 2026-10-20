@@ -40,6 +40,17 @@ import { MatchConfig } from '../core/match-config';
 
       <fieldset>
         <legend>Prenotazioni</legend>
+        <div class="row-wrap" role="group" aria-label="Modalità di prenotazione">
+          <button type="button" class="chip" [attr.aria-pressed]="config().booking_mode === 'order'" (click)="set('booking_mode', 'order')">In ordine di arrivo</button>
+          <button type="button" class="chip" [attr.aria-pressed]="config().booking_mode === 'free'" (click)="set('booking_mode', 'free')">Sceglie il Leader</button>
+        </div>
+        <p class="small muted">
+          @if (config().booking_mode === 'order') {
+            Fa fede l'ordine di prenotazione: i primi {{ config().players_per_team * 2 }} giocano, gli altri sono riserve in ordine.
+          } @else {
+            Nessun ordine: i giocatori dicono solo se ci sono; dopo la chiusura il Leader sceglie titolari e riserve e li avvisa.
+          }
+        </p>
         <div class="pair">
           <label class="field"><span>Si aprono</span>
             <select class="input" [ngModel]="config().booking_open_days" (ngModelChange)="set('booking_open_days', +$event)">

@@ -14,6 +14,7 @@ import { Toasts } from '../core/toast';
 import { Jersey } from '../ui/jersey';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
+import { Avatar } from '../ui/avatar';
 
 interface SlotView {
   slot: number;
@@ -22,7 +23,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Jersey, FormsModule, RouterLink, Icon, MatchConfigForm, ApplyDialog],
+  imports: [Jersey, FormsModule, RouterLink, Icon, MatchConfigForm, ApplyDialog, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -43,10 +44,12 @@ interface SlotView {
               <button [attr.aria-pressed]="store.mine()?.choice === 'present'" [disabled]="busy()" (click)="book('present')">
                 Ci sono<small>{{ presentHint() }}</small>
               </button>
-              <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy() || amLeaderTitular()"
-                      (click)="book('reserve')">
-                Riserva<small>se serve</small>
-              </button>
+              @if (!store.free()) {
+                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy() || amLeaderTitular()"
+                        (click)="book('reserve')">
+                  Riserva<small>se serve</small>
+                </button>
+              }
               <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" [disabled]="busy()" (click)="book('absent')">
                 Non ci sono<small>&nbsp;</small>
               </button>
@@ -56,7 +59,7 @@ interface SlotView {
             } @else if (!store.t()?.within24h) {
               <p class="small muted">Puoi cambiare idea liberamente fino a {{ when(changeDeadline()) }}.</p>
             }
-            <p class="small muted">Le prenotazioni si chiudono {{ when(m.bookings_close_at) }}.</p>
+            <p class="small muted">Le prenotazioni si chiudono {{ when(m.bookings_close_at) }}.@if (store.free()) { Poi il Leader sceglie titolari e riserve e ti avvisa.}</p>
           }
           @if (m.status === 'scheduled' && !store.t()?.started) {
             @if (store.mine()?.list === 'reserve' && store.t()?.within24h) {
@@ -91,6 +94,50 @@ interface SlotView {
         }
 
         <!-- Tabellone -->
+        @if (store.free()) {
+          <section class="section" aria-labelledby="team-h">
+            <header>
+              <h2 id="team-h">Titolari</h2>
+              <span class="muted small num">{{ store.team().length }}/{{ store.size() }}</span>
+            </header>
+            @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
+            <ul class="people">
+              @for (r of byName(store.team()); track r.user_id) {
+                <li [class.me]="r.user_id === session.uid()">
+                  <app-avatar [userId]="r.user_id" [size]="32" />
+                  <a class="ellipsis" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a>
+                  @if (r.is_leader) { <span class="tag armband">Leader</span> }
+                </li>
+              }
+            </ul>
+          </section>
+          @if (store.reserves().length) {
+            <section class="section" aria-labelledby="res-h">
+              <header><h2 id="res-h">Riserve</h2><span class="muted small">senza ordine</span></header>
+              <ul class="people">
+                @for (r of byName(store.reserves()); track r.user_id) {
+                  <li [class.me]="r.user_id === session.uid()">
+                    <app-avatar [userId]="r.user_id" [size]="32" />
+                    <a class="ellipsis" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @if (store.pending().length) {
+            <section class="section" aria-labelledby="pend-h">
+              <header><h2 id="pend-h">Disponibili</h2><span class="muted small">{{ store.pending().length }}, in attesa della scelta</span></header>
+              <ul class="people">
+                @for (r of byName(store.pending()); track r.user_id) {
+                  <li [class.me]="r.user_id === session.uid()">
+                    <app-avatar [userId]="r.user_id" [size]="32" />
+                    <a class="ellipsis" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        } @else {
         <section class="section" aria-labelledby="team-h">
           <header>
             <h2 id="team-h">In campo</h2>
@@ -130,6 +177,8 @@ interface SlotView {
               }
             </ol>
           </section>
+        }
+
         }
 
         <section class="section">
@@ -188,6 +237,50 @@ interface SlotView {
                 <p class="small muted">Il Leader è sempre il numero 1: si può solo segnare presente o assente.</p>
               }
             </div>
+
+            <div class="panel stack">
+              <h3>Prenotazioni</h3>
+              @if (store.t()?.bookingOpen) {
+                <p class="small muted">Aperte fino a {{ when(m.bookings_close_at) }}.</p>
+                <button class="btn small" [disabled]="busy()" (click)="closeBookings()">Chiudi le prenotazioni adesso</button>
+              } @else if (store.t()?.bookingClosed) {
+                <p class="small muted">Chiuse {{ when(m.bookings_close_at) }}. Tu puoi comunque cambiare le risposte fino all'inizio.</p>
+                <button class="btn small" [disabled]="busy()" (click)="reopenBookings()">Riapri le prenotazioni</button>
+              } @else {
+                <p class="small muted">Si aprono {{ when(m.bookings_open_at) }} e si chiudono {{ when(m.bookings_close_at) }}.</p>
+              }
+            </div>
+
+            @if (store.free()) {
+              <div class="panel stack">
+                <h3>Titolari e riserve</h3>
+                <p class="small"><strong>Titolari {{ store.team().length }}/{{ store.size() }}</strong>, riserve {{ store.reserves().length }}, da scegliere {{ store.pending().length }}</p>
+                @if (!m.lists_confirmed_at) {
+                  <p class="small muted">Scegli tra i disponibili. Con «Conferma» chi resta da scegliere diventa riserva, le prenotazioni si chiudono e tutti ricevono un avviso.</p>
+                } @else {
+                  <p class="small muted">Comunicati {{ when(m.lists_confirmed_at) }}: ogni cambio ora avvisa solo l'interessato.</p>
+                }
+                <ul class="assign">
+                  @for (r of byName(available()); track r.user_id) {
+                    <li>
+                      <app-avatar [userId]="r.user_id" [size]="28" />
+                      <span class="grow ellipsis">{{ session.name(r.user_id) }}</span>
+                      @if (r.is_leader) {
+                        <span class="tag armband">Leader</span>
+                      } @else {
+                        <div class="seg" role="group" [attr.aria-label]="'Posizione di ' + session.name(r.user_id)">
+                          <button [attr.aria-pressed]="r.list === 'team'" [disabled]="busy()" (click)="assign(r, 'team')">Titolare</button>
+                          <button [attr.aria-pressed]="r.list === 'reserve'" [disabled]="busy()" (click)="assign(r, 'reserve')">Riserva</button>
+                        </div>
+                      }
+                    </li>
+                  } @empty { <li class="small muted">Ancora nessun disponibile.</li> }
+                </ul>
+                @if (!m.lists_confirmed_at) {
+                  <button class="btn small primary" [disabled]="busy() || available().length <= 1" (click)="confirmLists()">Conferma e avvisa i giocatori</button>
+                }
+              </div>
+            }
 
             <div class="panel stack">
               <h3>Precedenza</h3>
@@ -261,6 +354,15 @@ interface SlotView {
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
     .venue-card { display: flex; flex-direction: column; gap: 12px; }
+    .people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .people li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+    .people li.me { box-shadow: inset 0 0 0 2px var(--turf); }
+    .people a { color: inherit; text-decoration: none; font-weight: 600; min-width: 0; }
+    .assign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .assign li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
+    .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
+    .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); padding: 0 12px; min-height: 36px; cursor: pointer; }
+    .seg button[aria-pressed='true'] { background: var(--turf); color: var(--on-turf, #fff); }
     .settings summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
     .settings summary::after { content: '+'; font: 600 1.4rem/1 var(--font-display); color: var(--muted); }
     .settings[open] summary::after { content: '−'; }
@@ -335,12 +437,18 @@ export class BookingTab {
   protected readonly myHeadline = computed(() => {
     const me = this.store.mine();
     if (!me) return `Ci sei ${fmtWeekday(this.store.match()!.starts_at)}?`;
+    if (this.store.free()) {
+      if (me.list === 'team') return 'Sei titolare';
+      if (me.list === 'reserve') return 'Sei tra le riserve';
+      if (me.list === 'pending') return 'Sei disponibile';
+    }
     if (me.list === 'team') return `Sei dentro con il numero ${me.slot}`;
     if (me.list === 'reserve') return `Sei riserva numero ${me.slot}`;
     return 'Hai detto che non ci sei';
   });
 
   protected readonly presentHint = computed(() => {
+    if (this.store.free()) return this.store.mine()?.choice === 'present' ? 'sei disponibile' : 'sceglie il Leader';
     const free = this.store.size() - this.store.team().length;
     if (this.store.mine()?.list === 'team') return 'sei in lista';
     return free > 0 ? (free === 1 ? 'ultimo posto' : `${free} posti liberi`) : 'vai in coda';
@@ -390,6 +498,8 @@ export class BookingTab {
   protected statusOf(userId: string): string {
     const b = this.store.board().find((r) => r.user_id === userId);
     if (!b) return 'non ha risposto';
+    if (b.list === 'pending') return 'disponibile';
+    if (this.store.free()) return b.list === 'team' ? 'titolare' : b.list === 'reserve' ? 'riserva' : 'assente';
     if (b.list === 'team') return `in squadra, n. ${b.slot}`;
     if (b.list === 'reserve') return `riserva n. ${b.slot}`;
     return 'assente';
@@ -401,6 +511,54 @@ export class BookingTab {
 
   protected canReset(userId: string): boolean {
     return !this.isTitular(userId) && this.store.board().some((r) => r.user_id === userId);
+  }
+
+  /** giocatori in ordine alfabetico, con il Leader per primo (modalità "sceglie il Leader": nessun ordine) */
+  protected byName(rows: BoardRow[]): BoardRow[] {
+    return [...rows].sort((a, b) => Number(b.is_leader) - Number(a.is_leader)
+      || this.session.name(a.user_id).localeCompare(this.session.name(b.user_id), 'it'));
+  }
+
+  /** tutti quelli che hanno detto ci sono: titolari, riserve e da scegliere */
+  protected readonly available = computed(() => this.store.board().filter((b) => b.list === 'team' || b.list === 'reserve' || b.list === 'pending'));
+
+  protected async assign(r: BoardRow, list: 'team' | 'reserve'): Promise<void> {
+    const m = this.store.match()!;
+    // toccare di nuovo la scelta attuale la annulla (solo prima della conferma)
+    const target = r.list === list && !m.lists_confirmed_at ? 'pending' : list;
+    if (target === r.list) return;
+    await this.run(async () => {
+      await this.api.leaderAssign(m.id, r.user_id, target);
+      await this.store.reload('bookings');
+    });
+  }
+
+  protected async confirmLists(): Promise<void> {
+    const n = this.store.pending().length;
+    const extra = n ? ` I ${n} ancora da scegliere diventeranno riserve.` : '';
+    if (!confirm(`Confermare titolari e riserve e avvisare tutti? Le prenotazioni si chiudono.${extra}`)) return;
+    await this.run(async () => {
+      const r = await this.api.leaderConfirmLists(this.store.match()!.id);
+      await Promise.all([this.store.reload('bookings'), this.store.reload('matches')]);
+      this.toasts.show(`Comunicati: ${r.team} titolari e ${r.reserve} riserve.`);
+    });
+  }
+
+  protected async closeBookings(): Promise<void> {
+    if (!confirm('Chiudere adesso le prenotazioni? I giocatori non potranno più cambiare la risposta.')) return;
+    await this.run(async () => {
+      await this.api.closeBookings(this.store.match()!.id);
+      await this.store.reload('matches');
+      this.toasts.show('Prenotazioni chiuse.');
+    });
+  }
+
+  protected async reopenBookings(): Promise<void> {
+    await this.run(async () => {
+      await this.api.reopenBookings(this.store.match()!.id);
+      await this.store.reload('matches');
+      this.toasts.show('Prenotazioni riaperte.');
+    });
   }
 
   protected async place(choice: Choice): Promise<void> {

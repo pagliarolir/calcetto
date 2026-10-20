@@ -1,7 +1,8 @@
+export type BookingMode = 'order' | 'free';
 export type Role = 'leader' | 'premier1' | 'premier2' | 'user';
 export type FieldRole = 'portiere' | 'difensore' | 'laterale' | 'pivot' | 'jolly';
 export type Choice = 'present' | 'absent' | 'reserve';
-export type List = 'team' | 'reserve' | 'out';
+export type List = 'team' | 'reserve' | 'out' | 'pending';
 export type Team = 'white' | 'black';
 
 export type VisibilityKey = 'last_name' | 'nickname' | 'field_role' | 'birth_date' | 'weight_kg' | 'height_cm' | 'avatar';
@@ -90,6 +91,9 @@ export interface Match {
   bookings_close_at: string;
   votes_opens_at: string;
   votes_closes_at: string;
+  /** 'order': fa fede l'ordine di prenotazione; 'free': titolari e riserve li sceglie il Leader */
+  booking_mode: BookingMode;
+  lists_confirmed_at: string | null;
 }
 
 export interface BoardRow {
@@ -253,6 +257,7 @@ export interface AppSettings {
   invite_code: string | null;
   /** classifica azzerata: contano solo le partite da questa data */
   stats_since: string | null;
+  booking_mode: BookingMode;
   players_per_team: number;
   team_a_kit: string;
   team_b_kit: string;

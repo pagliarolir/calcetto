@@ -18,6 +18,7 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 
 - Punizioni: ogni nuova funzione con cui un giocatore interviene (prenota, scrive, vota, inserisce dati) deve chiamare `perform assert_not_punished();` all'inizio. Le azioni esistenti hanno un guardiano con lo stesso nome davanti alla funzione originale `*_unchecked` (privata): per cambiarne la logica modifica la `*_unchecked`, non il guardiano. Gli inviti ad agire vanno aggiunti all'elenco dei tipi filtrati in `notify()`.
 
+- Modalità di prenotazione (`matches.booking_mode`): con `'free'` la lista `'pending'` sono i disponibili e niente ordine né promozioni automatiche; ogni nuova logica che sposta giocatori tra squadra e riserve deve valere solo per `'order'` (vedi il ramo dedicato in `_book` e `leader_reset_booking`).
 - Configurazione per partita: la dimensione della lista è `players_per_team * 2` della partita, mai un numero fisso. Nelle tabelle le squadre restano `'white'` (squadra A) e `'black'` (squadra B): i nomi veri vengono da `team_a_kit`/`team_b_kit` (`team_name(m, team)` in SQL). Gli orari `bookings_open_at`, `bookings_close_at`, `votes_opens_at`, `votes_closes_at` li calcola il trigger `trg_matches_config` dalla configurazione: non calcolarli a mano. Nei test, se sposti `starts_at` vicino a ora, imposta anche `bookings_close_at` nella stessa istruzione.
 
 ## Regole del frontend
