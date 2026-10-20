@@ -1,9 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import {
-  AppNotification, AppSettings, AttendanceRow, BoardRow, ChatMessage, Choice, LineupRow, Match, MatchFact, MvpVote,
-  PlayerVote, Result, ResultReview, Role, Scorer, StatsRow, Team, VoteSummary,
-} from './models';
+import { AppNotification, AppSettings, AttendanceRow, BoardRow, ChatMessage, Choice, LineupRow, Match, MatchFact, MvpVote, PlayerVote, Result, ResultReview, Role, Scorer, StatsRow, Team, VoteSummary, KitStatsRow, PairRow, LeaderPointsRow, LeaderPointsEntry } from './models';
 import { Supabase } from './supabase';
 import { ConfigField, MatchConfig } from './match-config';
 
@@ -217,6 +214,36 @@ export class Api {
   // ------------------------------------------------------------- statistiche
   async stats(from: string | null, to: string | null): Promise<StatsRow[]> {
     return must(await this.sb.rpc('stats_table', { p_from: from ?? '-infinity', p_to: to ?? 'infinity' })) as StatsRow[];
+  }
+
+  // ------------------------------------------------- statistiche di squadra e di coppia
+  async teamKitStats(from: string | null, to: string | null): Promise<KitStatsRow[]> {
+    return must(await this.sb.rpc('team_kit_stats', { p_from: from ?? '-infinity', p_to: to ?? 'infinity' })) as KitStatsRow[];
+  }
+
+  async playerKitStats(from: string | null, to: string | null): Promise<KitStatsRow[]> {
+    return must(await this.sb.rpc('player_kit_stats', { p_from: from ?? '-infinity', p_to: to ?? 'infinity' })) as KitStatsRow[];
+  }
+
+  async pairStats(from: string | null, to: string | null): Promise<PairRow[]> {
+    return must(await this.sb.rpc('pair_stats', { p_from: from ?? '-infinity', p_to: to ?? 'infinity' })) as PairRow[];
+  }
+
+  // ------------------------------------------------------------- punti Leader
+  async leaderPointsTable(): Promise<LeaderPointsRow[]> {
+    return must(await this.sb.rpc('leader_points_table')) as LeaderPointsRow[];
+  }
+
+  async leaderPointsHistory(limit = 50): Promise<LeaderPointsEntry[]> {
+    return must(await this.sb.from('leader_points').select('*').order('created_at', { ascending: false }).limit(limit)) as LeaderPointsEntry[];
+  }
+
+  async awardLeaderPoints(userId: string, points: number, reason: string) {
+    return must(await this.sb.rpc('award_leader_points', { p_user: userId, p_points: points, p_reason: reason }));
+  }
+
+  async deleteLeaderPoints(id: number) {
+    return must(await this.sb.rpc('delete_leader_points', { p_id: id }));
   }
 
   async history(userId: string, from: string | null, to: string | null): Promise<MatchFact[]> {
