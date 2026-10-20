@@ -4,9 +4,11 @@ import { Api } from '../core/api';
 import { fmtAgo } from '../core/format';
 import { AppNotification } from '../core/models';
 import { Unread } from '../core/unread';
+import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-inbox',
+  imports: [Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -18,6 +20,7 @@ import { Unread } from '../core/unread';
         @for (n of items(); track n.id) {
           <li>
             <button class="list-item" [class.unread]="!n.read_at" (click)="open(n)">
+              <span class="kind" [class]="'kind ' + iconOf(n.kind).tone" aria-hidden="true"><app-icon [name]="iconOf(n.kind).name" [size]="18" /></span>
               <span class="grow">
                 <strong>{{ n.title }}</strong><br />
                 <span class="small">{{ n.body }}</span>
@@ -31,10 +34,28 @@ import { Unread } from '../core/unread';
   `,
   styles: `
     .list-item.unread { background: var(--turf-soft); }
+    .kind { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
+    .kind.turf { background: var(--turf-soft); color: var(--turf); }
+    .kind.gold { background: color-mix(in srgb, var(--armband) 22%, transparent); color: color-mix(in srgb, var(--armband) 70%, var(--ink)); }
+    .kind.red { background: var(--danger-soft); color: var(--danger); }
+    .list-item.unread .kind { box-shadow: 0 0 0 2px var(--surface); }
     .list-item.unread strong::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--turf); margin-right: 8px; vertical-align: middle; }
   `,
 })
 export class InboxPage implements OnInit {
+  /** icona e tono per ogni tipo di avviso */
+  protected iconOf(kind: string): { name: string; tone: string } {
+    if (/^(punished|pardoned|late_withdrawal|match_cancelled|avatar_removed|stats_deleted)/.test(kind)) return { name: 'whistle', tone: 'red' };
+    if (/^(leader_points|votes|vote_grant|my_votes)/.test(kind)) return { name: 'star', tone: 'gold' };
+    if (/^(result|homologate|confirm)/.test(kind)) return { name: 'score', tone: '' };
+    if (/^lineup/.test(kind)) return { name: 'pitch', tone: 'turf' };
+    if (/^(match_moved|venue_changed)/.test(kind)) return { name: 'map', tone: '' };
+    if (/^(stats_)/.test(kind)) return { name: 'table', tone: '' };
+    if (/^(member_pending|guest_linked|password)/.test(kind)) return { name: 'user', tone: '' };
+    if (/^(booking|priority|need_one|reserve|placed_by|promoted|demoted|lists|chat)/.test(kind)) return { name: 'calendar', tone: 'turf' };
+    return { name: 'bell', tone: '' };
+  }
+
   private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly unread = inject(Unread);

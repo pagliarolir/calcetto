@@ -8,6 +8,11 @@ const time = fmt({ hour: '2-digit', minute: '2-digit' });
 const dateShort = fmt({ day: '2-digit', month: '2-digit', year: '2-digit' });
 
 export const fmtDayLong = (iso: string) => dayLong.format(new Date(iso));
+const dayNum = fmt({ day: 'numeric' });
+const monthShort = fmt({ month: 'short' });
+/** giorno del mese e mese abbreviato, per il riquadro calendario dell'elenco partite */
+export const fmtDayNum = (iso: string) => dayNum.format(new Date(iso));
+export const fmtMonthShort = (iso: string) => monthShort.format(new Date(iso)).replace('.', '');
 export const fmtDayShort = (iso: string) => dayShort.format(new Date(iso));
 export const fmtTime = (iso: string) => time.format(new Date(iso));
 export const fmtDate = (iso: string) => dateShort.format(new Date(iso));

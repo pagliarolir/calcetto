@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
-import { diffText, fmtDayLong, fmtTime } from '../core/format';
+import { diffText, fmtDayLong, fmtDayNum, fmtMonthShort, fmtTime, fmtWeekday } from '../core/format';
 import { kit, teamNames } from '../core/kits';
 import {
   changedFields, ConfigField, configOfSettings, hhmm, isoDate, MatchConfig, nextWeekday, shortDate, WEEKDAYS, weeklyDates,
@@ -111,8 +111,11 @@ type Panel = 'none' | 'create' | 'defaults';
         @for (m of items(); track m.id) {
           <li>
             <a class="list-item" [routerLink]="['/partita', m.id]">
-              <span class="grow"><span class="day">{{ day(m.starts_at) }}</span><br />
-                <span class="small muted">{{ time2(m.starts_at) }}@if (m.venue_name) {, {{ m.venue_name }}}, {{ m.players_per_team }} contro {{ m.players_per_team }}@if (m.booking_mode === 'free') {, sceglie il Leader}@if (m.moved) {, spostata}@if (m.status === 'cancelled') {, annullata}</span>
+              <span class="cal" [class.next]="m.status === 'scheduled'" [class.off]="m.status === 'cancelled'" aria-hidden="true">
+                <b>{{ dnum(m.starts_at) }}</b><small>{{ mon(m.starts_at) }}</small>
+              </span>
+              <span class="grow"><span class="day">{{ weekdayName(m.starts_at) }} alle {{ time2(m.starts_at) }}</span><br />
+                <span class="small muted">@if (m.venue_name) {{{ m.venue_name }}, }{{ m.players_per_team }} contro {{ m.players_per_team }}@if (m.booking_mode === 'free') {, sceglie il Leader}@if (m.moved) {, spostata}@if (m.status === 'cancelled') {, annullata}</span>
                 <span class="kits" aria-hidden="true"><i [style.background]="kitColor(m.team_a_kit)"></i><i [style.background]="kitColor(m.team_b_kit)"></i></span>
               </span>
               @if (m.results; as r) { <span class="num score">{{ text(r.diff, r.white_goals, r.black_goals, names(m)) }}</span> }
@@ -124,7 +127,16 @@ type Panel = 'none' | 'create' | 'defaults';
     </main>
   `,
   styles: `
-    .day { font-weight: 600; } .day::first-letter { text-transform: uppercase; }
+    .day { font-weight: 600; display: inline-block; } .day::first-letter { text-transform: uppercase; }
+    /* riquadro calendario: giorno grande, mese sotto; verde per le partite in programma */
+    .cal {
+      flex: none; width: 48px; height: 52px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--surface-2); color: var(--ink); line-height: 1;
+    }
+    .cal b { font: 700 1.5rem/1 var(--font-display); }
+    .cal small { font-size: 0.7rem; font-weight: 600; margin-top: 2px; }
+    .cal.next { background: var(--turf); color: var(--turf-ink); }
+    .cal.off { background: var(--danger-soft); color: var(--danger); text-decoration: line-through; }
     .score { font-size: var(--step-1); font-weight: 700; }
     .settings-link { align-self: flex-start; margin-top: -16px; padding-left: 0; }
     .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
@@ -150,6 +162,9 @@ export class MatchesPage implements OnInit {
   protected readonly today = isoDate(new Date());
   protected readonly day = fmtDayLong;
   protected readonly time2 = fmtTime;
+  protected readonly dnum = fmtDayNum;
+  protected readonly mon = fmtMonthShort;
+  protected readonly weekdayName = fmtWeekday;
   protected readonly text = diffText;
   protected readonly names = teamNames;
   protected oneDate = '';
