@@ -1,3 +1,5 @@
+/** voci delle preferenze sulle notifiche (le stesse del database: notify_category) */
+export type NotifyCategory = 'chat' | 'booking_open' | 'team_full' | 'withdrawal' | 'lineup_official' | 'lineup_change' | 'match_changes' | 'result' | 'votes';
 export type BookingMode = 'order' | 'free';
 export type Role = 'leader' | 'premier1' | 'premier2' | 'user';
 export type FieldRole = 'portiere' | 'difensore' | 'laterale' | 'pivot' | 'jolly';
@@ -17,6 +19,8 @@ export interface Profile {
   weight_kg: number | null;
   height_cm: number | null;
   visibility: Record<VisibilityKey, boolean>;
+  /** quali avvisi ricevere, per voce (voce mancante = accesa, tranne la chat) */
+  notify_prefs: Partial<Record<NotifyCategory, boolean>>;
   role: Role;
   last_seen_at: string;
   active: boolean;

@@ -5,7 +5,7 @@ import { toSquareJpeg } from '../core/image';
 import { fmtWhen } from '../core/format';
 import { Avatar } from '../ui/avatar';
 import { Api } from '../core/api';
-import { FIELD_ROLE_LABEL, FieldRole, ROLE_LABEL, VisibilityKey } from '../core/models';
+import { FIELD_ROLE_LABEL, FieldRole, ROLE_LABEL, VisibilityKey, NotifyCategory } from '../core/models';
 import { Push } from '../core/push';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
@@ -82,6 +82,20 @@ interface Form {
             @default { <p>Questo browser non supporta le notifiche push. Prova con Chrome, Edge, Firefox o Safari aggiornati.</p> }
           }
         </div>
+        <div class="panel stack prefs">
+          <h3>Cosa vuoi ricevere</h3>
+          <p class="small muted">Vale per le notifiche sul telefono e per gli Avvisi. Quelli che riguardano solo te (ad esempio entri in squadra o il Leader ti sposta) arrivano sempre.</p>
+          <ul class="toggles">
+            @for (c of notifyCategories; track c.key) {
+              <li>
+                <label class="switch">
+                  <span><strong>{{ c.label }}</strong><br /><span class="small muted">{{ c.hint }}</span></span>
+                  <input type="checkbox" [checked]="wants(c.key)" [disabled]="prefsBusy()" (change)="togglePref(c.key)" />
+                </label>
+              </li>
+            }
+          </ul>
+        </div>
       </section>
 
       <form class="section" (ngSubmit)="save()">
@@ -131,6 +145,10 @@ interface Form {
     label.btn { position: relative; }
     label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .opt { display: flex; align-items: flex-end; gap: 10px; }
+    .toggles { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .toggles li { padding: 10px 0; border-top: 1px solid var(--line); }
+    .toggles li:first-child { border-top: 0; padding-top: 0; }
+    .toggles .switch { align-items: center; gap: 12px; }
     .vis { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; padding-bottom: 4px; cursor: pointer; }
     .toggle {
       appearance: none; width: 46px; height: 28px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line);
@@ -277,6 +295,40 @@ export class ProfilePage {
     } catch (err) {
       this.visibility.set({ ...v, avatar: !v.avatar });
       this.toasts.error(errorMessage(err));
+    }
+  }
+
+  // --------------------------------------------------------- quali notifiche
+  protected readonly notifyCategories: { key: NotifyCategory; label: string; hint: string }[] = [
+    { key: 'chat', label: 'Messaggi in chat', hint: 'Quando qualcuno scrive nella chat di una partita in cui sei in lista' },
+    { key: 'booking_open', label: 'Apertura delle prenotazioni', hint: 'Quando puoi rispondere per la prossima partita' },
+    { key: 'team_full', label: 'Squadra al completo', hint: 'Quando la lista arriva a 10: chi risponde dopo va tra le riserve' },
+    { key: 'withdrawal', label: 'Rinuncia di un titolare', hint: 'Quando un titolare non gioca più o manca un giocatore' },
+    { key: 'lineup_official', label: 'Formazioni ufficiali', hint: 'Quando escono le squadre' },
+    { key: 'lineup_change', label: 'Cambi di formazione', hint: 'Quando le squadre ufficiali cambiano' },
+    { key: 'match_changes', label: 'Giorno, orario o campo', hint: 'Quando la partita si sposta, cambia campo o viene annullata' },
+    { key: 'result', label: 'Risultato', hint: 'Quando si inserisce, si conferma o si contesta il risultato' },
+    { key: 'votes', label: 'Votazioni', hint: 'Quando puoi votare i compagni' },
+  ];
+  protected readonly prefsBusy = signal(false);
+
+  /** voce mancante = accesa, tranne la chat (spenta finché non la accendi) */
+  protected wants(key: NotifyCategory): boolean {
+    return this.session.profile()?.notify_prefs?.[key] ?? key !== 'chat';
+  }
+
+  protected async togglePref(key: NotifyCategory): Promise<void> {
+    const uid = this.session.uid();
+    if (!uid) return;
+    const next = { ...(this.session.profile()?.notify_prefs ?? {}), [key]: !this.wants(key) };
+    this.prefsBusy.set(true);
+    try {
+      await this.api.updateProfile(uid, { notify_prefs: next });
+      await this.session.refresh();
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    } finally {
+      this.prefsBusy.set(false);
     }
   }
 
