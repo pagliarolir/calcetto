@@ -40,7 +40,7 @@ import { Toasts } from '../core/toast';
           </label>
           @if (error()) { <p class="note warn" role="alert">{{ error() }}</p> }
           <button class="btn primary block" type="submit" [disabled]="busy()">Salva la nuova password</button>
-          @if (!forced()) { <a class="btn ghost block" routerLink="/profilo">Annulla</a> }
+          @if (!forced()) { <a class="btn ghost block" routerLink="/profilo" [queryParams]="{ scheda: 'sicurezza' }">Annulla</a> }
         </form>
       }
     </main>

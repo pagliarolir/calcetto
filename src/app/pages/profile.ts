@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Icon } from '../ui/icon';
 import { toSquareJpeg } from '../core/image';
 import { fmtWhen } from '../core/format';
 import { Avatar } from '../ui/avatar';
@@ -21,9 +22,11 @@ interface Form {
   height_cm: number | null;
 }
 
+type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
+
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, Avatar],
+  imports: [FormsModule, RouterLink, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -38,66 +41,18 @@ interface Form {
         </div>
       </header>
 
-      <section class="section">
-        <header><h2>Foto</h2></header>
-        <div class="panel stack">
-          @if (preview(); as pv) {
-            <div class="row">
-              <img class="preview" [src]="pv.url" alt="Anteprima della nuova foto profilo" />
-              <p class="small">Così la vedranno gli altri: ritagliata in un cerchio. Va bene?</p>
-            </div>
-            <div class="row-wrap">
-              <button class="btn small primary" [disabled]="photoBusy()" (click)="savePhoto()">{{ photoBusy() ? 'Caricamento…' : 'Salva la foto' }}</button>
-              <button class="btn small ghost" [disabled]="photoBusy()" (click)="cancelPhoto()">Annulla</button>
-            </div>
-          } @else {
-            <div class="row-wrap">
-              <label class="btn small primary">
-                {{ session.profile()?.avatar_path ? 'Cambia foto' : 'Aggiungi una foto' }}
-                <input type="file" accept="image/*" class="sr-only" (change)="pickPhoto($event)" />
-              </label>
-              @if (session.profile()?.avatar_path) {
-                <button class="btn small ghost" [disabled]="photoBusy()" (click)="removePhoto()">Rimuovi</button>
-              }
-            </div>
-          }
-          <label class="switch">
-            <span>Mostra la foto agli altri</span>
-            <input type="checkbox" [checked]="visibility().avatar" (change)="togglePhotoVisibility()" />
-          </label>
-          <p class="small muted">Compare nelle formazioni, nella classifica, nelle pagelle e nella tua scheda. Se la nascondi, gli altri vedono le tue iniziali.</p>
-        </div>
-      </section>
+      <nav class="ptabs" role="tablist" aria-label="Profilo">
+        @for (t of tabs; track t.id) {
+          <button role="tab" [id]="'ptab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'ppanel-' + t.id"
+                  [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">
+            <app-icon [name]="t.icon" [size]="20" /><span>{{ t.label }}</span>
+          </button>
+        }
+      </nav>
 
-      <section class="section">
-        <header><h2>Notifiche</h2></header>
-        <div class="panel stack">
-          @switch (push.state()) {
-            @case ('on') { <p>Le notifiche sono attive su questo dispositivo.</p>
-              <button class="btn small" (click)="togglePush(false)">Disattiva su questo dispositivo</button> }
-            @case ('off') { <p>Attivale per sapere quando aprono le prenotazioni, quando escono le squadre e quando si vota.</p>
-              <button class="btn primary" (click)="togglePush(true)">Attiva le notifiche</button> }
-            @case ('denied') { <p>Le notifiche sono bloccate nelle impostazioni del browser per questo sito. Sbloccale da lì e torna qui.</p> }
-            @case ('needs-install') { <p>Su iPhone le notifiche funzionano solo con l'app sulla schermata Home: tocca Condividi, poi "Aggiungi alla schermata Home", e apri l'app da lì.</p> }
-            @default { <p>Questo browser non supporta le notifiche push. Prova con Chrome, Edge, Firefox o Safari aggiornati.</p> }
-          }
-        </div>
-        <div class="panel stack prefs">
-          <h3>Cosa vuoi ricevere</h3>
-          <p class="small muted">Vale per le notifiche sul telefono e per gli Avvisi. Quelli che riguardano solo te (ad esempio entri in squadra o il Leader ti sposta) arrivano sempre.</p>
-          <ul class="toggles">
-            @for (c of notifyCategories; track c.key) {
-              <li>
-                <label class="switch">
-                  <span><strong>{{ c.label }}</strong><br /><span class="small muted">{{ c.hint }}</span></span>
-                  <input type="checkbox" [checked]="wants(c.key)" [disabled]="prefsBusy()" (change)="togglePref(c.key)" />
-                </label>
-              </li>
-            }
-          </ul>
-        </div>
-      </section>
-
+      <div class="ppanel" role="tabpanel" [id]="'ppanel-' + tab()" [attr.aria-labelledby]="'ptab-' + tab()">
+        @switch (tab()) {
+          @case ('dati') {
       <form class="section" (ngSubmit)="save()">
         <header><h2>I tuoi dati</h2></header>
         <p class="small muted">Solo il nome è obbligatorio. Con l'interruttore decidi cosa vedono gli altri.</p>
@@ -130,17 +85,91 @@ interface Form {
         </div>
         <button class="btn primary block" type="submit" [disabled]="busy()">Salva il profilo</button>
       </form>
-
+          }
+          @case ('foto') {
+      <section class="section">
+        <header><h2>Foto</h2></header>
+        <div class="panel stack">
+          @if (preview(); as pv) {
+            <div class="row">
+              <img class="preview" [src]="pv.url" alt="Anteprima della nuova foto profilo" />
+              <p class="small">Così la vedranno gli altri: ritagliata in un cerchio. Va bene?</p>
+            </div>
+            <div class="row-wrap">
+              <button class="btn small primary" [disabled]="photoBusy()" (click)="savePhoto()">{{ photoBusy() ? 'Caricamento…' : 'Salva la foto' }}</button>
+              <button class="btn small ghost" [disabled]="photoBusy()" (click)="cancelPhoto()">Annulla</button>
+            </div>
+          } @else {
+            <div class="row-wrap">
+              <label class="btn small primary">
+                {{ session.profile()?.avatar_path ? 'Cambia foto' : 'Aggiungi una foto' }}
+                <input type="file" accept="image/*" class="sr-only" (change)="pickPhoto($event)" />
+              </label>
+              @if (session.profile()?.avatar_path) {
+                <button class="btn small ghost" [disabled]="photoBusy()" (click)="removePhoto()">Rimuovi</button>
+              }
+            </div>
+          }
+          <label class="switch">
+            <span>Mostra la foto agli altri</span>
+            <input type="checkbox" [checked]="visibility().avatar" (change)="togglePhotoVisibility()" />
+          </label>
+          <p class="small muted">Compare nelle formazioni, nella classifica, nelle pagelle e nella tua scheda. Se la nascondi, gli altri vedono le tue iniziali.</p>
+        </div>
+      </section>
+          }
+          @case ('notifiche') {
+      <section class="section">
+        <header><h2>Notifiche</h2></header>
+        <div class="panel stack">
+          @switch (push.state()) {
+            @case ('on') { <p>Le notifiche sono attive su questo dispositivo.</p>
+              <button class="btn small" (click)="togglePush(false)">Disattiva su questo dispositivo</button> }
+            @case ('off') { <p>Attivale per sapere quando aprono le prenotazioni, quando escono le squadre e quando si vota.</p>
+              <button class="btn primary" (click)="togglePush(true)">Attiva le notifiche</button> }
+            @case ('denied') { <p>Le notifiche sono bloccate nelle impostazioni del browser per questo sito. Sbloccale da lì e torna qui.</p> }
+            @case ('needs-install') { <p>Su iPhone le notifiche funzionano solo con l'app sulla schermata Home: tocca Condividi, poi "Aggiungi alla schermata Home", e apri l'app da lì.</p> }
+            @default { <p>Questo browser non supporta le notifiche push. Prova con Chrome, Edge, Firefox o Safari aggiornati.</p> }
+          }
+        </div>
+        <div class="panel stack prefs">
+          <h3>Cosa vuoi ricevere</h3>
+          <p class="small muted">Vale per le notifiche sul telefono e per gli Avvisi. Quelli che riguardano solo te (ad esempio entri in squadra o il Leader ti sposta) arrivano sempre.</p>
+          <ul class="toggles">
+            @for (c of notifyCategories; track c.key) {
+              <li>
+                <label class="switch">
+                  <span><strong>{{ c.label }}</strong><br /><span class="small muted">{{ c.hint }}</span></span>
+                  <input type="checkbox" [checked]="wants(c.key)" [disabled]="prefsBusy()" (change)="togglePref(c.key)" />
+                </label>
+              </li>
+            }
+          </ul>
+        </div>
+      </section>
+          }
+          @case ('sicurezza') {
       <section class="section">
         <header><h2>Sicurezza</h2></header>
         <a class="btn" routerLink="/nuova-password">Cambia password</a>
       </section>
-
       <button class="btn ghost" (click)="logout()">Esci dall'account</button>
+          }
+        }
+      </div>
     </main>
   `,
   styles: `
     .me { display: flex; align-items: center; gap: 16px; }
+    /* schede del profilo: icona sopra, nome sotto */
+    .ptabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); margin-top: -8px; }
+    .ptabs button {
+      appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
+      min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      font: 600 0.75rem/1 var(--font-body); transition: background 160ms, color 160ms;
+    }
+    .ptabs button[aria-selected='true'] { background: var(--surface); color: var(--turf); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
+    .ppanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
     .preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px var(--line); }
     label.btn { position: relative; }
     label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
@@ -168,6 +197,33 @@ export class ProfilePage {
   private readonly router = inject(Router);
 
   protected readonly roleLabel = ROLE_LABEL;
+  protected readonly tabs: { id: ProfileTab; label: string; icon: string }[] = [
+    { id: 'dati', label: 'Dati', icon: 'user' },
+    { id: 'foto', label: 'Foto', icon: 'camera' },
+    { id: 'notifiche', label: 'Notifiche', icon: 'bell' },
+    { id: 'sicurezza', label: 'Sicurezza', icon: 'key' },
+  ];
+  protected readonly tab = signal<ProfileTab>(
+    ((): ProfileTab => {
+      const q = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda') as ProfileTab | null;
+      return q && ['dati', 'foto', 'notifiche', 'sicurezza'].includes(q) ? q : 'dati';
+    })(),
+  );
+
+  protected selectTab(t: ProfileTab): void {
+    this.tab.set(t);
+    void this.router.navigate([], { queryParams: { scheda: t === 'dati' ? null : t }, replaceUrl: true });
+  }
+
+  /** frecce sinistra e destra per passare da una scheda all'altra */
+  protected tabKey(e: KeyboardEvent): void {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const i = this.tabs.findIndex((t) => t.id === this.tab());
+    const next = this.tabs[(i + (e.key === 'ArrowRight' ? 1 : this.tabs.length - 1)) % this.tabs.length].id;
+    this.selectTab(next);
+    document.getElementById('ptab-' + next)?.focus();
+  }
   protected readonly when = fmtWhen;
   protected readonly fieldRoles = Object.entries(FIELD_ROLE_LABEL);
   protected readonly optional: { key: VisibilityKey; label: string }[] = [
