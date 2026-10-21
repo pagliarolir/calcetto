@@ -272,7 +272,7 @@ import { scrollAppTo } from '../core/scroller';
             <p class="small muted">Giorno, ora, numero di giocatori, colori e orari di prenotazioni e votazioni si impostano in <a routerLink="/partite">Partite</a>, nella configurazione predefinita.</p>
             <div class="row">
               <label class="field grow"><span>Conferme per omologare</span><input class="input" type="number" min="1" max="9" name="q" [(ngModel)]="s.quorum" /></label>
-              <label class="field grow"><span>Votanti per le medie</span><input class="input" type="number" min="1" max="9" name="vm" [(ngModel)]="s.vote_min_voters" /></label>
+              <label class="field grow"><span>Votanti minimi perché la media conti in classifica</span><input class="input" type="number" min="1" max="9" name="vm" [(ngModel)]="s.vote_min_voters" /></label>
             </div>
             <button class="btn primary" type="submit">Salva le regole</button>
           </div>

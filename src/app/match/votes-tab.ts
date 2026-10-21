@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Api } from '../core/api';
 import { fmtWhen } from '../core/format';
 import { MvpVote, PlayerVote, Team, VoteSummary } from '../core/models';
@@ -8,11 +8,12 @@ import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
+import { VoteSlider } from '../ui/vote-slider';
 import { kit } from '../core/kits';
 
 @Component({
   selector: 'app-votes-tab',
-  imports: [Avatar],
+  imports: [Avatar, VoteSlider],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -33,22 +34,23 @@ import { kit } from '../core/kits';
             <!-- ================================================================ VOTA -->
             @case ('vota') {
               <section class="stack" aria-label="Vota">
-                <p class="small muted">Tocca un voto per cambiarlo: chi non tocchi prende <strong>6</strong>. La stella sceglie il migliore in campo di ogni squadra. I voti restano segreti e, una volta confermati, non si cambiano più.</p>
+                <p class="small muted">Trascina il cursore di lato per dare il voto: chi non tocchi prende <strong>6</strong>. Scorrendo la pagina i voti non cambiano. La stella sceglie il migliore in campo di ogni squadra. I voti restano segreti e, una volta confermati, non si cambiano più.</p>
                 @for (g of groups(); track g.key) {
                   <div class="group">
                     <h3 class="ghead"><i class="dot" [style.background]="g.color"></i>{{ g.label }}</h3>
                     <ul class="rows">
                       @for (id of g.ids; track id) {
-                        <li>
-                          <app-avatar [userId]="id" [team]="team(id)" [size]="38" />
-                          <span class="grow ellipsis name">{{ session.name(id) }}</span>
-                          @if (g.team) {
-                            <button class="star" [attr.aria-pressed]="mvp()[g.team] === id" (click)="pickMvp(g.team, id)"
-                                    [attr.aria-label]="'Migliore in campo dei ' + g.label + ': ' + session.name(id)">★</button>
-                          }
-                          <button class="rate" [class]="'rate ' + tone(score(id))" (click)="openPicker(id)"
-                                  [attr.aria-label]="'Voto a ' + session.name(id) + ': ' + fmt(score(id)) + '. Tocca per cambiarlo'"
-                                  [class.touched]="scores().has(id)">{{ fmt(score(id)) }}</button>
+                        <li class="voting">
+                          <div class="line">
+                            <app-avatar [userId]="id" [team]="team(id)" [size]="38" />
+                            <span class="grow ellipsis name">{{ session.name(id) }}</span>
+                            @if (g.team) {
+                              <button class="star" [attr.aria-pressed]="mvp()[g.team] === id" (click)="pickMvp(g.team, id)"
+                                      [attr.aria-label]="'Migliore in campo dei ' + g.label + ': ' + session.name(id)">★</button>
+                            }
+                            <span [class]="'rate static ' + tone(score(id))" [class.touched]="scores().has(id)" aria-hidden="true">{{ fmt(score(id)) }}</span>
+                          </div>
+                          <app-vote-slider [value]="score(id)" (valueChange)="setScore(id, $event)" [label]="'Voto a ' + session.name(id)" />
                         </li>
                       }
                     </ul>
@@ -65,8 +67,8 @@ import { kit } from '../core/kits';
             @case ('medie') {
               <section class="stack" aria-label="Medie">
                 @if (summary(); as s) {
-                  @if (s.players) {
-                    <p class="small muted">{{ s.voters === 1 ? '1 ha votato' : s.voters + ' hanno votato' }}</p>
+                  @if (s.voters && s.players) {
+                    <p class="small muted">{{ s.voters === 1 ? '1 ha votato' : s.voters + ' hanno votato' }}: le medie si aggiornano a ogni voto.</p>
                     <ol class="rows ranked">
                       @for (p of s.players; track p.user_id; let i = $index) {
                         <li>
@@ -80,13 +82,7 @@ import { kit } from '../core/kits';
                       }
                     </ol>
                   } @else {
-                    <div class="empty">
-                      <p>Le medie compaiono quando avranno votato almeno {{ s.threshold }} giocatori.</p>
-                      <div class="meter" role="progressbar" [attr.aria-valuenow]="s.voters" aria-valuemin="0" [attr.aria-valuemax]="s.threshold">
-                        <i [style.width.%]="(100 * s.voters) / s.threshold"></i>
-                      </div>
-                      <p class="small">{{ s.voters }} su {{ s.threshold }}</p>
-                    </div>
+                    <p class="empty">Ancora nessuno ha votato.</p>
                   }
                 }
               </section>
@@ -152,23 +148,6 @@ import { kit } from '../core/kits';
           }
         </div>
 
-        <!-- pannello che sale dal basso: un tocco sceglie il voto. <dialog> nativo: sta sopra tutto, barra compresa -->
-        <dialog #sheet class="sheet" (close)="picking.set(null)" (click)="backdropClick($event)" [attr.aria-label]="picking() ? 'Voto a ' + session.name(picking()!) : null">
-          @if (picking(); as id) {
-            <div class="grab" aria-hidden="true"></div>
-            <div class="sheet-head">
-              <app-avatar [userId]="id" [team]="team(id)" [size]="40" />
-              <div class="grow"><strong>{{ session.name(id) }}</strong><br /><span class="small muted">Scegli il voto</span></div>
-              <span [class]="'rate static ' + tone(score(id))">{{ fmt(score(id)) }}</span>
-            </div>
-            <div class="grid" role="group" aria-label="Voti">
-              @for (v of values; track v) {
-                <button [class]="'pick ' + tone(v)" [attr.aria-pressed]="score(id) === v" (click)="setScore(id, v)">{{ fmt(v) }}</button>
-              }
-            </div>
-            <button class="btn block ghost" (click)="closePicker()">Chiudi</button>
-          }
-        </dialog>
       }
     }
   `,
@@ -190,6 +169,8 @@ import { kit } from '../core/kits';
     .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
     .rows li { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; min-height: 58px; border-top: 1px solid var(--line); min-width: 0; }
     .rows li:first-child { border-top: 0; }
+    .rows li.voting { flex-direction: column; align-items: stretch; gap: 0; padding-bottom: 2px; }
+    .line { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .rows.tight { border: 0; border-radius: 0; margin-top: 8px; }
     .rows.tight li { min-height: 40px; padding: 4px 0; }
     .name { font-weight: 600; }
@@ -203,10 +184,9 @@ import { kit } from '../core/kits';
       font: 700 1.2rem/1 var(--font-display); color: #fff; background: var(--muted);
       transition: transform 160ms var(--ease-spring);
     }
-    .rate:active { transform: scale(0.94); }
     .rate.static { cursor: default; }
     .rate.small { min-width: 42px; height: 30px; font-size: 1rem; border-radius: 9px; }
-    .rate:not(.touched):not(.static) { box-shadow: inset 0 0 0 2px rgb(255 255 255 / 35%); }
+    .rate:not(.touched) { opacity: 0.85; }
     .top { background: #1d5fd1; } .good { background: #1f7a4a; } .ok { background: #4f7a12; } .meh { background: #b45309; } .bad { background: #b93a26; } .none { background: var(--surface-2); color: var(--muted); }
 
     .star {
@@ -218,31 +198,10 @@ import { kit } from '../core/kits';
 
     .confirm { position: sticky; bottom: 8px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 6px 24px rgb(20 32 25 / 16%); }
 
-    .meter { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 12px auto 6px; max-width: 220px; }
-    .meter i { display: block; height: 100%; background: var(--turf); border-radius: inherit; }
 
     .voter summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 36px; }
     .voter summary::-webkit-details-marker { display: none; }
 
-    /* pannello dal basso */
-    .sheet {
-      position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 90vh; border: 0; color: var(--ink);
-      background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-      box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
-    }
-    .sheet[open] { display: flex; flex-direction: column; gap: 14px; animation: rise 260ms var(--ease-out); }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); animation: fade 160ms ease-out; }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
-    .sheet-head { display: flex; align-items: center; gap: 12px; }
-    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .pick {
-      appearance: none; border: 0; min-height: 52px; border-radius: 14px; cursor: pointer;
-      font: 700 1.25rem/1 var(--font-display); color: #fff; opacity: 0.88;
-    }
-    .pick[aria-pressed='true'] { opacity: 1; box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink); }
-    @keyframes rise { from { transform: translateY(100%); } to { transform: none; } }
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .sheet[open], .sheet::backdrop { animation: none; } }
   `,
 })
 export class VotesTab {
@@ -267,8 +226,6 @@ export class VotesTab {
   protected readonly participants = computed(() => this.store.team().map((b) => b.user_id).filter((id) => id !== this.session.uid()));
   /** tutti quelli da votare (chi vota non vota sé stesso) */
   protected readonly toVote = this.participants;
-  protected readonly values = Array.from({ length: 19 }, (_, i) => 1 + i / 2);
-  protected readonly picking = signal<string | null>(null);
   protected readonly pane = signal<'vota' | 'medie' | 'miei' | 'tutti'>('medie');
   protected readonly given = signal<{ id: string; score: number }[]>([]);
   protected readonly myMvp = signal<{ white: string | null; black: string | null }>({ white: null, black: null });
@@ -379,30 +336,10 @@ export class VotesTab {
     return 'bad';
   }
 
-  private readonly sheet = viewChild<ElementRef<HTMLDialogElement>>('sheet');
-
-  protected openPicker(id: string): void {
-    this.picking.set(id);
-    const d = this.sheet()?.nativeElement;
-    if (d && !d.open) d.showModal();
-  }
-
-  protected closePicker(): void {
-    const d = this.sheet()?.nativeElement;
-    if (d?.open) d.close();   // l'evento close azzera la scelta
-    else this.picking.set(null);
-  }
-
-  /** un tocco fuori dal pannello (sullo sfondo) lo chiude */
-  protected backdropClick(e: MouseEvent): void {
-    if (e.target === this.sheet()?.nativeElement) this.closePicker();
-  }
-
   protected setScore(id: string, value: number): void {
     const m = new Map(this.scores());
     m.set(id, value);
     this.scores.set(m);
-    this.closePicker();
   }
 
   protected pickMvp(t: Team, id: string): void {

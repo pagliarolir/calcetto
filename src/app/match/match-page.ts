@@ -31,7 +31,7 @@ import { MatchStore } from './match-store';
           <!-- tabellone: le due squadre ai lati, al centro orario o punteggio -->
           <div class="board" [class.played]="!!scoreboard()">
             <div class="side" [class.lose]="scoreboard()?.win === -1">
-              <span class="kit" [style.background]="kitA().color" [style.color]="kitA().ink" aria-hidden="true"><app-icon name="shirt" [size]="24" /></span>
+              <span class="kit" [style.background]="kitA().color" [style.color]="kitA().ink" aria-hidden="true"><app-icon name="shirt" [size]="20" /></span>
               <span class="tname">{{ store.teamNames().white }}</span>
             </div>
             <div class="mid">
@@ -43,38 +43,32 @@ import { MatchStore } from './match-store';
                 <span class="sub">fino alle {{ until() }}</span>
               }
             </div>
-            <div class="side" [class.lose]="scoreboard()?.win === 1">
-              <span class="kit" [style.background]="kitB().color" [style.color]="kitB().ink" aria-hidden="true"><app-icon name="shirt" [size]="24" /></span>
+            <div class="side right" [class.lose]="scoreboard()?.win === 1">
+              <span class="kit" [style.background]="kitB().color" [style.color]="kitB().ink" aria-hidden="true"><app-icon name="shirt" [size]="20" /></span>
               <span class="tname">{{ store.teamNames().black }}</span>
             </div>
           </div>
 
-          <h1 class="date">{{ day() }}@if (scoreboard()) {, {{ kickoff() }}}</h1>
-          @if (m.moved || m.status === 'cancelled' || store.result()?.status === 'pending') {
-            <p class="flags">
-              @if (m.moved) { <span class="tag armband">Spostata</span> }
-              @if (m.status === 'cancelled') { <span class="tag danger">Annullata</span> }
-              @if (store.result()?.status === 'pending') { <span class="tag">risultato da omologare</span> }
-            </p>
-          }
-          @if (m.venue_name || m.venue_address) {
-            <div class="venue">
-              @if (m.venue_name) {
-                @if (m.venue_url) {
-                  <a class="venue-name" [href]="m.venue_url" target="_blank" rel="noopener" [attr.aria-label]="m.venue_name + ': sito del circolo'">
-                    {{ m.venue_name }} <app-icon name="external" [size]="14" />
-                  </a>
-                } @else {
-                  <span class="venue-name">{{ m.venue_name }}</span>
-                }
-              }
-              @if (maps(); as href) {
-                <a class="venue-addr" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'Apri nelle mappe: ' + (address() || m.venue_name)">
-                  <app-icon name="map" [size]="16" /> <span>{{ address() || 'Apri nelle mappe' }}</span>
+          <div class="info">
+            <h1 class="date">{{ day() }}@if (scoreboard()) {, {{ kickoff() }}}</h1>
+            @if (m.moved) { <span class="tag armband">Spostata</span> }
+            @if (m.status === 'cancelled') { <span class="tag danger">Annullata</span> }
+            @if (store.result()?.status === 'pending') { <span class="tag">da omologare</span> }
+            @if (m.venue_name) {
+              @if (m.venue_url) {
+                <a class="venue-name" [href]="m.venue_url" target="_blank" rel="noopener" [attr.aria-label]="m.venue_name + ': sito del circolo'">
+                  {{ m.venue_name }} <app-icon name="external" [size]="13" />
                 </a>
+              } @else {
+                <span class="venue-name">{{ m.venue_name }}</span>
               }
-            </div>
-          }
+            }
+            @if (maps(); as href) {
+              <a class="venue-addr" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'Apri nelle mappe: ' + (address() || m.venue_name)">
+                <app-icon name="map" [size]="15" /> <span>{{ address() || 'Apri nelle mappe' }}</span>
+              </a>
+            }
+          </div>
         </div>
         <nav class="tabs" aria-label="Sezioni della partita">
           <a routerLink="." [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="on">Lista</a>
@@ -102,29 +96,29 @@ import { MatchStore } from './match-store';
       padding-top: env(safe-area-inset-top);
     }
     @media (prefers-color-scheme: dark) { .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
-    .hero-in { max-width: 640px; margin: 0 auto; padding: 4px 16px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-    .skeleton { height: 190px; }
-    .topbar { align-self: stretch; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
+    .hero-in { max-width: 640px; margin: 0 auto; padding: 0 16px 4px; display: flex; flex-direction: column; gap: 2px; }
+    .skeleton { height: 160px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
     .link { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: 0.85; font-size: var(--step--1); font-weight: 600; text-decoration: none; min-height: 36px; }
-    .status { font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
-    .board { align-self: stretch; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 6px 0 2px; }
-    .side { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; transition: opacity 200ms; }
+    .status { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
+    /* tabellone su tutta la larghezza: squadre agli estremi, orario o punteggio al centro */
+    .board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 2px 0; }
+    .side { display: flex; align-items: center; gap: 10px; min-width: 0; transition: opacity 200ms; }
+    .side.right { flex-direction: row-reverse; text-align: right; }
     .side.lose { opacity: 0.55; }
-    .kit { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 3px rgb(255 255 255 / 22%), 0 6px 16px rgb(0 0 0 / 22%); }
-    .tname { font: 600 var(--step-1)/1 var(--font-display); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mid { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 120px; }
-    .big { font: 700 3.4rem/0.9 var(--font-display); letter-spacing: 0.01em; }
-    .sub { font-size: 0.75rem; font-weight: 600; opacity: 0.8; }
-    .date { font: 600 var(--step-1)/1.15 var(--font-body); margin-top: 2px; }
+    .kit { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 2px rgb(255 255 255 / 22%), 0 4px 10px rgb(0 0 0 / 20%); }
+    .tname { font: 600 1.2rem/1 var(--font-display); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mid { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    .big { font: 700 2.6rem/0.9 var(--font-display); letter-spacing: 0.01em; white-space: nowrap; }
+    .sub { font-size: 0.7rem; font-weight: 600; opacity: 0.8; white-space: nowrap; }
+    /* data e campo: righe sottili che si affiancano se c'è spazio */
+    .info { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; column-gap: 12px; row-gap: 0; font-size: var(--step--1); }
+    .date { font: 600 var(--step--1)/1.2 var(--font-body); }
     .date::first-letter { text-transform: uppercase; }
-    .flags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-    .venue { display: flex; flex-direction: column; align-items: center; gap: 0; }
-    .venue-name { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; color: inherit; font-weight: 600; font-size: var(--step--1); text-decoration: none; }
+    .info .tag { font-size: 0.7rem; }
+    .venue-name { display: inline-flex; align-items: center; gap: 4px; min-height: 26px; color: inherit; font-weight: 600; text-decoration: none; }
     a.venue-name { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-    .venue-addr {
-      display: inline-flex; align-items: center; gap: 6px; min-height: 28px; color: inherit; opacity: 0.85;
-      font-size: var(--step--1); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
-    }
+    .venue-addr { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; color: inherit; opacity: 0.85; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .venue-addr app-icon { flex: none; }
     .tabs {
       max-width: 640px; margin: 0 auto; display: flex; gap: 4px; overflow-x: auto; padding: 0 12px;
@@ -132,7 +126,7 @@ import { MatchStore } from './match-store';
     }
     .tabs::-webkit-scrollbar { display: none; }
     .tabs a {
-      flex: none; position: relative; padding: 10px 12px 12px; color: inherit; text-decoration: none;
+      flex: none; position: relative; padding: 8px 12px 10px; color: inherit; text-decoration: none;
       opacity: 0.75; font-weight: 600; font-size: var(--step--1);
     }
     .tabs a.on { opacity: 1; }

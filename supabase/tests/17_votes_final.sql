@@ -47,7 +47,7 @@ select (select count(*) from player_votes where voter_id = pid('P1')) as voti_de
 set role authenticated;
 select as_user('P2'); select count(*) as voti_visti_da_p2, count(*) filter (where voter_id <> pid('P2')) as di_altri from player_votes;
 select as_user('P1'); select count(distinct voter_id) as votanti_visti_dal_leader from player_votes;
-select as_user('P3'); select (vote_summary(mid())->>'voters')::int as votanti, vote_summary(mid())->'players' is null or jsonb_typeof(vote_summary(mid())->'players') = 'null' as medie_ancora_nascoste;
+select as_user('P3'); select (vote_summary(mid())->>'voters')::int as votanti, vote_summary(mid())->'players' is null or jsonb_typeof(vote_summary(mid())->'players') = 'null' as medie_nascoste;   -- atteso f: le medie si vedono sempre
 reset role;
 
 \echo '--- 6) nessuno puo cambiare i voti direttamente nella tabella (attesi 2 errori)'
