@@ -65,7 +65,7 @@ select as_user('P'||g), review_result(mid(), true) from generate_series(5,9) g;
 reset role;
 select status, homologated_by from results;
 
-\echo '--- voti: 4 votanti => medie nascoste; 5 => visibili'
+\echo '--- voti: le medie si vedono sempre (atteso hidden = f gia con 4 votanti)'
 set role authenticated;
 select as_user(nm(l.user_id)), submit_votes(mid(),
   (select jsonb_agg(jsonb_build_object('target_id', t.user_id, 'score', 5 + (abs(hashtext(t.user_id::text||l.user_id::text)) % 9) / 2.0)) from lineup t where t.user_id <> l.user_id), null, null)
