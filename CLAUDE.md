@@ -16,6 +16,8 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 - Notifiche: usa `notify(...)`, che accoda in `notifications`; l'invio push è automatico.
 - Aggiungi uno scenario in `supabase/tests/` per ogni regola nuova o modificata.
 
+- Permessi espliciti (Supabase non li dà più in automatico alle nuove tabelle dal 30/10/2026): ogni migrazione che crea una tabella o una vista in `public` dichiara subito i suoi grant: `service_role` select, insert, update, delete; `authenticated` solo ciò che serve (di norma select, il resto passa da funzioni); niente ad `anon`. I test non simulano permessi automatici, quindi una grant mancante fa fallire la suite.
+- Viste: niente viste "security definer". Se una vista deve leggere oltre le regole di sicurezza della tabella, metti la logica in una funzione `security definer` e crea la vista con `with (security_invoker = true)` che legge dalla funzione (come `members` / `members_list`).
 - Punizioni: ogni nuova funzione con cui un giocatore interviene (prenota, scrive, vota, inserisce dati) deve chiamare `perform assert_not_punished();` all'inizio. Le azioni esistenti hanno un guardiano con lo stesso nome davanti alla funzione originale `*_unchecked` (privata): per cambiarne la logica modifica la `*_unchecked`, non il guardiano. Gli inviti ad agire vanno aggiunti all'elenco dei tipi filtrati in `notify()`.
 
 - Modalità di prenotazione (`matches.booking_mode`): con `'free'` la lista `'pending'` sono i disponibili e niente ordine né promozioni automatiche; ogni nuova logica che sposta giocatori tra squadra e riserve deve valere solo per `'order'` (vedi il ramo dedicato in `_book` e `leader_reset_booking`).
