@@ -45,14 +45,16 @@ import { Icon } from '../ui/icon';
 export class InboxPage implements OnInit {
   /** icona e tono per ogni tipo di avviso */
   protected iconOf(kind: string): { name: string; tone: string } {
-    if (/^(punished|pardoned|late_withdrawal|match_cancelled|avatar_removed|stats_deleted)/.test(kind)) return { name: 'whistle', tone: 'red' };
+    if (kind === 'chat') return { name: 'chat', tone: 'turf' };
+    if (kind === 'team_full') return { name: 'list', tone: 'turf' };
+    if (/^(punished|pardoned|late_withdrawal|withdrawal|match_cancelled|avatar_removed|stats_deleted)/.test(kind)) return { name: 'whistle', tone: 'red' };
     if (/^(leader_points|votes|vote_grant|my_votes)/.test(kind)) return { name: 'star', tone: 'gold' };
     if (/^(result|homologate|confirm)/.test(kind)) return { name: 'score', tone: '' };
     if (/^lineup/.test(kind)) return { name: 'pitch', tone: 'turf' };
     if (/^(match_moved|venue_changed)/.test(kind)) return { name: 'map', tone: '' };
     if (/^(stats_)/.test(kind)) return { name: 'table', tone: '' };
     if (/^(member_pending|guest_linked|password)/.test(kind)) return { name: 'user', tone: '' };
-    if (/^(booking|priority|need_one|reserve|placed_by|promoted|demoted|lists|chat)/.test(kind)) return { name: 'calendar', tone: 'turf' };
+    if (/^(booking|priority|need_one|reserve|placed_by|promoted|demoted|lists)/.test(kind)) return { name: 'calendar', tone: 'turf' };
     return { name: 'bell', tone: '' };
   }
 

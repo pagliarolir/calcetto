@@ -23,7 +23,8 @@ reset role;
 select (select n from ids where id = user_id) as a_chi, kind, title, body, actions is not null as con_pulsante
 from notifications where kind in ('placed_by_leader', 'demoted', 'promoted') order by id;
 \echo '--- atteso: P11 team+pulsante, P10 demoted, P12 reserve+pulsante, P11 assente senza pulsante, nessun avviso a P1, e P10/P12 che salgono quando il Leader esce'
-select count(*) as avvisi_a_P1 from notifications where user_id = (select id from ids where n='P1');
+select count(*) as avvisi_a_P1 from notifications where user_id = (select id from ids where n='P1')
+  and kind <> 'team_full';   -- la squadra al completo (completata da altri) è un'informazione per tutti
 \echo '--- un giocatore normale non puo usarla (atteso: errore)'
 \set ON_ERROR_STOP 0
 set role authenticated;
