@@ -1,20 +1,23 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { kit } from '../core/kits';
 import { Api } from '../core/api';
 import { fmtDate, fmtWhen } from '../core/format';
-import { AttendanceRow, KitStatsRow, LeaderPointsEntry, LeaderPointsRow, PairRow, StatsRow } from '../core/models';
+import { KitStatsRow, LeaderPointsEntry, LeaderPointsRow, PairRow, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
+import { Icon } from '../ui/icon';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
-type Tab = 'classifica' | 'record' | 'presenze' | 'squadre' | 'coppie' | 'punti';
+type Tab = 'classifica' | 'record' | 'squadre' | 'punti';
 type Col = { key: keyof StatsRow; label: string; title: string; fmt?: 'dec' | 'pct' | 'form'; asc?: boolean };
 
 const COLUMNS: Col[] = [
+  { key: 'goals', label: 'Gol', title: 'Gol segnati' },
+  { key: 'own_goals', label: 'Aut', title: 'Autogol' },
   { key: 'points', label: 'Pt', title: 'Punti (3 vittoria, 1 pareggio)' },
   { key: 'played', label: 'PG', title: 'Partite giocate' },
   { key: 'wins', label: 'V', title: 'Vittorie' },
@@ -22,23 +25,17 @@ const COLUMNS: Col[] = [
   { key: 'losses', label: 'P', title: 'Sconfitte' },
   { key: 'points_per_game', label: 'Pt/PG', title: 'Punti per partita', fmt: 'dec' },
   { key: 'win_pct', label: '%V', title: 'Percentuale vittorie', fmt: 'pct' },
-  { key: 'goals', label: 'Gol', title: 'Gol segnati' },
   { key: 'goals_per_game', label: 'Gol/PG', title: 'Gol per partita', fmt: 'dec' },
-  { key: 'assists', label: 'Ast', title: 'Assist' },
-  { key: 'own_goals', label: 'Aut', title: 'Autogol' },
-  { key: 'team_goals_for', label: 'GF', title: 'Gol fatti dalle sue squadre' },
-  { key: 'team_goals_against', label: 'GS', title: 'Gol subiti dalle sue squadre', asc: true },
-  { key: 'team_goal_diff', label: 'DR', title: 'Differenza reti delle sue squadre' },
   { key: 'avg_vote', label: 'Voto', title: 'Media voto ricevuto', fmt: 'dec' },
   { key: 'best_avg_vote', label: 'Max', title: 'Miglior media in una partita', fmt: 'dec' },
   { key: 'worst_avg_vote', label: 'Min', title: 'Peggior media in una partita', fmt: 'dec' },
   { key: 'mvp_count', label: 'MVP', title: 'Volte migliore in campo' },
-  { key: 'best_win_streak', label: 'Serie V', title: 'Più vittorie di fila' },
-  { key: 'attendances', label: 'Pres', title: 'Presenze' },
-  { key: 'withdrawals', label: 'Rin', title: 'Rinunce (in qualsiasi momento)', asc: true },
-  { key: 'late_withdrawals', label: 'Forf', title: 'Rinunce nelle 24 ore', asc: true },
-  { key: 'current_form', label: 'Forma', title: 'Ultime 5 partite', fmt: 'form' },
+  { key: 'current_form', label: 'Forma', title: 'Ultime 5 partite (occupa due colonne)', fmt: 'form' },
 ];
+
+/** colonne visibili all'inizio (le altre si aggiungono dalla finestra «Colonne») */
+const DEFAULT_COLS = ['goals', 'own_goals', 'points', 'played', 'wins', 'draws', 'losses', 'avg_vote'];
+const COLS_KEY = 'gdl-classifica-colonne';
 
 interface Record { label: string; key: keyof StatsRow; suffix: string; open?: boolean; minPlayed?: number }
 
@@ -62,7 +59,8 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink, Avatar],
+  imports: [FormsModule, RouterLink, Avatar, Icon],
+  host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -169,14 +167,18 @@ const RECORDS: Record[] = [
         @switch (tab()) {
           @case ('classifica') {
         <section class="section">
-          <header><h2>Classifica</h2><span class="small muted">tocca una colonna per ordinare</span></header>
-          <div class="table-wrap">
-            <table class="data">
+          <header>
+            <h2>Classifica</h2>
+            <button class="btn small ghost cols-btn" (click)="openCols()" aria-haspopup="dialog"><app-icon name="table" [size]="16" /> Colonne</button>
+          </header>
+          <p class="small muted">Tocca una colonna per ordinare. Con «Colonne» scegli cosa vedere.</p>
+          <div class="fit-wrap">
+            <table class="data fit">
               <thead>
                 <tr>
                   <th scope="col">Giocatore</th>
-                  @for (c of columns; track c.key) {
-                    <th scope="col" [attr.aria-sort]="sortKey() === c.key ? (sortAsc() ? 'ascending' : 'descending') : null" [title]="c.title">
+                  @for (c of shownCols(); track c.key) {
+                    <th scope="col" [class.wide]="c.fmt === 'form'" [attr.aria-sort]="sortKey() === c.key ? (sortAsc() ? 'ascending' : 'descending') : null" [title]="c.title">
                       <button (click)="sort(c)">{{ c.label }}</button>
                     </th>
                   }
@@ -186,13 +188,37 @@ const RECORDS: Record[] = [
                 @for (r of sorted(); track r.user_id) {
                   <tr [class.me]="r.user_id === session.uid()">
                     <td><a class="who" [routerLink]="['/giocatore', r.user_id]"><app-avatar [userId]="r.user_id" [size]="26" />{{ session.name(r.user_id) }}</a></td>
-                    @for (c of columns; track c.key) { <td>{{ cell(r, c) }}</td> }
+                    @for (c of shownCols(); track c.key) { <td [class.wide]="c.fmt === 'form'">{{ cell(r, c) }}</td> }
                   </tr>
                 }
               </tbody>
             </table>
           </div>
         </section>
+
+        <!-- «Scegli dettagli»: quali colonne vedere, senza mai superare la larghezza dello schermo -->
+        <dialog #colsDialog class="sheet" (click)="colsBackdrop($event)" aria-labelledby="cols-h">
+          <div class="grab" aria-hidden="true"></div>
+          <h2 id="cols-h">Colonne della classifica</h2>
+          <p class="small muted">Su questo schermo ne entrano {{ maxCols() }}: ne hai scelte {{ chosenWeight() }}. Per aggiungerne una, togline un'altra.</p>
+          <ul class="cols">
+            @for (c of columns; track c.key) {
+              <li>
+                <label class="check" [class.off]="!shownKeys().includes(c.key) && chosenWeight() + weight(c) > maxCols()">
+                  <input type="checkbox" [checked]="shownKeys().includes(c.key)"
+                         [disabled]="(!shownKeys().includes(c.key) && chosenWeight() + weight(c) > maxCols()) || (shownKeys().includes(c.key) && shownKeys().length === 1)"
+                         (change)="toggleCol(c.key)" />
+                  <span class="cl">{{ c.label }}</span>
+                  <span class="small muted grow">{{ c.title }}</span>
+                </label>
+              </li>
+            }
+          </ul>
+          <div class="row-wrap">
+            <button class="btn small ghost" (click)="resetCols()">Ripristina</button>
+            <button class="btn small primary" (click)="closeCols()">Fatto</button>
+          </div>
+        </dialog>
 
           }
           @case ('record') {
@@ -213,31 +239,8 @@ const RECORDS: Record[] = [
         </section>
 
           }
-          @case ('presenze') {
-        <section class="section">
-          <header><h2>Registro presenze</h2></header>
-          <p class="small muted">● in campo, ○ riserva, × assente, r rinuncia, ! rinuncia nelle 24 ore</p>
-          <div class="table-wrap">
-            <table class="data register">
-              <thead>
-                <tr><th scope="col">Giocatore</th>
-                  @for (m of registerMatches(); track m.id) { <th scope="col">{{ date(m.at) }}</th> }
-                </tr>
-              </thead>
-              <tbody>
-                @for (u of registerUsers(); track u) {
-                  <tr [class.me]="u === session.uid()">
-                    <td><span class="who"><app-avatar [userId]="u" [size]="22" />{{ session.name(u) }}</span></td>
-                    @for (m of registerMatches(); track m.id) { <td>{{ mark(u, m.id) }}</td> }
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </section>
-          }
           @case ('squadre') {
-            <!-- ======================================================= Squadre -->
+            <!-- ======================================================= Squadre e coppie -->
             <section class="section" aria-labelledby="kit-h">
               <header><h2 id="kit-h">Vittorie per colore</h2></header>
               <div class="table-wrap">
@@ -252,13 +255,36 @@ const RECORDS: Record[] = [
                 </table>
               </div>
             </section>
-            <section class="section" aria-labelledby="pkit-h">
-              <header><h2 id="pkit-h">Con quale colore vince</h2></header>
+
+            <details class="panel fold">
+              <summary><span class="grow"><strong>Coppie più affiatate</strong><br /><span class="small muted">più partite da compagni</span></span><app-icon name="chevron" [size]="18" /></summary>
+              <ol class="pairs">
+                @for (x of topTogether(); track x.a_id + x.b_id) {
+                  <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
+                    <span class="grow">{{ session.name(x.a_id) }} e {{ session.name(x.b_id) }}</span>
+                    <span class="small"><strong>{{ x.together }}</strong> insieme, {{ pct(x.together_wins, x.together) }} vinte</span></li>
+                }
+              </ol>
+            </details>
+            <details class="panel fold">
+              <summary><span class="grow"><strong>Grandi rivalità</strong><br /><span class="small muted">più partite da avversari</span></span><app-icon name="chevron" [size]="18" /></summary>
+              <ol class="pairs">
+                @for (x of topAgainst(); track x.a_id + x.b_id) {
+                  <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
+                    <span class="grow">{{ session.name(x.a_id) }} contro {{ session.name(x.b_id) }}</span>
+                    <span class="small"><strong>{{ x.against }}</strong> sfide, {{ x.a_wins }}-{{ x.against_draws }}-{{ x.b_wins }}</span></li>
+                }
+              </ol>
+            </details>
+
+            <section class="section" aria-labelledby="aff-h">
+              <header><h2 id="aff-h">Affinità di un giocatore</h2></header>
               <label class="field"><span>Giocatore</span>
                 <select class="input" [ngModel]="focus()" (ngModelChange)="focus.set($event)">
                   @for (r of played(); track r.user_id) { <option [value]="r.user_id">{{ session.name(r.user_id) }}</option> }
                 </select>
               </label>
+              <h3>Con quale colore vince</h3>
               <ul class="bars">
                 @for (k of focusKits(); track k.kit) {
                   <li>
@@ -268,17 +294,6 @@ const RECORDS: Record[] = [
                   </li>
                 } @empty { <li class="small muted">Nessuna partita in questo periodo.</li> }
               </ul>
-            </section>
-          }
-          @case ('coppie') {
-            <!-- ======================================================= Coppie -->
-            <section class="section" aria-labelledby="aff-h">
-              <header><h2 id="aff-h">Affinità</h2></header>
-              <label class="field"><span>Giocatore</span>
-                <select class="input" [ngModel]="focus()" (ngModelChange)="focus.set($event)">
-                  @for (r of played(); track r.user_id) { <option [value]="r.user_id">{{ session.name(r.user_id) }}</option> }
-                </select>
-              </label>
               @if (bestMate(); as b) {
                 <p class="note">Con <strong>{{ session.name(b.other) }}</strong> vince il {{ pct(b.wins, b.games) }} delle partite giocate insieme ({{ b.wins }} su {{ b.games }}).</p>
               }
@@ -304,27 +319,6 @@ const RECORDS: Record[] = [
               </ul>
               <p class="small muted">Barre: percentuale di vittorie. Da avversari: vittorie, pareggi e sconfitte di {{ session.name(focus()) }}.</p>
             </section>
-
-            <section class="section" aria-labelledby="tog-h">
-              <header><h2 id="tog-h">Coppie più affiatate</h2><span class="small muted">più partite da compagni</span></header>
-              <ol class="pairs">
-                @for (x of topTogether(); track x.a_id + x.b_id) {
-                  <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
-                    <span class="grow">{{ session.name(x.a_id) }} e {{ session.name(x.b_id) }}</span>
-                    <span class="small"><strong>{{ x.together }}</strong> insieme, {{ pct(x.together_wins, x.together) }} vinte</span></li>
-                }
-              </ol>
-            </section>
-            <section class="section" aria-labelledby="riv-h">
-              <header><h2 id="riv-h">Grandi rivalità</h2><span class="small muted">più partite da avversari</span></header>
-              <ol class="pairs">
-                @for (x of topAgainst(); track x.a_id + x.b_id) {
-                  <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
-                    <span class="grow">{{ session.name(x.a_id) }} contro {{ session.name(x.b_id) }}</span>
-                    <span class="small"><strong>{{ x.against }}</strong> sfide, {{ x.a_wins }}-{{ x.against_draws }}-{{ x.b_wins }}</span></li>
-                }
-              </ol>
-            </section>
           }
         }
       }
@@ -336,7 +330,36 @@ const RECORDS: Record[] = [
     .list-item .small.muted:last-child { margin-left: 4px; min-width: 52px; }
     td a { text-decoration: none; font-weight: 600; }
     .who { display: inline-flex; align-items: center; gap: 8px; }
-    .register td:not(:first-child), .register th:not(:first-child) { text-align: center; }
+    /* classifica senza scorrimento laterale */
+    .fit-wrap { overflow: hidden; }
+    table.fit { table-layout: fixed; width: 100%; }
+    table.fit th:first-child, table.fit td:first-child { width: auto; }
+    table.fit th:not(:first-child), table.fit td:not(:first-child) { width: 32px; padding-left: 1px; padding-right: 1px; text-align: center; font-size: 0.85rem; }
+    table.fit td.wide, table.fit th.wide { width: 64px; }
+    table.fit .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    table.fit th button { font-size: 0.72rem; padding: 0; }
+    .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .cols-btn { gap: 6px; }
+    .sheet {
+      position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; border: 0; color: var(--ink);
+      background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
+    }
+    .sheet[open] { display: flex; flex-direction: column; gap: 10px; }
+    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+    .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .cols li { border-top: 1px solid var(--line); }
+    .cols li:first-child { border-top: 0; }
+    .check { display: flex; align-items: center; gap: 12px; min-height: 48px; cursor: pointer; }
+    .check.off { opacity: 0.45; cursor: not-allowed; }
+    .check input { width: 20px; height: 20px; accent-color: var(--turf); flex: none; }
+    .cl { width: 52px; font-weight: 700; flex: none; }
+    /* tendine delle coppie */
+    .fold summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 44px; }
+    .fold summary::-webkit-details-marker { display: none; }
+    .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
+    .fold[open] summary app-icon { transform: rotate(-90deg); }
+    .fold .pairs { margin-top: 10px; }
     .stabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin-top: -8px; }
     .stabs::-webkit-scrollbar { display: none; }
     .stabs button { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 12px; min-height: 44px;
@@ -379,12 +402,81 @@ export class StatsPage {
     { id: 'custom', label: 'Scegli le date' },
   ];
   protected readonly columns = COLUMNS;
+
+  // ---------------------------------------------------------- colonne visibili
+  private readonly colsDialog = viewChild<ElementRef<HTMLDialogElement>>('colsDialog');
+  private readonly viewport = signal(typeof window === 'undefined' ? 400 : window.innerWidth);
+  protected readonly chosen = signal<string[]>(this.loadCols());
+  /** quante colonne entrano: larghezza utile meno il nome, diviso la larghezza di una colonna */
+  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 32 - 92) / 32)));
+  /** colonne mostrate: quelle scelte, nell'ordine della tabella, finché c'è posto */
+  protected readonly shownCols = computed(() => {
+    const out: Col[] = [];
+    let used = 0;
+    for (const c of this.columns) {
+      if (!this.chosen().includes(c.key)) continue;   // la scelta salvata (non quella visibile: sarebbe circolare)
+      if (used + this.weight(c) > this.maxCols()) break;
+      out.push(c);
+      used += this.weight(c);
+    }
+    return out;
+  });
+  /** le colonne spuntate nella finestra sono esattamente quelle visibili */
+  protected readonly shownKeys = computed(() => this.shownCols().map((c) => c.key as string));
+  protected readonly chosenWeight = computed(() => this.shownCols().reduce((n, c) => n + this.weight(c), 0));
+
+  protected weight(c: Col): number {
+    return c.fmt === 'form' ? 2 : 1;
+  }
+
+  private loadCols(): string[] {
+    try {
+      const v = JSON.parse(localStorage.getItem(COLS_KEY) ?? 'null');
+      if (Array.isArray(v) && v.length) return v.filter((k) => COLUMNS.some((c) => c.key === k));
+    } catch {
+      /* si usano le colonne predefinite */
+    }
+    return [...DEFAULT_COLS];
+  }
+
+  private saveCols(v: string[]): void {
+    this.chosen.set(v);
+    try {
+      localStorage.setItem(COLS_KEY, JSON.stringify(v));
+    } catch {
+      /* la scelta vale finché la pagina resta aperta */
+    }
+  }
+
+  protected toggleCol(key: string): void {
+    const cur = this.shownKeys();
+    this.saveCols(cur.includes(key) ? cur.filter((k) => k !== key) : [...cur, key]);
+  }
+
+  protected resetCols(): void {
+    this.saveCols([...DEFAULT_COLS]);
+  }
+
+  protected openCols(): void {
+    const d = this.colsDialog()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  protected closeCols(): void {
+    this.colsDialog()?.nativeElement.close();
+  }
+
+  protected colsBackdrop(e: MouseEvent): void {
+    if (e.target === this.colsDialog()?.nativeElement) this.closeCols();
+  }
+
+  protected onResize(): void {
+    this.viewport.set(window.innerWidth);
+  }
   protected readonly tabs: { id: Tab; label: string }[] = [
     { id: 'classifica', label: 'Classifica' },
     { id: 'record', label: 'Record' },
-    { id: 'presenze', label: 'Presenze' },
-    { id: 'squadre', label: 'Squadre' },
-    { id: 'coppie', label: 'Coppie' },
+    { id: 'squadre', label: 'Squadre e coppie' },
     { id: 'punti', label: 'Punti Leader' },
   ];
   protected readonly tab = signal<Tab>('classifica');
@@ -407,7 +499,6 @@ export class StatsPage {
 
   protected readonly period = signal<Period>('year');
   protected readonly rows = signal<StatsRow[]>([]);
-  protected readonly register = signal<AttendanceRow[]>([]);
   protected readonly loading = signal(true);
   protected readonly range = signal<{ from: string | null; to: string | null }>({ from: null, to: null });
   protected readonly sortKey = signal<keyof StatsRow>('points');
@@ -444,19 +535,6 @@ export class StatsPage {
     }).filter((x): x is NonNullable<typeof x> => x !== null),
   );
 
-  protected readonly registerMatches = computed(() => {
-    const seen = new Map<string, string>();
-    for (const r of this.register()) seen.set(r.match_id, r.starts_at);
-    return [...seen].map(([id, at]) => ({ id, at })).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 20);
-  });
-
-  protected readonly registerUsers = computed(() => {
-    // anche chi ha soltanto rinunciato compare nel registro
-    const ids = new Set(this.register().filter((r) => r.list === 'team' || r.withdrew).map((r) => r.user_id));
-    return [...ids].sort((a, b) => this.session.name(a).localeCompare(this.session.name(b), 'it'));
-  });
-
-  private readonly registerIndex = computed(() => new Map(this.register().map((r) => [`${r.user_id}:${r.match_id}`, r])));
 
   protected readonly rangeText = computed(() => {
     const { from, to } = this.range();
@@ -466,7 +544,8 @@ export class StatsPage {
   });
 
   constructor() {
-    const q = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda') as Tab | null;
+    const raw = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda');
+    const q = (raw === 'coppie' ? 'squadre' : raw === 'presenze' ? 'classifica' : raw) as Tab | null;
     if (q && this.tabs.some((t) => t.id === q)) this.tab.set(q);
     this.focus.set(this.session.uid() ?? '');
     effect(() => {
@@ -589,8 +668,8 @@ export class StatsPage {
     try {
       const r = await this.computeRange();
       this.range.set(r);
-      const [rows, reg, kits, pkits, pairs] = await Promise.all([
-        this.api.stats(r.from, r.to), this.api.attendance(r.from, r.to),
+      const [rows, kits, pkits, pairs] = await Promise.all([
+        this.api.stats(r.from, r.to),
         this.api.teamKitStats(r.from, r.to), this.api.playerKitStats(r.from, r.to), this.api.pairStats(r.from, r.to),
       ]);
       this.rows.set(rows);
@@ -603,7 +682,6 @@ export class StatsPage {
         if (first) this.focus.set(first.user_id);
       }
       void this.api.statsResetInfo(null).then((i) => this.statsSince.set(i.global)).catch(() => undefined);
-      this.register.set(reg);
     } catch (e) {
       this.toasts.error(errorMessage(e));
     } finally {
@@ -647,12 +725,4 @@ export class StatsPage {
     return String(v);
   }
 
-  protected mark(u: string, m: string): string {
-    const r = this.registerIndex().get(`${u}:${m}`);
-    if (!r) return '';
-    if (r.list === 'team') return '●';          // alla fine ha giocato
-    if (r.late_withdrawal) return '!';
-    if (r.withdrew) return 'r';
-    return r.list === 'reserve' ? '○' : '×';
-  }
 }
