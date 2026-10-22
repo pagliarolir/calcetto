@@ -79,7 +79,8 @@ select status, homologated_by from results;
 \echo '--- voti: le medie si vedono sempre (atteso hidden = f gia con 4 votanti)'
 set role authenticated;
 select as_user(nm(l.user_id)), submit_votes(mid(),
-  (select jsonb_agg(jsonb_build_object('target_id', t.user_id, 'score', 5 + (abs(hashtext(t.user_id::text||l.user_id::text)) % 9) / 2.0)) from lineup t where t.user_id <> l.user_id), null, null)
+  (select jsonb_agg(jsonb_build_object('target_id', t.user_id, 'score', 5 + (abs(hashtext(t.user_id::text||l.user_id::text)) % 9) / 2.0)) from lineup t where t.user_id <> l.user_id),
+  (select user_id from lineup where user_id <> l.user_id order by user_id limit 1), null)
 from (select user_id from lineup order by user_id limit 4) l;
 select as_user('P9'); select vote_summary(mid())->>'voters' as voters_now, jsonb_typeof(vote_summary(mid())->'players') = 'null' as hidden;
 select as_user(nm(l.user_id)), submit_votes(mid(), '[]'::jsonb, (select user_id from lineup where team='white' and user_id<>l.user_id limit 1), null)

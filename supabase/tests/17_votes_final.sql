@@ -22,7 +22,7 @@ update leadership_delegation set delegate_id = pid('P12'), until = now() + inter
 
 set role authenticated;
 \echo '--- 1) un giocatore vota tutti (6 di base, un 8): voti registrati'
-select as_user('P2'), submit_votes(mid(), tutti_a_6(pid('P2')), null, null);
+select as_user('P2'), submit_votes(mid(), tutti_a_6(pid('P2')), pid('P4'), null);
 reset role;
 select count(*) as voti_di_p2, count(*) filter (where score = 6) as sei, count(*) filter (where score = 8) as otto from player_votes where voter_id = pid('P2');
 
@@ -41,7 +41,10 @@ select as_user('P3'), submit_votes(mid(), '[]'::jsonb, null, null);
 select as_user('P1'), submit_votes(mid(), tutti_a_6(pid('P1')), pid('P2'), pid('P3'));   -- due migliori: atteso errore
 \set ON_ERROR_STOP 1
 select as_user('P1'), submit_votes(mid(), tutti_a_6(pid('P1')), pid('P2'), null);
-select as_user('P12'), submit_votes(mid(), tutti_a_6(pid('P12')), null, null);
+\set ON_ERROR_STOP 0
+select as_user('P12'), submit_votes(mid(), tutti_a_6(pid('P12')), null, null);   -- senza migliore in campo: atteso errore
+\set ON_ERROR_STOP 1
+select as_user('P12'), submit_votes(mid(), tutti_a_6(pid('P12')), pid('P4'), null);
 reset role;
 select (select count(*) from player_votes where voter_id = pid('P1')) as voti_del_leader,
        (select count(*) from player_votes where voter_id = pid('P12')) as voti_del_delegato;

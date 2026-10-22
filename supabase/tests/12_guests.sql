@@ -30,9 +30,9 @@ insert into results (match_id, diff, white_goals, black_goals, status) values ((
 update matches set status = 'played' where id = (select id from nx);
 insert into scorers (match_id, user_id, goals) values ((select id from nx), gid('Gianni'), 2);
 set role authenticated;
-select as_user('Luca'), submit_votes((select id from nx), jsonb_build_array(jsonb_build_object('target_id', gid('Gianni'), 'score', 8)), null, null);
-select as_user('Simone'), submit_votes((select id from nx), jsonb_build_array(jsonb_build_object('target_id', gid('Gianni'), 'score', 7.5)), null, null);
-select as_user('Matteo'), submit_votes((select id from nx), jsonb_build_array(jsonb_build_object('target_id', gid('Gianni'), 'score', 7)), null, null);
+select as_user('Luca'), submit_votes((select id from nx), jsonb_build_array(jsonb_build_object('target_id', gid('Gianni'), 'score', 8)), gid('Gianni'), null);
+select as_user('Simone'), submit_votes((select id from nx), jsonb_build_array(jsonb_build_object('target_id', gid('Gianni'), 'score', 7.5)), gid('Gianni'), null);
+select as_user('Matteo'), submit_votes((select id from nx), jsonb_build_array(jsonb_build_object('target_id', gid('Gianni'), 'score', 7)), gid('Gianni'), null);
 select as_user('Marco');
 select played, goals, attendances, avg_vote from stats_table() where user_id = gid('Gianni');
 reset role;

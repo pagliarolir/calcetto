@@ -48,6 +48,8 @@ export class MatchStore implements OnDestroy {
       bookingClosed: now >= at(m.bookings_close_at) && now < at(m.starts_at),
       beforeOpen: now < at(m.bookings_open_at),
       started: now >= at(m.starts_at),
+      /** partita finita (e non annullata): restano Risultato, Pagelle e Chat */
+      ended: now >= at(m.ends_at) && m.status !== 'cancelled',
       within24h: now >= at(m.starts_at) - 24 * 3600_000,
       lineupOpen: now >= at(m.lineup_opens_at),
       resultOpen: now >= at(m.result_opens_at),
