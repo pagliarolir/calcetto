@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { fmtCountdown, fmtDayLong, fmtDayNum, fmtMonthShort, fmtTime, fmtWeekday, mapsUrl, titleCase } from '../core/format';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
+import { Branding } from '../core/branding';
 import { MatchStore } from './match-store';
 
 @Component({
@@ -29,7 +30,11 @@ import { MatchStore } from './match-store';
               <span class="status">{{ status() }}</span>
             </div>
             <div class="ticket">
+              @if (branding.logo512(); as logo) {
+                <img class="calbig logo" [src]="logo" alt="" />
+              } @else {
               <div class="calbig" aria-hidden="true"><small>{{ weekdayShort() }}</small><b>{{ dayNum() }}</b><small>{{ monthShort() }}</small></div>
+              }
               <div class="tmain">
                 <h1>{{ day() }}</h1>
                 @if (m.moved || m.status === 'cancelled' || store.result()?.status === 'pending') {
@@ -40,11 +45,15 @@ import { MatchStore } from './match-store';
                   </p>
                 }
                 <p class="line time"><app-icon name="clock" [size]="18" />{{ kickoff() }} – {{ until() }}</p>
-                @if (maps(); as href) {
-                  <div class="line">
-                    <a class="line link-line" [href]="href" target="_blank" rel="noopener"><app-icon name="pin" [size]="16" /><span class="ellipsis">{{ venueLine() }}</span></a>
+                @if (m.venue_name) {
+                  <p class="line"><app-icon name="pitch" [size]="16" /><span class="ellipsis">{{ m.venue_name }}</span>
                     @if (m.venue_url) { <a class="mini" [href]="m.venue_url" target="_blank" rel="noopener" aria-label="Sito del circolo"><app-icon name="external" [size]="14" /></a> }
-                  </div>
+                  </p>
+                }
+                @if (maps(); as href) {
+                  <a class="line link-line" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'Apri nelle mappe: ' + (address() || m.venue_name)">
+                    <app-icon name="map" [size]="16" /><span class="ellipsis">{{ address() || 'Apri nelle mappe' }}</span>
+                  </a>
                 }
               </div>
             </div>
@@ -91,6 +100,8 @@ import { MatchStore } from './match-store';
       box-shadow: 0 6px 16px rgb(0 0 0 / 20%); }
     .calbig b { font: 700 2.6rem/0.9 var(--font-display); }
     .calbig small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
+    /* il logo dell'app prende il posto del calendario */
+    .calbig.logo { height: 92px; align-self: center; padding: 0; object-fit: cover; background: #fff; }
     .tmain { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
     .tmain h1 { font: 700 1.75rem/1 var(--font-display); margin-bottom: 4px; }
     .tmain h1::first-letter { text-transform: uppercase; }
@@ -126,6 +137,7 @@ import { MatchStore } from './match-store';
 export class MatchPage {
   readonly id = input.required<string>();
   protected readonly store = inject(MatchStore);
+  protected readonly branding = inject(Branding);
 
   protected readonly day = computed(() => (this.store.match() ? fmtDayLong(this.store.match()!.starts_at) : ''));
 
@@ -144,8 +156,6 @@ export class MatchPage {
   protected readonly weekdayShort = computed(() => this.weekdayName().slice(0, 3));
   protected readonly dayNum = computed(() => (this.store.match() ? fmtDayNum(this.store.match()!.starts_at) : ''));
   protected readonly monthShort = computed(() => (this.store.match() ? fmtMonthShort(this.store.match()!.starts_at) : ''));
-  /** il luogo su una riga: nome e indirizzo */
-  protected readonly venueLine = computed(() => [this.store.match()?.venue_name, this.address()].filter(Boolean).join(', '));
 
   protected readonly kickoff = computed(() => (this.store.match() ? fmtTime(this.store.match()!.starts_at) : ''));
   protected readonly until = computed(() => (this.store.match() ? fmtTime(this.store.match()!.ends_at) : ''));

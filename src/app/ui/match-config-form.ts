@@ -21,6 +21,20 @@ import { MatchConfig } from '../core/match-config';
       </fieldset>
 
       <fieldset>
+        <legend>Durata</legend>
+        <div class="row-wrap duration">
+          @for (d of durations; track d) {
+            <button type="button" class="chip" [attr.aria-pressed]="config().duration_min === d" (click)="set('duration_min', d)">{{ d }} minuti</button>
+          }
+          <label class="field mins"><span class="sr-only">Durata in minuti</span>
+            <input class="input" type="number" inputmode="numeric" min="1" max="90" step="1"
+                   [ngModel]="config().duration_min" (ngModelChange)="setDuration($event)" aria-label="Durata in minuti" />
+          </label>
+        </div>
+        <p class="small muted">Da 1 a 90 minuti. Le votazioni si aprono contando dalla fine della partita.</p>
+      </fieldset>
+
+      <fieldset>
         <legend>Colori delle squadre</legend>
         @for (side of sides; track side.key) {
           <div class="kit-row">
@@ -101,6 +115,8 @@ import { MatchConfig } from '../core/match-config';
     .swatch[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--turf); }
     .swatch:disabled { opacity: 0.25; cursor: not-allowed; }
     .vs { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
+    .duration { align-items: center; }
+    .mins { width: 88px; position: relative; }
     .pill { padding: 4px 12px; border-radius: 999px; font-weight: 700; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%); }
   `,
 })
@@ -117,6 +133,13 @@ export class MatchConfigForm {
 
   protected readonly voteOpenOptions = computed(() => withValue([0, 15, 30, 60, 120, 180, 720, 1440], this.config().votes_open_after_min));
   protected readonly voteHourOptions = computed(() => withValue([12, 24, 48, 72, 168], this.config().votes_hours));
+
+  protected readonly durations = [45, 60, 90];
+
+  protected setDuration(v: number | string): void {
+    const n = Math.round(Number(v));
+    if (Number.isFinite(n) && n >= 1 && n <= 90) this.set('duration_min', n);
+  }
 
   protected kitOf(key: 'team_a_kit' | 'team_b_kit') {
     return kit(this.config()[key]);

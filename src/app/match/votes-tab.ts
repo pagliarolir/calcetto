@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, untracked, viewChild } from '@angular/core';
 import { Api } from '../core/api';
 import { fmtWhen } from '../core/format';
 import { MvpVote, PlayerVote, Team, VoteSummary } from '../core/models';
@@ -9,11 +9,12 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { VoteSlider } from '../ui/vote-slider';
+import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 
 @Component({
   selector: 'app-votes-tab',
-  imports: [Avatar, VoteSlider],
+  imports: [Avatar, VoteSlider, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -35,6 +36,17 @@ import { kit } from '../core/kits';
             @case ('vota') {
               <section class="stack" aria-label="Vota">
                 <p class="small muted">Trascina il cursore di lato per dare il voto: chi non tocchi prende <strong>6</strong>. Scorrendo la pagina i voti non cambiano. La stella sceglie il migliore in campo di ogni squadra. I voti restano segreti e, una volta confermati, non si cambiano più.</p>
+                <button class="mvp-card" (click)="openMvp()" [attr.aria-label]="mvpPick() ? 'Migliore in campo: ' + session.name(mvpPick()!) + '. Tocca per cambiare' : 'Scegli il migliore in campo'">
+                  <span class="mvp-star" aria-hidden="true">★</span>
+                  @if (mvpPick(); as id) {
+                    <app-avatar [userId]="id" [team]="team(id)" [size]="40" />
+                    <span class="grow"><span class="small muted">Migliore in campo</span><br /><strong>{{ session.name(id) }}</strong></span>
+                  } @else {
+                    <span class="grow"><strong>Migliore in campo</strong><br /><span class="small muted">Tocca per sceglierlo (facoltativo)</span></span>
+                  }
+                  <app-icon name="chevron" [size]="18" />
+                </button>
+
                 @for (g of groups(); track g.key) {
                   <div class="group">
                     <h3 class="ghead"><i class="dot" [style.background]="g.color"></i>{{ g.label }}</h3>
@@ -44,10 +56,6 @@ import { kit } from '../core/kits';
                           <div class="line">
                             <app-avatar [userId]="id" [team]="team(id)" [size]="38" />
                             <span class="grow ellipsis name">{{ session.name(id) }}</span>
-                            @if (g.team) {
-                              <button class="star" [attr.aria-pressed]="mvp()[g.team] === id" (click)="pickMvp(g.team, id)"
-                                      [attr.aria-label]="'Migliore in campo dei ' + g.label + ': ' + session.name(id)">★</button>
-                            }
                             <span [class]="'rate static ' + tone(score(id))" [class.touched]="scores().has(id)" aria-hidden="true">{{ fmt(score(id)) }}</span>
                           </div>
                           <app-vote-slider [value]="score(id)" (valueChange)="setScore(id, $event)" [label]="'Voto a ' + session.name(id)" />
@@ -57,7 +65,7 @@ import { kit } from '../core/kits';
                   </div>
                 }
                 <div class="confirm panel">
-                  <p class="small">{{ toVote().length }} voti, media {{ fmt(myAvg()) }}@if (mvpText()) {, migliori: {{ mvpText() }}}</p>
+                  <p class="small">{{ toVote().length }} voti, media {{ fmt(myAvg()) }}@if (mvpPick(); as id) {, migliore: {{ session.name(id) }}}</p>
                   <button class="btn primary block" [disabled]="busy() || !toVote().length" (click)="submit()">Conferma i voti</button>
                 </div>
               </section>
@@ -148,6 +156,25 @@ import { kit } from '../core/kits';
           }
         </div>
 
+        <dialog #mvpDialog class="sheet" (click)="mvpBackdrop($event)" aria-label="Scegli il migliore in campo">
+          <div class="grab" aria-hidden="true"></div>
+          <h2 class="sheet-title">★ Migliore in campo</h2>
+          @for (g of groups(); track g.key) {
+            <h3 class="ghead"><i class="dot" [style.background]="g.color"></i>{{ g.label }}</h3>
+            <div class="pick-grid">
+              @for (id of g.ids; track id) {
+                <button class="pick-p" [attr.aria-pressed]="mvpPick() === id" (click)="chooseMvp(id)">
+                  <app-avatar [userId]="id" [team]="team(id)" [size]="44" />
+                  <span class="ellipsis">{{ session.name(id) }}</span>
+                </button>
+              }
+            </div>
+          }
+          <div class="row-wrap">
+            <button class="btn small ghost" (click)="chooseMvp(null)">Nessuno</button>
+            <button class="btn small" (click)="closeMvp()">Chiudi</button>
+          </div>
+        </dialog>
       }
     }
   `,
@@ -189,6 +216,29 @@ import { kit } from '../core/kits';
     .rate:not(.touched) { opacity: 0.85; }
     .top { background: #1d5fd1; } .good { background: #1f7a4a; } .ok { background: #4f7a12; } .meh { background: #b45309; } .bad { background: #b93a26; } .none { background: var(--surface-2); color: var(--muted); }
 
+    .mvp-card {
+      display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; min-height: 64px; padding: 10px 14px;
+      border-radius: 16px; border: 1.5px solid color-mix(in srgb, var(--armband) 60%, var(--line)); background: color-mix(in srgb, var(--armband) 12%, var(--surface));
+      color: var(--ink); font: inherit;
+    }
+    .mvp-star { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--armband); color: var(--armband-ink); font-size: 1.2rem; }
+    .sheet {
+      position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; border: 0; color: var(--ink);
+      background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
+    }
+    .sheet[open] { display: flex; flex-direction: column; gap: 10px; animation: rise 260ms var(--ease-out); }
+    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+    .sheet-title { font-size: var(--step-1); }
+    .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+    .pick-p {
+      appearance: none; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 14px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; font: 600 var(--step--1)/1.1 var(--font-body); min-width: 0;
+    }
+    .pick-p span { max-width: 100%; }
+    .pick-p[aria-pressed='true'] { border-color: var(--armband); background: color-mix(in srgb, var(--armband) 18%, var(--surface)); }
+    @keyframes rise { from { transform: translateY(100%); } to { transform: none; } }
     .star {
       flex: none; appearance: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
       border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); font-size: 1.1rem;
@@ -217,7 +267,9 @@ export class VotesTab {
 
   protected readonly summary = signal<VoteSummary | null>(null);
   protected readonly scores = signal(new Map<string, number>());
-  protected readonly mvp = signal<Record<Team, string | null>>({ white: null, black: null });
+  /** un solo migliore in campo */
+  protected readonly mvpPick = signal<string | null>(null);
+  private readonly mvpDialog = viewChild<ElementRef<HTMLDialogElement>>('mvpDialog');
   protected readonly all = signal<{ votes: PlayerVote[]; mvp: MvpVote[] } | null>(null);
   protected readonly canSeeAll = signal(false);
   protected readonly grantPick = signal(new Set<string>());
@@ -263,7 +315,6 @@ export class VotesTab {
     return ids.length ? ids.reduce((s, id) => s + this.score(id), 0) / ids.length : 6;
   });
 
-  protected readonly mvpText = computed(() => [this.mvp().white, this.mvp().black].filter((x): x is string => !!x).map((id) => this.session.name(id)).join(' e '));
 
   protected readonly myGiven = computed(() => {
     const mv = this.myMvp();
@@ -342,8 +393,23 @@ export class VotesTab {
     this.scores.set(m);
   }
 
-  protected pickMvp(t: Team, id: string): void {
-    this.mvp.update((p) => ({ ...p, [t]: p[t] === id ? null : id }));
+  protected openMvp(): void {
+    const d = this.mvpDialog()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  protected closeMvp(): void {
+    this.mvpDialog()?.nativeElement.close();
+  }
+
+  protected chooseMvp(id: string | null): void {
+    this.mvpPick.set(id);
+    this.closeMvp();
+  }
+
+  /** un tocco sullo sfondo chiude la finestra */
+  protected mvpBackdrop(e: MouseEvent): void {
+    if (e.target === this.mvpDialog()?.nativeElement) this.closeMvp();
   }
 
   protected votesBy(voter: string): PlayerVote[] {
@@ -352,7 +418,7 @@ export class VotesTab {
 
   protected mvpLine(voter: string): string {
     const m = this.all()?.mvp.find((v) => v.voter_id === voter);
-    if (!m || (!m.white_pick && !m.black_pick)) return 'migliori dedotti dai voti';
+    if (!m || (!m.white_pick && !m.black_pick)) return 'migliore dedotto dai voti';
     return [m.white_pick && `★ ${this.session.name(m.white_pick)}`, m.black_pick && `★ ${this.session.name(m.black_pick)}`].filter(Boolean).join(', ');
   }
 
@@ -373,7 +439,7 @@ export class VotesTab {
     try {
       // tutti i compagni: chi non è stato toccato prende 6
       const votes = this.toVote().map((target_id) => ({ target_id, score: this.score(target_id) }));
-      await this.api.submitVotes(id, votes, this.mvp().white, this.mvp().black);
+      await this.api.submitVotes(id, votes, this.mvpPick(), null);
       this.toasts.show('Voti inviati. Restano segreti.');
       await this.load(id, this.session.uid()!);
     } catch (e) {

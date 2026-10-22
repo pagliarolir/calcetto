@@ -84,7 +84,7 @@ interface SlotView {
             @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
             <ul class="people board">
               @for (r of byName(store.team()); track r.user_id) {
-                <li><app-figurina variant="free" [userId]="r.user_id" [captain]="r.is_leader" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'capitano' : 'titolare'" [noteTone]="'turf'" /></li>
+                <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" /></li>
               }
             </ul>
           </section>
@@ -118,8 +118,8 @@ interface SlotView {
             @for (s of slots(); track s.slot + ':' + (s.row?.user_id ?? '-')) {
               <li [class.enter-drop]="s.row?.user_id === session.uid()">
                 @if (s.row; as r) {
-                  <app-figurina [userId]="r.user_id" [number]="s.slot" [captain]="r.is_leader" [mine]="r.user_id === session.uid()"
-                                [note]="r.is_leader ? 'capitano' : r.placed_by ? 'messo dal Leader' : null" />
+                  <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
+                                [note]="r.is_leader ? 'Leader' : r.placed_by ? 'messo dal Leader' : null" />
                 } @else {
                   <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
                 }

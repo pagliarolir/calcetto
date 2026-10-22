@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Branding } from '../core/branding';
 import { Api } from '../core/api';
 import { fmtAgo, fmtWhen, fromLocalInput } from '../core/format';
 import { AppSettings, Member, Role, ROLE_LABEL, FIELD_ROLE_LABEL } from '../core/models';
@@ -242,6 +243,30 @@ import { scrollAppTo } from '../core/scroller';
       }
 
       @if (session.isLeader() && settings(); as s) {
+        <section class="section" aria-labelledby="logo-h">
+          <header><h2 id="logo-h">Logo dell'app</h2></header>
+          <div class="panel stack">
+            <div class="row">
+              @if (branding.logo512(); as logo) {
+                <img class="logo-prev" [src]="logo" alt="Logo attuale dell'app" />
+              } @else {
+                <span class="logo-prev empty-logo" aria-hidden="true">G.d.L.</span>
+              }
+              <p class="small muted grow">Compare nel tabellone della partita e diventa l'icona dell'app quando la si aggiunge alla schermata Home. Chi l'ha già aggiunta vede il nuovo logo togliendola e aggiungendola di nuovo.</p>
+            </div>
+            <div class="row-wrap">
+              <label class="btn small primary file-btn">
+                {{ branding.logoId() ? 'Cambia il logo' : 'Carica il logo' }}
+                <input type="file" accept="image/*" class="sr-only" [disabled]="logoBusy()" (change)="pickLogo($event)" />
+              </label>
+              @if (branding.logoId()) {
+                <button class="btn small ghost" [disabled]="logoBusy()" (click)="removeLogo()">Rimuovi</button>
+              }
+            </div>
+            <p class="small muted">Meglio un'immagine quadrata: viene adattata intera, senza tagli, su sfondo bianco.</p>
+          </div>
+        </section>
+
         <section class="section" aria-labelledby="stats-h">
           <header><h2 id="stats-h">Statistiche</h2></header>
           <div class="panel stack">
@@ -271,7 +296,6 @@ import { scrollAppTo } from '../core/scroller';
               <input class="input" name="invite" [(ngModel)]="s.invite_code" autocomplete="off" /></label>
             <p class="small muted">Giorno, ora, numero di giocatori, colori e orari di prenotazioni e votazioni si impostano in <a routerLink="/partite">Partite</a>, nella configurazione predefinita.</p>
             <div class="row">
-              <label class="field grow"><span>Conferme per omologare</span><input class="input" type="number" min="1" max="9" name="q" [(ngModel)]="s.quorum" /></label>
               <label class="field grow"><span>Votanti minimi perché la media conti in classifica</span><input class="input" type="number" min="1" max="9" name="vm" [(ngModel)]="s.vote_min_voters" /></label>
             </div>
             <button class="btn primary" type="submit">Salva le regole</button>
@@ -289,6 +313,10 @@ import { scrollAppTo } from '../core/scroller';
     .temp { border: 2px solid var(--armband); }
     .punish { border: 2px solid var(--danger); }
     .danger-zone { border-color: var(--danger); }
+    .logo-prev { width: 72px; height: 72px; border-radius: 18px; flex: none; object-fit: cover; box-shadow: 0 0 0 1px var(--line), 0 4px 12px rgb(0 0 0 / 10%); background: #fff; }
+    .empty-logo { display: grid; place-items: center; font: 700 1rem/1 var(--font-display); color: var(--turf); }
+    .file-btn { position: relative; }
+    .file-btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .who { color: inherit; text-decoration: none; }
     .pw { font: 700 var(--step-3)/1.1 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
@@ -462,6 +490,38 @@ export class AdminPage implements OnInit {
     void navigator.share({ title: 'G.d.L.', text: `Ciao ${name}! Collega il tuo profilo del calcetto:`, url }).catch(() => undefined);
   }
 
+  protected readonly branding = inject(Branding);
+  protected readonly logoBusy = signal(false);
+
+  protected async pickLogo(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.logoBusy.set(true);
+    try {
+      await this.branding.upload(file);
+      this.toasts.show('Logo aggiornato.');
+    } catch (err) {
+      this.toasts.error(errorMessage(err));
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
+  protected async removeLogo(): Promise<void> {
+    if (!confirm('Togliere il logo? Torna quello predefinito.')) return;
+    this.logoBusy.set(true);
+    try {
+      await this.branding.remove();
+      this.toasts.show('Logo rimosso.');
+    } catch (err) {
+      this.toasts.error(errorMessage(err));
+    } finally {
+      this.logoBusy.set(false);
+    }
+  }
+
   protected deleteAllText = '';
 
   protected async resetAll(): Promise<void> {
@@ -559,7 +619,7 @@ export class AdminPage implements OnInit {
   protected async saveSettings(): Promise<void> {
     const s = this.settings()!;
     await this.run(() => this.api.updateSettings({
-      invite_code: s.invite_code?.trim() || null, quorum: s.quorum, vote_min_voters: s.vote_min_voters,
+      invite_code: s.invite_code?.trim() || null, vote_min_voters: s.vote_min_voters,
     }), 'Regole salvate.');
   }
 
