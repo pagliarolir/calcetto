@@ -204,7 +204,14 @@ import { scrollAppTo } from '../core/scroller';
             <summary>Ex giocatori ({{ removed().length }})</summary>
             <ul class="plain">
               @for (m of removed(); track m.id) {
-                <li class="spread"><span>{{ session.fullName(m.id) }}</span><button class="btn small" (click)="approve(m)">Riammetti</button></li>
+                <li class="spread"><span class="grow">{{ session.fullName(m.id) }}</span>
+                  <span class="row-wrap">
+                    <button class="btn small" (click)="approve(m)">Riammetti</button>
+                    @if (session.isLeader()) {
+                      <button class="btn small danger" (click)="deleteFormer(m)" [attr.aria-label]="'Elimina definitivamente ' + session.fullName(m.id)">Elimina</button>
+                    }
+                  </span>
+                </li>
               }
             </ul>
           </details>
@@ -618,6 +625,17 @@ export class AdminPage implements OnInit {
 
   protected async removeIcon(): Promise<void> {
     if (confirm("Togliere l'icona? Torna quella predefinita.")) await this.run2(() => this.branding.removeIcon(), 'Icona rimossa.');
+  }
+
+  /** il Leader elimina definitivamente un ex giocatore, con i suoi dati */
+  protected async deleteFormer(m: Member): Promise<void> {
+    const name = this.session.fullName(m.id);
+    if (!confirm(`Eliminare definitivamente ${name}? Spariscono il suo account e tutti i suoi dati: presenze, gol, voti dati e ricevuti. Anche alcune medie degli altri possono cambiare un poco. Non si torna indietro.`)) return;
+    await this.run(async () => {
+      const avatar = await this.api.deleteFormerMember(m.id);
+      if (avatar) await this.api.removeAvatarFile(avatar).catch(() => undefined);
+      await this.session.loadMembers();
+    }, `${name} è stato eliminato.`);
   }
 
   protected deleteAllText = '';

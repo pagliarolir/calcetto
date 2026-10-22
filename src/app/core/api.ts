@@ -293,6 +293,12 @@ export class Api {
     if (oldPath) await this.sb.storage.from('avatars').remove([oldPath]);
   }
 
+  /** toglie solo il file di una foto (es. di un ex giocatore eliminato) */
+  async removeAvatarFile(path: string): Promise<void> {
+    const r = await this.sb.storage.from('avatars').remove([path]);
+    if (r.error) throw r.error;
+  }
+
   async removeAvatar(userId: string, path: string): Promise<void> {
     must(await this.sb.from('profiles').update({ avatar_path: null }).eq('id', userId));
     await this.sb.storage.from('avatars').remove([path]);
@@ -314,6 +320,11 @@ export class Api {
 
   async delegate(userId: string | null, until: string | null) {
     return must(await this.sb.rpc('delegate_leadership', { p_user: userId, p_until: until }));
+  }
+
+  /** il Leader elimina un ex giocatore con i suoi dati; restituisce la foto da togliere */
+  async deleteFormerMember(userId: string): Promise<string | null> {
+    return must(await this.sb.rpc('delete_former_member', { p_user: userId })) as string | null;
   }
 
   async deactivate(userId: string) {
