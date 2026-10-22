@@ -74,91 +74,88 @@ interface SlotView {
           }
         </section>
 
-        <!-- Tabellone -->
-        @if (store.free()) {
-          <section class="section" aria-labelledby="team-h">
-            <header>
-              <h2 id="team-h">Titolari</h2>
-              <span class="muted small num">{{ store.team().length }}/{{ store.size() }}</span>
-            </header>
-            @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
-            <ul class="people board">
-              @for (r of byName(store.team()); track r.user_id) {
-                <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" /></li>
-              }
-            </ul>
-          </section>
-          @if (store.reserves().length) {
-            <section class="section" aria-labelledby="res-h">
-              <header><h2 id="res-h">Riserve</h2><span class="muted small">senza ordine</span></header>
-              <ul class="people board">
-                @for (r of byName(store.reserves()); track r.user_id) {
-                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
-                }
-              </ul>
-            </section>
+        <!-- Elenchi: una scheda alla volta, ognuna con quante persone ci sono -->
+        <div class="seg lists" role="tablist" aria-label="Elenchi dei giocatori">
+          @for (l of listTabs(); track l.id) {
+            <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="listTab.set(l.id)">
+              {{ l.label }} <span class="count num">{{ l.count }}</span>
+            </button>
           }
-          @if (store.pending().length) {
-            <section class="section" aria-labelledby="pend-h">
-              <header><h2 id="pend-h">Disponibili</h2><span class="muted small">{{ store.pending().length }}, in attesa della scelta</span></header>
+        </div>
+
+        <section class="section list-panel" role="tabpanel" [attr.aria-label]="listLabel()">
+          @switch (listTab()) {
+            @case ('team') {
+              @if (store.free()) {
+                @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
+                <ul class="people board">
+                  @for (r of byName(store.team()); track r.user_id) {
+                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" /></li>
+                  } @empty { <li class="empty">Ancora nessun titolare.</li> }
+                </ul>
+              } @else {
+                <ol class="board">
+                  @for (s of slots(); track s.slot) {
+                    <li [class.enter-drop]="s.row?.user_id === session.uid()">
+                      @if (s.row; as r) {
+                        <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
+                                      [note]="r.is_leader ? 'Leader' : r.placed_by ? 'messo dal Leader' : null" />
+                      } @else {
+                        <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
+                      }
+                    </li>
+                  }
+                </ol>
+              }
+            }
+            @case ('pending') {
+              <p class="small muted">Hanno detto che ci sono: il Leader sceglierà chi gioca.</p>
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
-                }
+                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
+                } @empty { <li class="empty">Nessun disponibile.</li> }
               </ul>
-            </section>
-          }
-        } @else {
-        <section class="section" aria-labelledby="team-h">
-          <header>
-            <h2 id="team-h">In campo</h2>
-            <span class="muted small num">{{ store.team().length }}/{{ store.size() }}</span>
-          </header>
-          <ol class="board">
-            @for (s of slots(); track s.slot + ':' + (s.row?.user_id ?? '-')) {
-              <li [class.enter-drop]="s.row?.user_id === session.uid()">
-                @if (s.row; as r) {
-                  <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
-                                [note]="r.is_leader ? 'Leader' : r.placed_by ? 'messo dal Leader' : null" />
-                } @else {
-                  <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
-                }
-              </li>
             }
-          </ol>
-        </section>
-
-        @if (store.reserves().length) {
-          <section class="section" aria-labelledby="res-h">
-            <header><h2 id="res-h">Riserve</h2><span class="muted small">entrano in quest'ordine</span></header>
-            <ol class="board">
-              @for (r of store.reserves(); track r.user_id + ':' + r.slot) {
-                <li [class.enter-drop]="r.user_id === session.uid()">
-                  <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
-                                [note]="r.reserve_reply === 'confirmed' ? 'disponibile' : r.choice === 'present' ? 'in coda' : 'se serve'"
-                                [noteTone]="r.reserve_reply === 'confirmed' ? 'turf' : 'muted'" />
-                </li>
+            @case ('reserve') {
+              @if (store.reserves().length) {
+                <p class="small muted">{{ store.free() ? 'Senza ordine: se si libera un posto decide il Leader.' : 'Entrano in questo ordine quando si libera un posto.' }}</p>
+                @if (store.free()) {
+                  <ul class="people board">
+                    @for (r of byName(store.reserves()); track r.user_id) {
+                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" /></li>
+                    }
+                  </ul>
+                } @else {
+                  <ol class="board">
+                    @for (r of store.reserves(); track r.user_id + ':' + r.slot) {
+                      <li [class.enter-drop]="r.user_id === session.uid()">
+                        <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
+                                      [note]="r.reserve_reply === 'confirmed' ? 'disponibile' : r.choice === 'present' ? 'in coda' : 'se serve'"
+                                      [noteTone]="r.reserve_reply === 'confirmed' ? 'turf' : 'muted'" />
+                      </li>
+                    }
+                  </ol>
+                }
+              } @else { <p class="empty">Nessuna riserva, per ora.</p> }
+            }
+            @case ('out') {
+              <ul class="people board">
+                @for (r of byName(store.absents()); track r.user_id) {
+                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.late_withdrawal ? 'forfait tardivo' : 'assente'" /></li>
+                } @empty { <li class="empty">Nessun assente.</li> }
+              </ul>
+              @if (silent().length) {
+                <div class="panel stack silent">
+                  <h3>Non hanno risposto <span class="count num">{{ silent().length }}</span></h3>
+                  <ul class="people board">
+                    @for (id of silent(); track id) {
+                      <li><app-figurina variant="free" [userId]="id" [mine]="id === session.uid()" note="nessuna risposta" /></li>
+                    }
+                  </ul>
+                </div>
               }
-            </ol>
-          </section>
-        }
-
-        }
-
-        <section class="section">
-          <details class="panel">
-            <summary>Assenti ({{ store.absents().length }}) e senza risposta ({{ silent().length }})</summary>
-            <div class="stack" style="margin-top: 12px">
-              <p class="small"><strong>Non ci sono:</strong>
-                @for (r of store.absents(); track r.user_id; let last = $last) {
-                  {{ session.name(r.user_id) }}@if (r.late_withdrawal) { (forfait tardivo)}@if (!last) {, }
-                } @empty { nessuno }
-              </p>
-              <p class="small"><strong>Non hanno risposto:</strong>
-                @for (id of silent(); track id; let last = $last) { {{ session.name(id) }}@if (!last) {, } } @empty { tutti hanno risposto }
-              </p>
-            </div>
-          </details>
+            }
+          }
         </section>
 
         <!-- Strumenti del Leader (REQ-023, REQ-024) -->
@@ -316,6 +313,21 @@ interface SlotView {
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
     .people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .people li { display: grid; min-width: 0; }
+    .people li.empty { grid-column: 1 / -1; }
+    /* schede degli elenchi */
+    .seg.lists { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); overflow-x: auto; scrollbar-width: none; }
+    .seg.lists::-webkit-scrollbar { display: none; }
+    .seg.lists button {
+      flex: 1 0 auto; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
+      min-height: 40px; padding: 0 12px; border-radius: 10px; font: 600 var(--step--1)/1 var(--font-body);
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .seg.lists button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
+    .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--line); color: var(--ink); }
+    .seg.lists button[aria-selected='true'] .count { background: var(--turf); color: var(--turf-ink); }
+    .list-panel { margin-top: -8px; }
+    .silent { margin-top: 12px; }
+    .silent h3 { display: flex; align-items: center; gap: 8px; }
     .assign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .assign li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
     .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
@@ -468,6 +480,19 @@ export class BookingTab {
     return [...rows].sort((a, b) => Number(b.is_leader) - Number(a.is_leader)
       || this.session.name(a.user_id).localeCompare(this.session.name(b.user_id), 'it'));
   }
+
+  /** scheda degli elenchi aperta: titolari, disponibili, riserve, assenti */
+  protected readonly listTab = signal<'team' | 'pending' | 'reserve' | 'out'>('team');
+  protected readonly listTabs = computed(() => {
+    const out: { id: 'team' | 'pending' | 'reserve' | 'out'; label: string; count: string }[] = [
+      { id: 'team', label: 'Titolari', count: `${this.store.team().length}/${this.store.size()}` },
+    ];
+    if (this.store.free()) out.push({ id: 'pending', label: 'Disponibili', count: String(this.store.pending().length) });
+    out.push({ id: 'reserve', label: 'Riserve', count: String(this.store.reserves().length) });
+    out.push({ id: 'out', label: 'Assenti', count: String(this.store.absents().length + this.silent().length) });
+    return out;
+  });
+  protected readonly listLabel = computed(() => this.listTabs().find((l) => l.id === this.listTab())?.label ?? '');
 
   /** tutti quelli che hanno detto ci sono: titolari, riserve e da scegliere */
   protected readonly available = computed(() => this.store.board().filter((b) => b.list === 'team' || b.list === 'reserve' || b.list === 'pending'));

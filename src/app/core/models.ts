@@ -98,6 +98,8 @@ export interface Match {
   /** 'order': fa fede l'ordine di prenotazione; 'free': titolari e riserve li sceglie il Leader */
   booking_mode: BookingMode;
   lists_confirmed_at: string | null;
+  /** 'single': un solo migliore in campo; 'per_team': uno per squadra (partite votate prima) */
+  mvp_mode: 'single' | 'per_team';
 }
 
 export interface BoardRow {

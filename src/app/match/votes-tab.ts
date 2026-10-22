@@ -66,7 +66,8 @@ import { kit } from '../core/kits';
                 }
                 <div class="confirm panel">
                   <p class="small">{{ toVote().length }} voti, media {{ fmt(myAvg()) }}@if (mvpPick(); as id) {, migliore: {{ session.name(id) }}}</p>
-                  <button class="btn primary block" [disabled]="busy() || !toVote().length" (click)="submit()">Conferma i voti</button>
+                  @if (needsMvp() && !mvpPick()) { <p class="small warn-text">Scegli il migliore in campo per confermare.</p> }
+                  <button class="btn primary block" [disabled]="busy() || !toVote().length || (needsMvp() && !mvpPick())" (click)="submit()">Conferma i voti</button>
                 </div>
               </section>
             }
@@ -76,6 +77,20 @@ import { kit } from '../core/kits';
               <section class="stack" aria-label="Medie">
                 @if (summary(); as s) {
                   @if (s.voters && s.players) {
+                    @if (mvpTop().length) {
+                      <div class="mvp-hero" aria-label="Migliore in campo">
+                        @for (p of mvpTop(); track p.user_id) {
+                          <div class="mvp-one">
+                            <span class="mvp-pic">
+                              <app-avatar [userId]="p.user_id" [team]="team(p.user_id)" [size]="76" />
+                              <span class="mvp-badge" [attr.aria-label]="p.mvp_votes + ' voti da migliore'">★ {{ p.mvp_votes }}</span>
+                            </span>
+                            <strong>{{ session.name(p.user_id) }}</strong>
+                            <span class="small muted">migliore in campo</span>
+                          </div>
+                        }
+                      </div>
+                    }
                     <p class="small muted">{{ s.voters === 1 ? '1 ha votato' : s.voters + ' hanno votato' }}: le medie si aggiornano a ogni voto.</p>
                     <ol class="rows ranked">
                       @for (p of s.players; track p.user_id; let i = $index) {
@@ -83,7 +98,6 @@ import { kit } from '../core/kits';
                           <span class="pos num">{{ i + 1 }}</span>
                           <app-avatar [userId]="p.user_id" [team]="team(p.user_id)" [size]="38" />
                           <span class="grow ellipsis name">{{ session.name(p.user_id) }}
-                            @if (p.is_mvp) { <span class="mvp" title="Migliore in campo">★ migliore</span> }
                           </span>
                           <span [class]="'rate static ' + tone(p.avg)">{{ p.avg !== null ? p.avg.toFixed(2).replace('.', ',') : '–' }}</span>
                         </li>
@@ -216,6 +230,15 @@ import { kit } from '../core/kits';
     .rate:not(.touched) { opacity: 0.85; }
     .top { background: #1d5fd1; } .good { background: #1f7a4a; } .ok { background: #4f7a12; } .meh { background: #b45309; } .bad { background: #b93a26; } .none { background: var(--surface-2); color: var(--muted); }
 
+    .mvp-hero { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; padding: 6px 0 4px; }
+    .mvp-one { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+    .mvp-pic { position: relative; display: inline-block; border-radius: 50%; box-shadow: 0 0 0 3px var(--armband), 0 8px 20px rgb(0 0 0 / 18%); }
+    .mvp-badge {
+      position: absolute; right: -8px; bottom: -4px; min-width: 30px; height: 24px; padding: 0 7px; border-radius: 12px;
+      display: grid; place-items: center; background: var(--armband); color: var(--armband-ink);
+      font: 800 0.8rem/1 var(--font-display); box-shadow: 0 0 0 3px var(--surface);
+    }
+    .warn-text { color: var(--danger); font-weight: 600; }
     .mvp-card {
       display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; min-height: 64px; padding: 10px 14px;
       border-radius: 16px; border: 1.5px solid color-mix(in srgb, var(--armband) 60%, var(--line)); background: color-mix(in srgb, var(--armband) 12%, var(--surface));
@@ -267,6 +290,11 @@ export class VotesTab {
 
   protected readonly summary = signal<VoteSummary | null>(null);
   protected readonly scores = signal(new Map<string, number>());
+  /** il migliore (o i migliori a pari voti) da mettere in evidenza nelle medie */
+  protected readonly mvpTop = computed(() => (this.summary()?.players ?? []).filter((p) => p.is_mvp && p.mvp_votes > 0));
+  /** il migliore in campo è obbligatorio quando le squadre sono fatte */
+  protected readonly needsMvp = computed(() => this.store.match()?.mvp_mode !== 'per_team' && this.groups().some((g) => !!g.team));
+
   /** un solo migliore in campo */
   protected readonly mvpPick = signal<string | null>(null);
   private readonly mvpDialog = viewChild<ElementRef<HTMLDialogElement>>('mvpDialog');

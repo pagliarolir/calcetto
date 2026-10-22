@@ -31,6 +31,23 @@ type Field = keyof Line;
                   <h2 class="num big">{{ text(r.diff, r.white_goals, r.black_goals, teamLabel()) }}</h2>
                   <span class="tag" [class.turf]="r.status === 'homologated'">{{ r.status === 'homologated' ? 'Omologato' : 'Da omologare' }}</span>
                 </div>
+                @if (scorersBy('white').goals.length || scorersBy('black').goals.length) {
+                  <div class="scorecols" aria-label="Marcatori">
+                    @for (t of teams; track t) {
+                      <div class="col" [class.right]="t === 'black'">
+                        <span class="cname">{{ teamLabel()[t] }}</span>
+                        <ul>
+                          @for (g of scorersBy(t).goals; track g.id + g.own) {
+                            <li><span class="ball" aria-hidden="true">⚽</span>{{ session.name(g.id) }}@if (g.n > 1) { <span class="times">×{{ g.n }}</span> }@if (g.own) { <span class="own">(aut.)</span> }</li>
+                          }
+                        </ul>
+                        @if (scorersBy(t).assists.length) {
+                          <p class="assists">Assist: {{ scorersBy(t).assists }}</p>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
                 <p class="small muted">Inserito da {{ session.name(r.entered_by) }}.
                   @if (r.status === 'homologated') { {{ homologatedBy() }} }
                 </p>
@@ -175,6 +192,16 @@ type Field = keyof Line;
     .score-in { display: flex; align-items: flex-end; justify-content: center; gap: 18px; }
     .score-in .stack { align-items: center; gap: 4px; }
     .dash { font-size: var(--step-3); padding-bottom: 2px; }
+    /* marcatori sotto il punteggio: una colonna per squadra */
+    .scorecols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 10px 0 4px; border-top: 1px solid var(--line); margin-top: 6px; }
+    .col ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .col li { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 0; }
+    .col.right { text-align: right; }
+    .col.right li { flex-direction: row-reverse; }
+    .cname { font: 600 0.75rem/1 var(--font-body); color: var(--muted); }
+    .ball { font-size: 0.85rem; }
+    .times, .own { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
+    .assists { margin: 6px 0 0; font-size: 0.75rem; color: var(--muted); }
     .scorer { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
     .scorer.mine .grow { font-weight: 700; }
     .scorer .tag { margin-left: 6px; font-size: 0.7rem; }
@@ -247,6 +274,21 @@ export class ResultTab {
     if (t.locked) return this.session.isLeader();
     return this.store.amParticipant() || this.session.isLeader();
   });
+
+  /** marcatori di una squadra: i suoi gol e gli autogol degli avversari; più gli assist */
+  protected scorersBy(t: Team): { goals: { id: string; n: number; own: boolean }[]; assists: string } {
+    const team = this.store.teamOf();
+    const goals: { id: string; n: number; own: boolean }[] = [];
+    const assists: string[] = [];
+    for (const s of this.store.scorers()) {
+      const st = team.get(s.user_id);
+      if (st === t && s.goals > 0) goals.push({ id: s.user_id, n: s.goals, own: false });
+      if (st && st !== t && s.own_goals > 0) goals.push({ id: s.user_id, n: s.own_goals, own: true });
+      if (st === t && s.assists > 0) assists.push(this.session.name(s.user_id) + (s.assists > 1 ? ` ×${s.assists}` : ''));
+    }
+    goals.sort((a, b) => b.n - a.n || Number(a.own) - Number(b.own));
+    return { goals, assists: assists.join(', ') };
+  }
 
   /** ognuno modifica solo la propria riga (se non l'ha fissata il Leader); il Leader tutte */
   protected editable(id: string): boolean {

@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Branding } from '../core/branding';
+import { Branding, IconMode } from '../core/branding';
+import { logoColor, toIconPng } from '../core/image';
 import { Api } from '../core/api';
 import { fmtAgo, fmtWhen, fromLocalInput } from '../core/format';
 import { AppSettings, Member, Role, ROLE_LABEL, FIELD_ROLE_LABEL } from '../core/models';
@@ -244,26 +245,59 @@ import { scrollAppTo } from '../core/scroller';
 
       @if (session.isLeader() && settings(); as s) {
         <section class="section" aria-labelledby="logo-h">
-          <header><h2 id="logo-h">Logo dell'app</h2></header>
+          <header><h2 id="logo-h">Logo del tabellone</h2></header>
           <div class="panel stack">
             <div class="row">
-              @if (branding.logo512(); as logo) {
-                <img class="logo-prev" [src]="logo" alt="Logo attuale dell'app" />
-              } @else {
-                <span class="logo-prev empty-logo" aria-hidden="true">G.d.L.</span>
-              }
-              <p class="small muted grow">Compare nel tabellone della partita e diventa l'icona dell'app quando la si aggiunge alla schermata Home. Chi l'ha già aggiunta vede il nuovo logo togliendola e aggiungendola di nuovo.</p>
+              <span class="logo-stage" aria-hidden="true">
+                @if (branding.headerUrl(); as u) { <img [src]="u" alt="" /> } @else { <span class="none">nessuno</span> }
+              </span>
+              <p class="small muted grow">Compare a sinistra nel tabellone della partita, al posto del calendario. Resta trasparente: niente sfondo dietro.</p>
             </div>
             <div class="row-wrap">
               <label class="btn small primary file-btn">
-                {{ branding.logoId() ? 'Cambia il logo' : 'Carica il logo' }}
-                <input type="file" accept="image/*" class="sr-only" [disabled]="logoBusy()" (change)="pickLogo($event)" />
+                {{ branding.headerId() ? 'Cambia il logo' : 'Carica il logo' }}
+                <input type="file" accept="image/*" class="sr-only" [disabled]="logoBusy()" (change)="pickHeader($event)" />
               </label>
-              @if (branding.logoId()) {
-                <button class="btn small ghost" [disabled]="logoBusy()" (click)="removeLogo()">Rimuovi</button>
-              }
+              @if (branding.headerId()) { <button class="btn small ghost" [disabled]="logoBusy()" (click)="removeHeader()">Rimuovi</button> }
             </div>
-            <p class="small muted">Meglio un'immagine quadrata: viene adattata intera, senza tagli, su sfondo bianco.</p>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="icon-h">
+          <header><h2 id="icon-h">Icona dell'app</h2></header>
+          <div class="panel stack">
+            <div class="row">
+              <span class="icon-prev" aria-hidden="true">
+                @if (iconPreview() ?? branding.icon512(); as u) { <img [src]="u" alt="" /> } @else { <span class="none">G.d.L.</span> }
+              </span>
+              <p class="small muted grow">È l'icona che compare sul telefono quando si aggiunge l'app alla schermata Home. Chi l'ha già aggiunta la vede cambiata togliendo l'app e aggiungendola di nuovo.</p>
+            </div>
+            @if (iconFile()) {
+              <div class="row-wrap" role="group" aria-label="Come adattare l'immagine">
+                <button class="chip" [attr.aria-pressed]="iconMode() === 'cover'" (click)="setIconMode('cover')">Riempi il quadrato</button>
+                <button class="chip" [attr.aria-pressed]="iconMode() === 'contain'" (click)="setIconMode('contain')">Intera su colore</button>
+              </div>
+              @if (iconMode() === 'contain') {
+                <div class="row-wrap" role="group" aria-label="Colore dello sfondo">
+                  @for (c of iconColors(); track c.color) {
+                    <button class="swatch" [style.background]="c.color" [attr.aria-pressed]="iconBg() === c.color" [attr.aria-label]="c.label" [title]="c.label" (click)="setIconBg(c.color)"></button>
+                  }
+                </div>
+              }
+              <p class="small muted">{{ iconHint() }}</p>
+              <div class="row-wrap">
+                <button class="btn small primary" [disabled]="logoBusy()" (click)="saveIcon()">Salva l'icona</button>
+                <button class="btn small ghost" [disabled]="logoBusy()" (click)="cancelIcon()">Annulla</button>
+              </div>
+            } @else {
+              <div class="row-wrap">
+                <label class="btn small primary file-btn">
+                  {{ iconButtonText() }}
+                  <input type="file" accept="image/*" class="sr-only" [disabled]="logoBusy()" (change)="pickIcon($event)" />
+                </label>
+                @if (branding.iconId()) { <button class="btn small ghost" [disabled]="logoBusy()" (click)="removeIcon()">Rimuovi</button> }
+              </div>
+            }
           </div>
         </section>
 
@@ -313,8 +347,14 @@ import { scrollAppTo } from '../core/scroller';
     .temp { border: 2px solid var(--armband); }
     .punish { border: 2px solid var(--danger); }
     .danger-zone { border-color: var(--danger); }
-    .logo-prev { width: 72px; height: 72px; border-radius: 18px; flex: none; object-fit: cover; box-shadow: 0 0 0 1px var(--line), 0 4px 12px rgb(0 0 0 / 10%); background: #fff; }
-    .empty-logo { display: grid; place-items: center; font: 700 1rem/1 var(--font-display); color: var(--turf); }
+    .logo-stage { width: 96px; height: 96px; border-radius: 16px; flex: none; display: grid; place-items: center; padding: 8px; background: var(--turf); }
+    .logo-stage img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 3px 8px rgb(0 0 0 / 25%)); }
+    .icon-prev { width: 72px; height: 72px; border-radius: 18px; flex: none; overflow: hidden; display: grid; place-items: center; box-shadow: 0 0 0 1px var(--line), 0 4px 12px rgb(0 0 0 / 12%); background: var(--surface-2); }
+    .icon-prev img { width: 100%; height: 100%; object-fit: cover; }
+    .none { font: 700 0.85rem/1 var(--font-display); color: var(--chalk, #fff); opacity: 0.8; }
+    .icon-prev .none { color: var(--turf); }
+    .swatch { appearance: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid var(--line); padding: 0; }
+    .swatch[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--turf); }
     .file-btn { position: relative; }
     .file-btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -493,15 +533,27 @@ export class AdminPage implements OnInit {
   protected readonly branding = inject(Branding);
   protected readonly logoBusy = signal(false);
 
-  protected async pickLogo(e: Event): Promise<void> {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
+  // ---------------------------------------------------------------- loghi
+  protected readonly iconFile = signal<File | null>(null);
+  protected readonly iconButtonText = computed(() => (this.branding.iconId() ? "Cambia l'icona" : "Carica l'icona"));
+  protected readonly iconHint = computed(() => this.iconMode() === 'cover'
+    ? "L'immagine riempie tutta l'icona: i bordi in eccesso si tagliano."
+    : "L'immagine resta intera; le parti trasparenti prendono il colore scelto.");
+  protected readonly iconMode = signal<IconMode>('cover');
+  protected readonly iconBg = signal('#1F6B45');
+  protected readonly iconPreview = signal<string | null>(null);
+  protected readonly logoTint = signal<string | null>(null);
+  protected readonly iconColors = computed(() => [
+    { color: '#1F6B45', label: "Verde dell'app" },
+    { color: '#111111', label: 'Nero' },
+    ...(this.logoTint() ? [{ color: this.logoTint()!, label: 'Colore del logo' }] : []),
+  ]);
+
+  private async run2(fn: () => Promise<void>, ok: string): Promise<void> {
     this.logoBusy.set(true);
     try {
-      await this.branding.upload(file);
-      this.toasts.show('Logo aggiornato.');
+      await fn();
+      this.toasts.show(ok);
     } catch (err) {
       this.toasts.error(errorMessage(err));
     } finally {
@@ -509,17 +561,63 @@ export class AdminPage implements OnInit {
     }
   }
 
-  protected async removeLogo(): Promise<void> {
-    if (!confirm('Togliere il logo? Torna quello predefinito.')) return;
-    this.logoBusy.set(true);
-    try {
-      await this.branding.remove();
-      this.toasts.show('Logo rimosso.');
-    } catch (err) {
-      this.toasts.error(errorMessage(err));
-    } finally {
-      this.logoBusy.set(false);
-    }
+  protected async pickHeader(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) await this.run2(() => this.branding.uploadHeader(file), 'Logo del tabellone aggiornato.');
+  }
+
+  protected async removeHeader(): Promise<void> {
+    if (confirm('Togliere il logo del tabellone? Torna il calendario.')) await this.run2(() => this.branding.removeHeader(), 'Logo rimosso.');
+  }
+
+  protected async pickIcon(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.iconFile.set(file);
+    this.iconMode.set('cover');
+    this.logoTint.set(await logoColor(file).catch(() => null));
+    await this.refreshIconPreview();
+  }
+
+  protected async setIconMode(m: IconMode): Promise<void> {
+    this.iconMode.set(m);
+    await this.refreshIconPreview();
+  }
+
+  protected async setIconBg(c: string): Promise<void> {
+    this.iconBg.set(c);
+    await this.refreshIconPreview();
+  }
+
+  private async refreshIconPreview(): Promise<void> {
+    const f = this.iconFile();
+    if (!f) return;
+    const blob = await toIconPng(f, 180, this.iconMode(), this.iconBg());
+    const old = this.iconPreview();
+    this.iconPreview.set(URL.createObjectURL(blob));
+    if (old) URL.revokeObjectURL(old);
+  }
+
+  protected cancelIcon(): void {
+    const old = this.iconPreview();
+    if (old) URL.revokeObjectURL(old);
+    this.iconPreview.set(null);
+    this.iconFile.set(null);
+  }
+
+  protected async saveIcon(): Promise<void> {
+    const f = this.iconFile();
+    if (!f) return;
+    await this.run2(() => this.branding.uploadIcon(f, this.iconMode(), this.iconBg()), "Icona dell'app aggiornata.");
+    this.cancelIcon();
+  }
+
+  protected async removeIcon(): Promise<void> {
+    if (confirm("Togliere l'icona? Torna quella predefinita.")) await this.run2(() => this.branding.removeIcon(), 'Icona rimossa.');
   }
 
   protected deleteAllText = '';

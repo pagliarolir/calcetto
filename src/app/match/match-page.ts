@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
 import { fmtCountdown, fmtDayLong, fmtDayNum, fmtMonthShort, fmtTime, fmtWeekday, mapsUrl, titleCase } from '../core/format';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
@@ -30,7 +32,7 @@ import { MatchStore } from './match-store';
               <span class="status">{{ status() }}</span>
             </div>
             <div class="ticket">
-              @if (branding.logo512(); as logo) {
+              @if (branding.headerUrl(); as logo) {
                 <img class="calbig logo" [src]="logo" alt="" />
               } @else {
               <div class="calbig" aria-hidden="true"><small>{{ weekdayShort() }}</small><b>{{ dayNum() }}</b><small>{{ monthShort() }}</small></div>
@@ -64,10 +66,13 @@ import { MatchStore } from './match-store';
             </div>
           </div>
         <nav class="tabs" aria-label="Sezioni della partita">
-          <a routerLink="." [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="on">Lista</a>
-          <a routerLink="squadre" routerLinkActive="on">Squadre</a>
-          <a routerLink="risultato" routerLinkActive="on">Risultato</a>
-          <a routerLink="voti" routerLinkActive="on">Pagelle</a>
+          @if (finished()) {
+            <a routerLink="risultato" routerLinkActive="on">Risultato</a>
+            <a routerLink="voti" routerLinkActive="on">Pagelle</a>
+          } @else {
+            <a routerLink="." [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="on">Lista</a>
+            <a routerLink="squadre" routerLinkActive="on">Squadre</a>
+          }
           <a routerLink="chat" routerLinkActive="on">Chat
             @if (store.t()?.chatOpen) { <span class="dot" aria-label="aperta"></span> }
           </a>
@@ -101,7 +106,7 @@ import { MatchStore } from './match-store';
     .calbig b { font: 700 2.6rem/0.9 var(--font-display); }
     .calbig small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
     /* il logo dell'app prende il posto del calendario */
-    .calbig.logo { height: 92px; align-self: center; padding: 0; object-fit: cover; background: #fff; }
+    .calbig.logo { height: 92px; align-self: center; padding: 0; object-fit: contain; background: none; box-shadow: none; border-radius: 0; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 25%)); }
     .tmain { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
     .tmain h1 { font: 700 1.75rem/1 var(--font-display); margin-bottom: 4px; }
     .tmain h1::first-letter { text-transform: uppercase; }
@@ -192,7 +197,21 @@ export class MatchPage {
     return 'Partita chiusa';
   });
 
+  /** a partita finita le schede sono Risultato, Pagelle e Chat */
+  protected readonly finished = computed(() => !!this.store.t()?.ended);
+  private readonly router = inject(Router);
+  private readonly url = toSignal(this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
+
   constructor() {
+    // a partita finita, Lista e Squadre non ci sono più: si apre il Risultato
+    effect(() => {
+      const id = this.store.match()?.id;
+      if (!id || !this.finished()) return;
+      const path = this.url().split('?')[0].split('#')[0];
+      if (path === `/partita/${id}` || path === `/partita/${id}/squadre`) {
+        void this.router.navigateByUrl(`/partita/${id}/risultato`, { replaceUrl: true });
+      }
+    });
     effect(() => {
       const id = this.id();
       untracked(() => void this.store.load(id));
