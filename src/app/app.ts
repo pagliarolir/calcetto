@@ -8,6 +8,7 @@ import { Toasts } from './core/toast';
 import { Unread } from './core/unread';
 import { Icon } from './ui/icon';
 import { ReprimandView } from './ui/reprimand';
+import { Branding } from './core/branding';
 
 @Component({
   selector: 'app-root',
@@ -109,6 +110,7 @@ import { ReprimandView } from './ui/reprimand';
 export class App {
   private readonly router = inject(Router);
   private readonly session = inject(Session);
+  private readonly branding = inject(Branding);
   protected readonly toasts = inject(Toasts);
   protected readonly unread = inject(Unread);
 
@@ -133,6 +135,8 @@ export class App {
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   constructor() {
+    // logo dell'app (icona e manifest): anche prima dell'accesso
+    void this.branding.load();
     // rete di sicurezza: se un browser facesse comunque scorrere la colonna, torna subito a posto
     const host = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
     host.addEventListener('scroll', () => {

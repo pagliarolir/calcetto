@@ -49,19 +49,30 @@ select nm(user_id), team, field_slot from lineup order by team, field_slot;
 
 -- la partita è finita (21:30 passate)
 update matches set starts_at = now() - interval '2 hours';
-\echo '--- risultato: P1 inserisce 6-3, 5 conferme omologano'
+\echo '--- risultato: P1 inserisce 6-3; le conferme non omologano: omologa il Leader'
 set role authenticated;
 select as_user('P1'); select submit_result(mid(), null, 6, 3);
 \set ON_ERROR_STOP 0
 select as_user('P1'); select review_result(mid(), true);
 select as_user('P6'); select submit_result(mid(), 1);
-\echo '--- marcatori incoerenti (7 gol ai bianchi): atteso errore'
-select as_user('P5'); select save_scorers(mid(), (select jsonb_agg(jsonb_build_object('user_id', user_id, 'goals', 2)) from lineup where team='white' and match_id=mid()));
+\echo '--- marcatori incoerenti inseriti dal Leader (10 gol ai bianchi): atteso errore'
+select as_user('P1'); select save_scorers(mid(), (select jsonb_agg(jsonb_build_object('user_id', user_id, 'goals', 2)) from lineup where team='white' and match_id=mid()));
+\echo '--- un giocatore inserisce i gol di un altro: atteso errore'
+select as_user('P5'); select save_scorers(mid(), (select jsonb_agg(jsonb_build_object('user_id', user_id, 'goals', 1)) from lineup where team='white' and match_id=mid() and user_id <> (select id from ids where n='P5')));
 \set ON_ERROR_STOP 1
-select as_user('P5'); select save_scorers(mid(), jsonb_build_array(
+select as_user('P1'); select save_scorers(mid(), jsonb_build_array(
    jsonb_build_object('user_id', (select user_id from lineup where team='white' order by field_slot limit 1), 'goals', 3, 'assists', 1),
    jsonb_build_object('user_id', (select user_id from lineup where team='black' order by field_slot limit 1), 'goals', 2, 'own_goals', 1)));
 select as_user('P'||g), review_result(mid(), true) from generate_series(5,9) g;
+reset role;
+\echo '--- 5 conferme: il risultato resta da omologare (atteso pending)'
+select status from results;
+set role authenticated;
+\set ON_ERROR_STOP 0
+\echo '--- un Premier non omologa (atteso errore)'
+select as_user('P2'), staff_homologate(mid());
+\set ON_ERROR_STOP 1
+select as_user('P1'), staff_homologate(mid());
 reset role;
 select status, homologated_by from results;
 

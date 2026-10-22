@@ -35,11 +35,7 @@ type Field = keyof Line;
                   @if (r.status === 'homologated') { {{ homologatedBy() }} }
                 </p>
                 @if (r.status === 'pending') {
-                  <div class="meter" role="progressbar" [attr.aria-valuenow]="agrees()" aria-valuemin="0" [attr.aria-valuemax]="quorum">
-                    @for (i of quorumDots; track i) { <span [class.on]="i < agrees()"></span> }
-                  </div>
-                  <p class="small">{{ agrees() }} conferme su {{ quorum }} necessarie
-                    @if (contests()) { , {{ contests() }} contestazioni }</p>
+                  <p class="small">{{ agrees() === 1 ? '1 conferma' : agrees() + ' conferme' }}@if (contests()) {, {{ contests() === 1 ? '1 contestazione' : contests() + ' contestazioni' }}}: il risultato lo omologa il Leader.</p>
                 }
               </div>
 
@@ -116,7 +112,11 @@ type Field = keyof Line;
           <section class="section">
             <header><h2>Gol e assist</h2></header>
             @if (canEditScorers()) {
-              <p class="small muted">Puoi segnare i gol tuoi e degli altri. L'autogol va al giocatore che l'ha fatto e conta per la squadra avversaria.</p>
+              <p class="small muted">
+                @if (session.isLeader()) { Puoi inserire i dati di tutti: quelli che inserisci tu restano bloccati per gli altri. }
+                @else { Inserisci i tuoi gol, assist e autogol. Gli altri li inseriscono loro o il Leader; i dati inseriti dal Leader non si cambiano. }
+                L'autogol va al giocatore che l'ha fatto e conta per la squadra avversaria.
+              </p>
               @for (t of teams; track t) {
                 <div class="panel stack">
                   <div class="spread">
@@ -124,8 +124,13 @@ type Field = keyof Line;
                     <span class="small" [class.warn]="over(t)">{{ creditText(t) }}</span>
                   </div>
                   @for (id of players(t); track id) {
-                    <div class="scorer">
-                      <span class="grow ellipsis">{{ session.name(id) }}</span>
+                    <div class="scorer" [class.mine]="id === session.uid()">
+                      <span class="grow ellipsis">{{ session.name(id) }}
+                        @if (lockedByLeader(id)) { <span class="tag" title="Inseriti dal Leader">dal Leader</span> }
+                      </span>
+                      @if (!editable(id)) {
+                        <span class="small muted readonly">{{ summary(val(id, 'goals'), val(id, 'assists'), val(id, 'own_goals')) || 'nessun gol' }}</span>
+                      } @else {
                       @for (f of fields; track f.key) {
                         <div class="cell">
                           <span class="small muted">{{ f.label }}</span>
@@ -135,6 +140,7 @@ type Field = keyof Line;
                             <button (click)="bump(id, f.key, 1)" [disabled]="!canAdd(id, f.key)" [attr.aria-label]="f.label + ' più, ' + session.name(id)">+</button>
                           </div>
                         </div>
+                      }
                       }
                     </div>
                   } @empty { <p class="small muted">Formazione non ancora assegnata.</p> }
@@ -170,6 +176,9 @@ type Field = keyof Line;
     .score-in .stack { align-items: center; gap: 4px; }
     .dash { font-size: var(--step-3); padding-bottom: 2px; }
     .scorer { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+    .scorer.mine .grow { font-weight: 700; }
+    .scorer .tag { margin-left: 6px; font-size: 0.7rem; }
+    .readonly { text-align: right; }
     .cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .cell .stepper button { width: 30px; height: 30px; font-size: 1rem; }
     .cell .stepper output { min-width: 18px; font-size: var(--step-0); }
@@ -188,8 +197,6 @@ export class ResultTab {
   protected readonly teamLabel = computed(() => this.store.teamNames());
   protected readonly when = fmtWhen;
   protected readonly text = diffText;
-  protected readonly quorum = 5;
-  protected readonly quorumDots = [0, 1, 2, 3, 4];
   protected readonly fields: { key: Field; label: string }[] = [
     { key: 'goals', label: 'Gol' },
     { key: 'assists', label: 'Assist' },
@@ -231,19 +238,29 @@ export class ResultTab {
   protected readonly canHomologate = computed(() => {
     const r = this.store.result();
     if (!r || r.status !== 'pending') return false;
-    return this.session.isLeader() || (this.session.isStaff() && !!this.store.t()?.locked);
+    return this.session.isLeader();   // il risultato lo omologa il Leader
   });
 
   protected readonly canEditScorers = computed(() => {
     const t = this.store.t();
     if (!t?.resultOpen) return false;
     if (t.locked) return this.session.isLeader();
-    return this.store.amParticipant() || this.session.isStaff();
+    return this.store.amParticipant() || this.session.isLeader();
   });
+
+  /** ognuno modifica solo la propria riga (se non l'ha fissata il Leader); il Leader tutte */
+  protected editable(id: string): boolean {
+    if (this.session.isLeader()) return true;
+    return id === this.session.uid() && !this.lockedByLeader(id);
+  }
+
+  protected lockedByLeader(id: string): boolean {
+    return this.store.scorers().some((s) => s.user_id === id && s.set_by_leader);
+  }
 
   protected readonly homologatedBy = computed(() => {
     const by = this.store.result()?.homologated_by;
-    return by === 'quorum' ? 'Confermato da almeno 5 giocatori.' : by === 'leader' ? 'Omologato dal Leader.' : 'Omologato da un Premier.';
+    return by === 'quorum' ? 'Confermato da almeno 5 giocatori.' : by === 'leader' ? 'Omologato dal Leader.' : 'Omologato da un Premier.'   // storico;
   });
 
   protected readonly previewText = computed(() => {
@@ -269,9 +286,10 @@ export class ResultTab {
     const c = this.credit();
     const out: string[] = [];
     const n = this.teamLabel();
-    if (c.wAst > c.wGoals) out.push(`I ${n.white} hanno più assist che gol segnati dai loro giocatori.`);
-    if (c.bAst > c.bGoals) out.push(`I ${n.black} hanno più assist che gol segnati dai loro giocatori.`);
+    // ognuno inserisce i propri dati: gli assist si confrontano con i gol del risultato, non con quelli già inseriti
     if (r && r.white_goals !== null && r.black_goals !== null) {
+      if (c.wAst > r.white_goals) out.push(`I ${n.white} hanno più assist che gol segnati.`);
+      if (c.bAst > r.black_goals) out.push(`I ${n.black} hanno più assist che gol segnati.`);
       if (c.white > r.white_goals) out.push(`Ai ${n.white} risultano ${c.white} gol, ma ne hanno fatti ${r.white_goals}.`);
       if (c.black > r.black_goals!) out.push(`Ai ${n.black} risultano ${c.black} gol, ma ne hanno fatti ${r.black_goals}.`);
     }
@@ -388,7 +406,8 @@ export class ResultTab {
 
   protected async saveScorers(): Promise<void> {
     if (this.reprimand.guard()) return;
-    const rows = [...this.lines()].map(([user_id, l]) => ({ user_id, ...l }));
+    // si inviano solo le righe che si possono modificare (per un giocatore: la sua)
+    const rows = [...this.lines()].filter(([user_id]) => this.editable(user_id)).map(([user_id, l]) => ({ user_id, ...l }));
     await this.run(async () => {
       await this.api.saveScorers(this.store.match()!.id, rows);
       await this.store.reload('scorers');

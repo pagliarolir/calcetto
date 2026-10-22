@@ -37,7 +37,10 @@ select as_user('P3'), submit_votes(mid(), '[]'::jsonb, null, null);
 \set ON_ERROR_STOP 1
 
 \echo '--- 4) il Leader vota anche se non ha giocato, e anche il suo delegato'
-select as_user('P1'), submit_votes(mid(), tutti_a_6(pid('P1')), pid('P2'), pid('P3'));
+\set ON_ERROR_STOP 0
+select as_user('P1'), submit_votes(mid(), tutti_a_6(pid('P1')), pid('P2'), pid('P3'));   -- due migliori: atteso errore
+\set ON_ERROR_STOP 1
+select as_user('P1'), submit_votes(mid(), tutti_a_6(pid('P1')), pid('P2'), null);
 select as_user('P12'), submit_votes(mid(), tutti_a_6(pid('P12')), null, null);
 reset role;
 select (select count(*) from player_votes where voter_id = pid('P1')) as voti_del_leader,

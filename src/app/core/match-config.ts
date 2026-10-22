@@ -12,13 +12,16 @@ export interface MatchConfig {
   votes_open_after_min: number;
   votes_hours: number;
   booking_mode: BookingMode;
+  /** durata della partita in minuti (1-90) */
+  duration_min: number;
 }
 
-export type ConfigField = 'time' | 'booking_mode' | 'players_per_team' | 'kits' | 'booking_open' | 'booking_close' | 'votes_open' | 'votes_close';
+export type ConfigField = 'time' | 'duration' | 'booking_mode' | 'players_per_team' | 'kits' | 'booking_open' | 'booking_close' | 'votes_open' | 'votes_close';
 
 export const FIELD_LABEL: Record<ConfigField, string> = {
   time: 'ora della partita',
   booking_mode: 'modalità di prenotazione',
+  duration: 'durata',
   players_per_team: 'numero di giocatori',
   kits: 'colori delle squadre',
   booking_open: 'apertura delle prenotazioni',
@@ -36,6 +39,7 @@ export function configOfMatch(m: Match): MatchConfig {
     booking_close_days: m.booking_close_days, booking_close_time: hhmm(m.booking_close_time),
     votes_open_after_min: m.votes_open_after_min, votes_hours: m.votes_hours,
     booking_mode: m.booking_mode,
+    duration_min: m.duration_min,
   };
 }
 
@@ -46,6 +50,7 @@ export function configOfSettings(s: AppSettings): MatchConfig {
     booking_close_days: s.booking_close_days, booking_close_time: hhmm(s.booking_close_time),
     votes_open_after_min: s.votes_open_after_min, votes_hours: s.vote_hours,
     booking_mode: s.booking_mode,
+    duration_min: s.duration_min,
   };
 }
 
@@ -53,6 +58,7 @@ export function configOfSettings(s: AppSettings): MatchConfig {
 export function changedFields(before: MatchConfig, after: MatchConfig, timeBefore?: string, timeAfter?: string): ConfigField[] {
   const out: ConfigField[] = [];
   if (timeBefore !== undefined && timeAfter !== undefined && hhmm(timeBefore) !== hhmm(timeAfter)) out.push('time');
+  if (before.duration_min !== after.duration_min) out.push('duration');
   if (before.booking_mode !== after.booking_mode) out.push('booking_mode');
   if (before.players_per_team !== after.players_per_team) out.push('players_per_team');
   if (before.team_a_kit !== after.team_a_kit || before.team_b_kit !== after.team_b_kit) out.push('kits');

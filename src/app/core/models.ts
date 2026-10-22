@@ -146,6 +146,8 @@ export interface Scorer {
   goals: number;
   assists: number;
   own_goals: number;
+  /** inseriti dal Leader: gli altri non li possono cambiare */
+  set_by_leader: boolean;
 }
 
 export interface PlayerVote {

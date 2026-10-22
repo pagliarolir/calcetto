@@ -160,7 +160,7 @@ export class Api {
     return must(await this.sb.from('scorers').select('*').eq('match_id', matchId)) as Scorer[];
   }
 
-  async saveScorers(matchId: string, rows: Omit<Scorer, 'match_id'>[]) {
+  async saveScorers(matchId: string, rows: Omit<Scorer, 'match_id' | 'set_by_leader'>[]) {
     return must(await this.sb.rpc('save_scorers', { p_match: matchId, p_rows: rows }));
   }
 
