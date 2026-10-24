@@ -59,11 +59,13 @@ import { MatchStore } from './match-store';
                 }
               </div>
             </div>
+            @if (!finished()) {
             <div class="strip" [class.played]="!!scoreboard()">
-              <span class="team" [class.lose]="scoreboard()?.win === -1"><span class="kit sm" [style.background]="kitA().color" [style.color]="kitA().ink"><app-icon name="shirt" [size]="16" /></span>{{ store.teamNames().white }}</span>
+              <span class="team" [class.lose]="scoreboard()?.win === -1"><span class="kit sm" [style.background]="kitA().color" aria-hidden="true"></span>{{ store.teamNames().white }}</span>
               <span class="vs num">{{ scoreboard()?.big ?? 'contro' }}</span>
-              <span class="team right" [class.lose]="scoreboard()?.win === 1">{{ store.teamNames().black }}<span class="kit sm" [style.background]="kitB().color" [style.color]="kitB().ink"><app-icon name="shirt" [size]="16" /></span></span>
+              <span class="team right" [class.lose]="scoreboard()?.win === 1">{{ store.teamNames().black }}<span class="kit sm" [style.background]="kitB().color" aria-hidden="true"></span></span>
             </div>
+            }
           </div>
         <nav class="tabs" aria-label="Sezioni della partita">
           @if (finished()) {
@@ -124,7 +126,7 @@ import { MatchStore } from './match-store';
     .strip .vs { font: 700 1rem/1 var(--font-display); opacity: 0.85; }
     .strip.played .vs { font-size: 1.6rem; opacity: 1; }
     .kit { flex: none; border-radius: 50%; display: grid; place-items: center; }
-    .kit.sm { width: 26px; height: 26px; box-shadow: 0 0 0 2px rgb(255 255 255 / 22%); }
+    .kit.sm { width: 14px; height: 14px; box-shadow: 0 0 0 2px rgb(255 255 255 / 30%); }
     .tabs {
       max-width: 640px; margin: 0 auto; display: flex; gap: 4px; overflow-x: auto; padding: 0 12px;
       scrollbar-width: none;

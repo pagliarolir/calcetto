@@ -29,9 +29,11 @@ import { Icon } from './icon';
             <li>
               <button class="sticker" [class.got]="!!ach.mine(a.id)" (click)="open(a)"
                       [attr.aria-label]="'Sticker numero ' + a.number + ', ' + a.name + (ach.mine(a.id) ? ', sbloccato' : ', da sbloccare')">
-                <span class="pic">
+                <span class="pic" [class.shadowed]="!ach.mine(a.id) && !!a.image_path">
                   @if (ach.mine(a.id)) {
                     @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" /> } @else { <span class="ph star" aria-hidden="true">★</span> }
+                  } @else if (ach.imageUrl(a); as u) {
+                    <img class="sil" [src]="u" alt="" />
                   } @else {
                     <span class="ph" aria-hidden="true"><app-icon name="lock" [size]="22" /></span>
                   }
@@ -82,9 +84,11 @@ import { Icon } from './icon';
       @if (sel(); as a) {
         <div class="grab" aria-hidden="true"></div>
         <div class="detail">
-          <span class="pic big" [class.got]="!!ach.mine(a.id)">
+          <span class="pic big" [class.got]="!!ach.mine(a.id)" [class.shadowed]="!ach.mine(a.id) && !session.isLeader() && !!a.image_path">
             @if (ach.mine(a.id) || session.isLeader()) {
               @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" /> } @else { <span class="ph star" aria-hidden="true">★</span> }
+            } @else if (ach.imageUrl(a); as u) {
+              <img class="sil" [src]="u" alt="" />
             } @else {
               <span class="ph" aria-hidden="true"><app-icon name="lock" [size]="34" /></span>
             }
@@ -156,6 +160,17 @@ import { Icon } from './icon';
     .got .pic, .pic.got { background: radial-gradient(circle at 35% 30%, #fff8d6, #f2c94c 70%); box-shadow: 0 0 0 2px var(--armband), 0 6px 14px rgb(0 0 0 / 18%); }
     .pic img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
     .ph { color: var(--muted); display: grid; place-items: center; }
+    /* da sbloccare ma già caricato: sagoma nera con contorno bianco di circa 3 px, come i personaggi da sbloccare */
+    .pic.shadowed { background: radial-gradient(circle at 35% 30%, #9aa59f, #6f7a74); box-shadow: inset 0 0 0 2px rgb(0 0 0 / 15%); }
+    .pic img.sil {
+      width: 74%; height: 74%; border-radius: 0;
+      filter: brightness(0)
+        drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff);
+    }
+    .pic.big img.sil {
+      filter: brightness(0)
+        drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
+    }
     .ph.star { color: var(--armband-ink); font-size: 1.6rem; }
     .num { position: absolute; right: -4px; bottom: -2px; min-width: 22px; height: 22px; border-radius: 11px; padding: 0 5px; display: grid; place-items: center;
            font: 800 0.72rem/1 var(--font-display); background: var(--surface); color: var(--ink); box-shadow: 0 0 0 2px var(--line); }
