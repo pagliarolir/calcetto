@@ -10,6 +10,7 @@ create function chi(c text) returns text language sql as $$
   select coalesce(string_agg((select n from ids where id = pa.user_id), ',' order by (select n from ids where id = pa.user_id)), '-')
   from player_achievements pa join achievements a on a.id = pa.achievement_id where a.code = c $$;
 grant execute on function as_user(text), pid(text), chi(text) to authenticated;
+grant select on ids to authenticated;
 delete from matches;
 
 -- 7 partite giocate, una a settimana. Bianchi (vincono sempre 3-1): P1, P2, P4, P8, P9. Neri: P5, P6, P10, P11 e P12,
@@ -36,10 +37,12 @@ end $$;
 \echo '--- 1) premi automatici dopo 7 partite'
 select a.number, a.name, chi(a.code) as sbloccato_da from achievements a where a.code is not null order by a.number;
 
-\echo '--- 2) Monnezza: P7 si ritira dopo aver dato la disponibilità (nella partita in programma)'
+\echo '--- 2) Monnezza: P7, nella formazione ufficiale della partita in programma, si ritira da sé'
 select create_match(now() + interval '5 days') is not null as in_programma;
+update matches set bookings_open_at = now() - interval '1 day', lineup_status = 'official' where status = 'scheduled';
 insert into bookings (match_id, user_id, choice, list) values ((select id from matches where status = 'scheduled' limit 1), pid('P7'), 'present', 'team');
-update bookings set list = 'out', choice = 'absent', withdrew = true where user_id = pid('P7');
+insert into lineup (match_id, user_id, team) values ((select id from matches where status = 'scheduled' limit 1), pid('P7'), 'white');
+set role authenticated; select as_user('P7'), book((select id from matches where status = 'scheduled' limit 1), 'absent'); reset role;
 select chi('ritiro') as monnezza;
 
 \echo '--- 3) un avviso a tutti per ogni sticker sbloccato'

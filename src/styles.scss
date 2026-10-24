@@ -223,11 +223,13 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .icon-btn:active { background: var(--surface-2); }
 
 /* Scelta presenza: tre segmenti grandi, pensati per il pollice */
+/* «Ci sono» un po' più largo; due o tre pulsanti si dividono sempre tutta la riga */
 .choice {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  display: flex;
   gap: 8px;
 }
+.choice button { flex: 1 1 0; min-width: 0; }
+.choice button:first-child { flex-grow: 1.3; }
 .choice button {
   appearance: none;
   min-height: 64px;
