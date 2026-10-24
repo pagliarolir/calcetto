@@ -4,7 +4,7 @@ import { writeFileSync } from 'node:fs';
 const need = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'VAPID_PUBLIC_KEY'];
 const missing = need.filter((k) => !process.env[k]);
 if (missing.length) {
-  console.error(`Variabili mancanti: ${missing.join(', ')}. Impostale in Settings > Secrets and variables > Actions > Variables.`);
+  console.error(`Variabili mancanti: ${missing.join(', ')}. Su GitHub: Settings > Secrets and variables > Actions > Variables. Su Vercel: Settings > Environment Variables.`);
   process.exit(1);
 }
 const env = {
