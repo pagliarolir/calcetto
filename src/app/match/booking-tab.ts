@@ -54,8 +54,6 @@ interface SlotView {
             </div>
             @if (store.t()?.within24h && store.mine()?.list === 'team') {
               <p class="small muted">Mancano meno di 24 ore: se rinunci ora, Leader e Premier ricevono un avviso.</p>
-            } @else if (!store.t()?.within24h) {
-              <p class="small muted">Puoi cambiare idea liberamente fino a {{ when(changeDeadline()) }}.</p>
             }
             <p class="small muted">Le prenotazioni si chiudono {{ when(m.bookings_close_at) }}.@if (store.free()) { Poi il Leader sceglie titolari e riserve e ti avvisa.}</p>
           }
@@ -75,7 +73,7 @@ interface SlotView {
         </section>
 
         <!-- Elenchi: una scheda alla volta, ognuna con quante persone ci sono -->
-        <div class="seg lists" role="tablist" aria-label="Elenchi dei giocatori">
+        <div class="seg lists" [class.four]="listTabs().length > 3" role="tablist" aria-label="Elenchi dei giocatori">
           @for (l of listTabs(); track l.id) {
             <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="listTab.set(l.id)">
               {{ l.label }} <span class="count num">{{ l.count }}</span>
@@ -315,16 +313,19 @@ interface SlotView {
     .people li { display: grid; min-width: 0; }
     .people li.empty { grid-column: 1 / -1; }
     /* schede degli elenchi */
-    .seg.lists { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); overflow-x: auto; scrollbar-width: none; }
-    .seg.lists::-webkit-scrollbar { display: none; }
+    /* le schede si dividono sempre la riga: niente scorrimento */
+    .seg.lists { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
     .seg.lists button {
-      flex: 1 0 auto; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
+      min-width: 0; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
       min-height: 40px; padding: 0 12px; border-radius: 10px; font: 600 var(--step--1)/1 var(--font-body);
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     }
     .seg.lists button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
     .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--line); color: var(--ink); }
     .seg.lists button[aria-selected='true'] .count { background: var(--turf); color: var(--turf-ink); }
+    /* quattro schede («sceglie il Leader»): nome piccolo e numero sotto */
+    .seg.lists.four button { flex-direction: column; gap: 3px; min-height: 52px; padding: 6px 2px; font-size: 0.72rem; letter-spacing: -0.01em; }
+    .seg.lists.four .count { min-width: 20px; height: 18px; font-size: 0.68rem; }
     .list-panel { margin-top: -8px; }
     .silent { margin-top: 12px; }
     .silent h3 { display: flex; align-items: center; gap: 8px; }
@@ -375,10 +376,6 @@ export class BookingTab {
     const mine = this.windows().find((w) => w.user_id === this.session.uid());
     return !!mine && new Date(mine.opens_at).getTime() <= this.store.now() && !t.bookingClosed;
   });
-
-  protected readonly changeDeadline = computed(() =>
-    new Date(new Date(this.store.match()!.starts_at).getTime() - 24 * 3600_000).toISOString(),
-  );
 
   /** Posti in lista (10 per il 5 contro 5, 12 per il 6 contro 6, ...): dall'1 con il Leader, dal 2 se il Leader è assente (REQ-022). */
   protected readonly slots = computed<SlotView[]>(() => {
@@ -441,8 +438,11 @@ export class BookingTab {
     await this.run(async () => {
       const res = await this.api.book(this.store.match()!.id, choice);
       await this.store.reload('bookings');
-      if (res.list === 'team') this.toasts.show(`Sei dentro con il numero ${res.slot}.`);
-      else if (res.list === 'reserve') this.toasts.show(`Sei tra le riserve con il numero ${res.slot}.`);
+      // con «sceglie il Leader» i posti non sono numerati
+      const n = res.slot ? ` con il numero ${res.slot}` : '';
+      if (res.list === 'team') this.toasts.show(`Sei dentro${n}.`);
+      else if (res.list === 'reserve') this.toasts.show(`Sei tra le riserve${n}.`);
+      else if (res.list === 'pending') this.toasts.show('Sei tra i disponibili: titolari e riserve li sceglie il Leader.');
       else this.toasts.show('Segnato come assente.');
     });
   }
@@ -541,8 +541,9 @@ export class BookingTab {
     await this.run(async () => {
       const res = await this.api.leaderBook(this.store.match()!.id, id, choice);
       await this.store.reload('bookings');
-      const where = res.list === 'team' ? `in squadra con il numero ${res.slot}`
-        : res.list === 'reserve' ? `riserva numero ${res.slot}` : 'assente';
+      const n = res.slot ? ` con il numero ${res.slot}` : '';
+      const where = res.list === 'team' ? `in squadra${n}`
+        : res.list === 'reserve' ? `tra le riserve${n}` : res.list === 'pending' ? 'tra i disponibili' : 'assente';
       this.toasts.show(`${this.session.name(id)}: ${where}.`);
     });
   }

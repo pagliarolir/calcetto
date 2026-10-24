@@ -77,8 +77,8 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
                 }
               </label>
               <label class="vis">
-                <input type="checkbox" class="toggle" [checked]="visibility()[f.key]" (change)="toggleVis(f.key)" />
-                <span class="small">{{ visibility()[f.key] ? 'Visibile' : 'Nascosto' }}</span>
+                <input type="checkbox" class="toggle" [checked]="visibility()[f.key]" (change)="toggleVis(f.key)"
+                       [attr.aria-label]="'Mostra agli altri: ' + f.label" />
               </label>
             </div>
           }
@@ -173,12 +173,17 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
     .preview { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px var(--line); }
     label.btn { position: relative; }
     label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
-    .opt { display: flex; align-items: flex-end; gap: 10px; }
+    .opt { display: flex; align-items: flex-end; gap: 12px; }
+    .opt .field { min-width: 0; }
+    .opt .input { min-width: 0; }
+    /* su iPhone il campo data ha una larghezza propria: lo si accorcia e lo si lascia restringere */
+    .opt input[type='date'] { -webkit-appearance: none; appearance: none; display: block; max-width: 190px; }
     .toggles { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .toggles li { padding: 10px 0; border-top: 1px solid var(--line); }
     .toggles li:first-child { border-top: 0; padding-top: 0; }
     .toggles .switch { align-items: center; gap: 12px; }
-    .vis { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; padding-bottom: 4px; cursor: pointer; }
+    /* alto quanto il campo (48 px): l'interruttore resta centrato sul campo */
+    .vis { flex: none; height: 48px; display: grid; place-items: center; cursor: pointer; }
     .toggle {
       appearance: none; width: 46px; height: 28px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line);
       position: relative; cursor: pointer; margin: 0; transition: background 160ms;
