@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, untracked, viewChild } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -33,11 +33,11 @@ import { MatchStore } from './match-store';
             </div>
             <div class="ticket">
               @if (branding.headerUrl(); as logo) {
-                <img class="calbig logo" [src]="logo" alt="" />
+                <span class="logo-box" #logoBox><img [src]="logo" alt="" /></span>
               } @else {
               <div class="calbig" aria-hidden="true"><small>{{ weekdayShort() }}</small><b>{{ dayNum() }}</b><small>{{ monthShort() }}</small></div>
               }
-              <div class="tmain">
+              <div class="tmain" #tmain>
                 <h1>{{ day() }}</h1>
                 @if (m.moved || m.status === 'cancelled' || store.result()?.status === 'pending') {
                   <p class="flags">
@@ -62,7 +62,6 @@ import { MatchStore } from './match-store';
             @if (!finished()) {
             <div class="strip" [class.played]="!!scoreboard()">
               <span class="team" [class.lose]="scoreboard()?.win === -1"><span class="kit sm" [style.background]="kitA().color" aria-hidden="true"></span>{{ store.teamNames().white }}</span>
-              <span class="vs num">{{ scoreboard()?.big ?? 'contro' }}</span>
               <span class="team right" [class.lose]="scoreboard()?.win === 1">{{ store.teamNames().black }}<span class="kit sm" [style.background]="kitB().color" aria-hidden="true"></span></span>
             </div>
             }
@@ -108,9 +107,13 @@ import { MatchStore } from './match-store';
     .calbig b { font: 700 2.6rem/0.9 var(--font-display); }
     .calbig small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
     /* il logo dell'app prende il posto del calendario */
-    .calbig.logo { height: 92px; align-self: center; padding: 0; object-fit: contain; background: none; box-shadow: none; border-radius: 0; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 25%)); }
+    /* il logo è alto quanto le scritte accanto, quadrato, con gli angoli un po' arrotondati */
+    /* il contenitore prende l'altezza delle scritte accanto (non la impone): l'immagine lo riempie */
+    .logo-box { flex: none; align-self: center; position: relative; width: 92px; height: 92px; }
+    .logo-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 14px; box-shadow: 0 4px 12px rgb(0 0 0 / 22%); }
     .tmain { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
-    .tmain h1 { font: 700 1.75rem/1 var(--font-display); margin-bottom: 4px; }
+    /* la data resta su una riga (si rimpicciolisce sugli schermi stretti): l'altezza delle scritte non dipende dal logo */
+    .tmain h1 { font: 700 clamp(1.3rem, 5.4vw, 1.75rem)/1 var(--font-display); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tmain h1::first-letter { text-transform: uppercase; }
     .flags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
     .flags .tag { font-size: 0.7rem; }
@@ -119,12 +122,10 @@ import { MatchStore } from './match-store';
     .link-line span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .mini { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(255 255 255 / 14%); color: inherit; flex: none; }
     /* striscia delle squadre: diventa il punteggio a fine partita */
-    .strip { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 10px; border-radius: 14px; background: rgb(0 0 0 / 16%); }
-    .strip .team { display: inline-flex; align-items: center; gap: 8px; font: 600 1.05rem/1 var(--font-display); min-width: 0; }
+    .strip { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 10px; border-radius: 14px; background: rgb(0 0 0 / 16%); }
+    .strip .team { display: inline-flex; align-items: center; gap: 10px; font: 600 1.35rem/1 var(--font-display); min-width: 0; }
     .strip .team.right { justify-content: flex-end; }
     .strip .lose { opacity: 0.55; }
-    .strip .vs { font: 700 1rem/1 var(--font-display); opacity: 0.85; }
-    .strip.played .vs { font-size: 1.6rem; opacity: 1; }
     .kit { flex: none; border-radius: 50%; display: grid; place-items: center; }
     .kit.sm { width: 14px; height: 14px; box-shadow: 0 0 0 2px rgb(255 255 255 / 30%); }
     .tabs {
@@ -204,7 +205,24 @@ export class MatchPage {
   private readonly router = inject(Router);
   private readonly url = toSignal(this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
 
+  // il logo è un quadrato alto quanto le scritte accanto (le misura e le segue se cambiano)
+  private readonly tmainEl = viewChild<ElementRef<HTMLElement>>('tmain');
+  private readonly logoEl = viewChild<ElementRef<HTMLElement>>('logoBox');
+
   constructor() {
+    effect((onCleanup) => {
+      const t = this.tmainEl()?.nativeElement;
+      const l = this.logoEl()?.nativeElement;
+      if (!t || !l) return;
+      const fit = () => {
+        const h = Math.round(t.getBoundingClientRect().height);
+        if (h > 0 && l.style.height !== `${h}px`) l.style.width = l.style.height = `${h}px`;
+      };
+      const ro = new ResizeObserver(fit);
+      ro.observe(t);
+      fit();
+      onCleanup(() => ro.disconnect());
+    });
     // a partita finita, Lista e Squadre non ci sono più: si apre il Risultato
     effect(() => {
       const id = this.store.match()?.id;

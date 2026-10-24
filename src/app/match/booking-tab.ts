@@ -36,7 +36,7 @@ interface SlotView {
           } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
             <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
           } @else if (!canBook()) {
-            <p class="note">Le prenotazioni aprono {{ when(m.bookings_open_at) }}. Ti arriva una notifica.</p>
+            <p class="note">Le prenotazioni aprono {{ when(m.bookings_open_at) }}.</p>
           } @else {
             <div class="choice" role="group" aria-label="La tua presenza">
               <button [attr.aria-pressed]="store.mine()?.choice === 'present'" [disabled]="busy()" (click)="book('present')">
@@ -324,8 +324,8 @@ interface SlotView {
     .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--line); color: var(--ink); }
     .seg.lists button[aria-selected='true'] .count { background: var(--turf); color: var(--turf-ink); }
     /* quattro schede («sceglie il Leader»): nome piccolo e numero sotto */
-    .seg.lists.four button { flex-direction: column; gap: 3px; min-height: 52px; padding: 6px 2px; font-size: 0.72rem; letter-spacing: -0.01em; }
-    .seg.lists.four .count { min-width: 20px; height: 18px; font-size: 0.68rem; }
+    .seg.lists.four button { flex-direction: column; gap: 4px; min-height: 56px; padding: 6px 2px; font-size: 0.86rem; letter-spacing: -0.015em; }
+    .seg.lists.four .count { min-width: 24px; height: 21px; font-size: 0.78rem; }
     .list-panel { margin-top: -8px; }
     .silent { margin-top: 12px; }
     .silent h3 { display: flex; align-items: center; gap: 8px; }
