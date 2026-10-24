@@ -45,6 +45,7 @@ import { Icon } from '../ui/icon';
 export class InboxPage implements OnInit {
   /** icona e tono per ogni tipo di avviso */
   protected iconOf(kind: string): { name: string; tone: string } {
+    if (kind === 'achievement') return { name: 'star', tone: 'turf' };
     if (kind === 'chat') return { name: 'chat', tone: 'turf' };
     if (kind === 'team_full') return { name: 'list', tone: 'turf' };
     if (/^(punished|pardoned|late_withdrawal|withdrawal|match_cancelled|avatar_removed|stats_deleted)/.test(kind)) return { name: 'whistle', tone: 'red' };

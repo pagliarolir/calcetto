@@ -9,10 +9,11 @@ import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/model
 import { Session } from '../core/session';
 import { teamNames } from '../core/kits';
 import { Avatar } from '../ui/avatar';
+import { StickerStrip } from '../ui/sticker-strip';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule],
+  imports: [RouterLink, Avatar, FormsModule, StickerStrip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -24,6 +25,7 @@ import { Avatar } from '../ui/avatar';
             <h1>{{ session.fullName(m.id) }}</h1>
             @if (m.guest) { <span class="tag">senza account</span> }
           </div>
+          <app-sticker-strip [userId]="m.id" />
           <div class="row-wrap">
             @if (m.nickname) { <span class="tag">detto {{ m.nickname }}</span> }
             @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
