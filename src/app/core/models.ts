@@ -1,5 +1,5 @@
 /** voci delle preferenze sulle notifiche (le stesse del database: notify_category) */
-export type NotifyCategory = 'chat' | 'booking_open' | 'team_full' | 'withdrawal' | 'lineup_official' | 'lineup_change' | 'match_changes' | 'result' | 'votes';
+export type NotifyCategory = 'chat' | 'booking_open' | 'team_full' | 'withdrawal' | 'lineup_official' | 'lineup_change' | 'match_changes' | 'result' | 'votes' | 'achievements';
 export type BookingMode = 'order' | 'free';
 export type Role = 'leader' | 'premier1' | 'premier2' | 'user';
 export type FieldRole = 'portiere' | 'difensore' | 'laterale' | 'pivot' | 'jolly';
@@ -316,4 +316,22 @@ export interface PairRow {
   a_id: string; b_id: string;
   together: number; together_wins: number; together_draws: number;
   against: number; a_wins: number; b_wins: number; against_draws: number;
+}
+
+/** obiettivo (sticker): la missione si legge a parte, solo se sbloccato (o dal Leader) */
+export interface Achievement {
+  id: string;
+  code: string | null;
+  number: number;
+  name: string;
+  image_path: string | null;
+  created_at: string;
+}
+
+export interface PlayerAchievement {
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  awarded_by: string | null;
+  announced: boolean;
 }

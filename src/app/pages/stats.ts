@@ -10,9 +10,10 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { AchievementsPanel } from '../ui/achievements-panel';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
-type Tab = 'classifica' | 'record' | 'squadre' | 'punti';
+type Tab = 'classifica' | 'record' | 'squadre' | 'punti' | 'obiettivi';
 type Col = { key: keyof StatsRow; label: string; title: string; fmt?: 'dec' | 'pct' | 'form'; asc?: boolean };
 
 const COLUMNS: Col[] = [
@@ -59,30 +60,30 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink, Avatar, Icon],
+  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
       <header class="stack">
-        <h1>Classifica</h1>
-        @if (tab() !== 'punti') {
-        <div class="chips" role="group" aria-label="Periodo">
-          @for (p of periods; track p.id) {
-            <button class="chip" [attr.aria-pressed]="period() === p.id" (click)="period.set(p.id)">{{ p.label }}</button>
+        <div class="titlebar">
+          <h1>Classifica</h1>
+          @if (tab() !== 'punti' && tab() !== 'obiettivi') {
+            <label class="period">
+              <span class="sr-only">Periodo</span>
+              <select class="input" [ngModel]="period()" (ngModelChange)="period.set($event)" aria-label="Periodo">
+                @for (p of periods; track p.id) { <option [value]="p.id">{{ p.label }}</option> }
+              </select>
+            </label>
           }
         </div>
-        @if (period() === 'custom') {
+        @if (tab() !== 'punti' && tab() !== 'obiettivi' && period() === 'custom') {
           <div class="row">
             <label class="field grow"><span>Dal</span><input class="input" type="date" [(ngModel)]="customFrom" (change)="reload()" /></label>
             <label class="field grow"><span>Al</span><input class="input" type="date" [(ngModel)]="customTo" (change)="reload()" /></label>
           </div>
         }
-        <p class="small muted">{{ rangeText() }}. Contano solo le partite con risultato omologato.</p>
-        @if (statsSince(); as d) { <p class="note">Classifica azzerata {{ whenFull(d) }}: contano solo le partite successive.</p> }
-        } @else {
-        <p class="small muted">I punti Leader non dipendono dalle partite: valgono sempre.</p>
-        }
+        @if (tab() !== 'punti' && tab() !== 'obiettivi' && statsSince(); as d) { <p class="note">Classifica azzerata {{ whenFull(d) }}: contano solo le partite successive.</p> }
       </header>
 
       <nav class="stabs" role="tablist" aria-label="Statistiche">
@@ -159,6 +160,9 @@ const RECORDS: Record[] = [
             </ul>
           </section>
         }
+      } @else if (tab() === 'obiettivi') {
+        <!-- ======================================================= Obiettivi -->
+        <app-achievements-panel />
       } @else if (loading()) {
         <p class="muted">Calcolo in corso…</p>
       } @else if (!played().length) {
@@ -340,6 +344,9 @@ const RECORDS: Record[] = [
     table.fit th button { font-size: 0.72rem; padding: 0; }
     .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .cols-btn { gap: 6px; }
+    .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .period { position: relative; flex: 0 1 auto; }
+    .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 180px; }
     .sheet {
       position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; border: 0; color: var(--ink);
       background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
@@ -478,6 +485,7 @@ export class StatsPage {
     { id: 'record', label: 'Record' },
     { id: 'squadre', label: 'Squadre e coppie' },
     { id: 'punti', label: 'Punti Leader' },
+    { id: 'obiettivi', label: 'Obiettivi' },
   ];
   protected readonly tab = signal<Tab>('classifica');
   protected readonly busy = signal(false);
@@ -536,12 +544,6 @@ export class StatsPage {
   );
 
 
-  protected readonly rangeText = computed(() => {
-    const { from, to } = this.range();
-    if (!from && !to) return 'Tutte le partite';
-    if (this.period() === 'last' && from) return `Partita del ${fmtDate(from)}`;
-    return `Dal ${from ? fmtDate(from) : 'primo giorno'} al ${to ? fmtDate(new Date(new Date(to).getTime() - 1).toISOString()) : 'oggi'}`;
-  });
 
   constructor() {
     const raw = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda');

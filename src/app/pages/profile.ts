@@ -365,6 +365,7 @@ export class ProfilePage {
     { key: 'match_changes', label: 'Giorno, orario o campo', hint: 'Quando la partita si sposta, cambia campo o viene annullata' },
     { key: 'result', label: 'Risultato', hint: 'Quando si inserisce, si conferma o si contesta il risultato' },
     { key: 'votes', label: 'Votazioni', hint: 'Quando puoi votare i compagni' },
+    { key: 'achievements', label: 'Obiettivi sbloccati', hint: 'Quando qualcuno vince uno sticker' },
   ];
   protected readonly prefsBusy = signal(false);
 

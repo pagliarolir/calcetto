@@ -9,15 +9,17 @@ import { Unread } from './core/unread';
 import { Icon } from './ui/icon';
 import { ReprimandView } from './ui/reprimand';
 import { Branding } from './core/branding';
+import { AchievementBanner } from './ui/achievement-banner';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
          elemento della colonna, quindi non dipende dall'altezza della pagina che si sta caricando. -->
     <div class="app-scroller" #scroller>
+      <app-achievement-banner />
       <router-outlet />
     </div>
 
