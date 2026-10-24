@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { diffText, fmtWhen } from '../core/format';
@@ -8,14 +8,18 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
+import { NgTemplateOutlet } from '@angular/common';
 import { Avatar } from '../ui/avatar';
+import { kit } from '../core/kits';
+import { Ball, Boot, KitShirt } from '../ui/match-marks';
+import { Icon } from '../ui/icon';
 
 interface Line { goals: number; assists: number; own_goals: number }
 type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [FormsModule, Avatar],
+  imports: [FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -27,27 +31,14 @@ type Field = keyof Line;
           <section class="section">
             @if (store.result(); as r) {
               <div class="panel stack result">
-                <div class="spread">
-                  <h2 class="num big">{{ text(r.diff, r.white_goals, r.black_goals, teamLabel()) }}</h2>
-                  <span class="tag" [class.turf]="r.status === 'homologated'">{{ r.status === 'homologated' ? 'Omologato' : 'Da omologare' }}</span>
-                </div>
-                @if (scorersBy('white').goals.length || scorersBy('black').goals.length) {
-                  <div class="scorecols" aria-label="Marcatori">
-                    @for (t of teams; track t) {
-                      <div class="col" [class.right]="t === 'black'">
-                        <span class="cname">{{ teamLabel()[t] }}</span>
-                        <ul>
-                          @for (g of scorersBy(t).goals; track g.id + g.own) {
-                            <li><span class="ball" aria-hidden="true">⚽</span>{{ session.name(g.id) }}@if (g.n > 1) { <span class="times">×{{ g.n }}</span> }@if (g.own) { <span class="own">(aut.)</span> }</li>
-                          }
-                        </ul>
-                        @if (scorersBy(t).assists.length) {
-                          <p class="assists">Assist: {{ scorersBy(t).assists }}</p>
-                        }
-                      </div>
-                    }
+                <div class="scoreline">
+                  <app-kit-shirt [color]="kitOf('white').color" [ink]="kitOf('white').ink" [size]="82" [tight]="true" />
+                  <div class="score-mid">
+                    <h2 class="num big">{{ text(r.diff, r.white_goals, r.black_goals, teamLabel()) }}</h2>
+                    <span class="tag" [class.turf]="r.status === 'homologated'">{{ r.status === 'homologated' ? 'Omologato' : 'Da omologare' }}</span>
                   </div>
-                }
+                  <app-kit-shirt [color]="kitOf('black').color" [ink]="kitOf('black').ink" [size]="82" [tight]="true" />
+                </div>
                 <p class="small muted">Inserito da {{ session.name(r.entered_by) }}.
                   @if (r.status === 'homologated') { {{ homologatedBy() }} }
                 </p>
@@ -86,9 +77,61 @@ type Field = keyof Line;
               }
             }
 
-            @if (canEnter()) {
+            <!-- risultato ancora da inserire: il riquadro sta in alto -->
+            @if (canEnter() && !store.result()) {
               <div class="panel stack">
-                <h3>{{ store.result() ? 'Correggi il risultato' : 'Com\\'è finita?' }}</h3>
+                <h3>Com'è finita?</h3>
+                <ng-container *ngTemplateOutlet="entry" />
+              </div>
+            }
+          </section>
+
+          <!-- Formazioni con gol (pallone bianco), autogol (pallone rosso) e assist (scarpino) -->
+          @if (players('white').length || players('black').length) {
+            <section class="section" aria-label="Formazioni e marcatori">
+              @if (canEditScorers()) {
+                <p class="small muted">{{ session.isLeader() ? 'Tocca un giocatore per inserire i suoi gol, assist e autogol.' : 'Tocca il tuo nome per inserire i tuoi gol, assist e autogol.' }}</p>
+              }
+              <div class="rosters">
+                @for (t of teams; track t) {
+                  <div class="roster" [class.right]="t === 'black'">
+                    <h3 class="rhead"><i class="dot" [style.background]="kitOf(t).color"></i>{{ teamLabel()[t] }}</h3>
+                    <ul>
+                      @for (id of rosterOf(t); track id) {
+                        <li>
+                          <button class="pl" [class.mine]="id === session.uid()" [class.can]="editable(id)" [disabled]="!editable(id)" (click)="openScorer(id)"
+                                  [attr.aria-label]="session.name(id) + ': ' + (summary(val(id, 'goals'), val(id, 'assists'), val(id, 'own_goals')) || 'nessun gol') + (editable(id) ? '. Tocca per modificare' : '')">
+                            <app-avatar [userId]="id" [team]="t" [size]="26" />
+                            <span class="pname ellipsis">{{ session.name(id) }}</span>
+                            <span class="marks">
+                              @for (k of marks(val(id, 'goals')); track $index) { <app-ball /> }
+                              @if (val(id, 'goals') > 3) { <span class="times">×{{ val(id, 'goals') }}</span> }
+                              @for (k of marks(val(id, 'own_goals')); track $index) { <app-ball [own]="true" /> }
+                              @if (val(id, 'own_goals') > 3) { <span class="times">×{{ val(id, 'own_goals') }}</span> }
+                              @for (k of marks(val(id, 'assists')); track $index) { <app-boot /> }
+                              @if (val(id, 'assists') > 3) { <span class="times">×{{ val(id, 'assists') }}</span> }
+                              @if (lockedByLeader(id) && !session.isLeader()) { <app-icon name="lock" [size]="12" class="lk" /> }
+                            </span>
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+              <p class="legend small muted"><app-ball [size]="13" /> gol <app-ball [own]="true" [size]="13" /> autogol <app-boot [size]="13" /> assist</p>
+            </section>
+          }
+
+          <!-- risultato già inserito: la correzione è una tendina chiusa sotto le formazioni -->
+          @if (canEnter() && store.result()) {
+            <details class="panel fold">
+              <summary><span class="grow"><strong>Correggi il risultato</strong></span><app-icon name="chevron" [size]="18" /></summary>
+              <div class="stack fold-body"><ng-container *ngTemplateOutlet="entry" /></div>
+            </details>
+          }
+
+          <ng-template #entry>
                 <div class="chips">
                   <button class="chip" [attr.aria-pressed]="!exact()" (click)="exact.set(false)">Solo chi ha vinto e di quanto</button>
                   <button class="chip" [attr.aria-pressed]="exact()" (click)="exact.set(true)">Punteggio esatto</button>
@@ -121,64 +164,37 @@ type Field = keyof Line;
                   </div>
                 }
                 <button class="btn primary" [disabled]="busy()" (click)="submit()">Salva {{ previewText() }}</button>
-              </div>
-            }
-          </section>
+          </ng-template>
 
-          <!-- Marcatori -->
-          <section class="section">
-            <header><h2>Gol e assist</h2></header>
-            @if (canEditScorers()) {
-              <p class="small muted">
-                @if (session.isLeader()) { Puoi inserire i dati di tutti: quelli che inserisci tu restano bloccati per gli altri. }
-                @else { Inserisci i tuoi gol, assist e autogol. Gli altri li inseriscono loro o il Leader; i dati inseriti dal Leader non si cambiano. }
-                L'autogol va al giocatore che l'ha fatto e conta per la squadra avversaria.
-              </p>
-              @for (t of teams; track t) {
-                <div class="panel stack">
-                  <div class="spread">
-                    <h3>{{ teamLabel()[t] }}</h3>
-                    <span class="small" [class.warn]="over(t)">{{ creditText(t) }}</span>
+          <!-- pannello per inserire i dati di un giocatore -->
+          <dialog #scorerDlg class="sheet" (click)="scorerBackdrop($event)" (close)="cancelScorer()" aria-labelledby="sc-h">
+            @if (editing(); as id) {
+              <div class="grab" aria-hidden="true"></div>
+              <div class="sc-head">
+                <app-avatar [userId]="id" [team]="store.teamOf().get(id)" [size]="40" />
+                <h2 id="sc-h" class="grow">{{ session.name(id) }}</h2>
+              </div>
+              @for (f of fields; track f.key) {
+                <div class="sc-row">
+                  <span class="sc-ic">
+                    @if (f.key === 'goals') { <app-ball [size]="20" /> } @else if (f.key === 'own_goals') { <app-ball [own]="true" [size]="20" /> } @else { <app-boot [size]="20" /> }
+                  </span>
+                  <span class="grow">{{ f.label }}</span>
+                  <div class="stepper">
+                    <button (click)="bump(id, f.key, -1)" [disabled]="val(id, f.key) === 0" [attr.aria-label]="f.label + ' meno'">−</button>
+                    <output>{{ val(id, f.key) }}</output>
+                    <button (click)="bump(id, f.key, 1)" [disabled]="!canAdd(id, f.key)" [attr.aria-label]="f.label + ' più'">+</button>
                   </div>
-                  @for (id of players(t); track id) {
-                    <div class="scorer" [class.mine]="id === session.uid()">
-                      <span class="grow ellipsis">{{ session.name(id) }}
-                        @if (lockedByLeader(id)) { <span class="tag" title="Inseriti dal Leader">dal Leader</span> }
-                      </span>
-                      @if (!editable(id)) {
-                        <span class="small muted readonly">{{ summary(val(id, 'goals'), val(id, 'assists'), val(id, 'own_goals')) || 'nessun gol' }}</span>
-                      } @else {
-                      @for (f of fields; track f.key) {
-                        <div class="cell">
-                          <span class="small muted">{{ f.label }}</span>
-                          <div class="stepper">
-                            <button (click)="bump(id, f.key, -1)" [disabled]="val(id, f.key) === 0" [attr.aria-label]="f.label + ' meno, ' + session.name(id)">−</button>
-                            <output>{{ val(id, f.key) }}</output>
-                            <button (click)="bump(id, f.key, 1)" [disabled]="!canAdd(id, f.key)" [attr.aria-label]="f.label + ' più, ' + session.name(id)">+</button>
-                          </div>
-                        </div>
-                      }
-                      }
-                    </div>
-                  } @empty { <p class="small muted">Formazione non ancora assegnata.</p> }
                 </div>
               }
+              <p class="small muted">L'autogol conta per la squadra avversaria.</p>
               @for (i of issues(); track i) { <p class="note warn" role="alert">{{ i }}</p> }
-              <button class="btn primary block" [disabled]="busy() || issues().length > 0 || !dirty()" (click)="saveScorers()">Salva gol e assist</button>
-            } @else {
-              @if (store.scorers().length) {
-                <ul class="list">
-                  @for (s of store.scorers(); track s.user_id) {
-                    <li class="list-item">
-                      <app-avatar [userId]="s.user_id" [team]="store.teamOf().get(s.user_id)" />
-                      <span class="grow">{{ session.name(s.user_id) }}</span>
-                      <span class="small">{{ summary(s.goals, s.assists, s.own_goals) }}</span>
-                    </li>
-                  }
-                </ul>
-              } @else { <p class="empty">Nessun marcatore inserito.</p> }
+              <div class="row">
+                <button class="btn ghost grow" (click)="closeScorer()">Annulla</button>
+                <button class="btn primary grow" [disabled]="busy() || issues().length > 0 || !dirty()" (click)="saveFromSheet()">Salva</button>
+              </div>
             }
-          </section>
+          </dialog>
         }
       </div>
     }
@@ -192,16 +208,48 @@ type Field = keyof Line;
     .score-in { display: flex; align-items: flex-end; justify-content: center; gap: 18px; }
     .score-in .stack { align-items: center; gap: 4px; }
     .dash { font-size: var(--step-3); padding-bottom: 2px; }
-    /* marcatori sotto il punteggio: una colonna per squadra */
-    .scorecols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 10px 0 4px; border-top: 1px solid var(--line); margin-top: 6px; }
-    .col ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-    .col li { display: flex; align-items: center; gap: 6px; font-weight: 600; min-width: 0; }
-    .col.right { text-align: right; }
-    .col.right li { flex-direction: row-reverse; }
-    .cname { font: 600 0.75rem/1 var(--font-body); color: var(--muted); }
-    .ball { font-size: 0.85rem; }
-    .times, .own { font-size: 0.75rem; color: var(--muted); font-weight: 600; }
-    .assists { margin: 6px 0 0; font-size: 0.75rem; color: var(--muted); }
+    .fold summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 40px; }
+    .fold summary::-webkit-details-marker { display: none; }
+    .fold summary app-icon { transform: rotate(90deg); transition: transform 200ms; }
+    .fold[open] summary app-icon { transform: rotate(-90deg); }
+    .fold-body { margin-top: 12px; }
+    /* punteggio centrato tra le due maglie */
+    .scoreline { display: flex; align-items: center; justify-content: center; gap: 14px; }
+    .score-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    /* formazioni complete, una colonna per squadra */
+    .rosters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .roster { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px; }
+    .rhead { display: flex; align-items: center; gap: 6px; font-size: var(--step-0); margin: 0 4px 6px; }
+    .roster.right .rhead { justify-content: flex-end; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); flex: none; }
+    .roster ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .pl { appearance: none; border: 0; background: none; color: var(--ink); font: inherit; width: 100%; min-height: 40px; padding: 4px; border-radius: 10px;
+          display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 6px; align-items: center; text-align: left; cursor: default; }
+    .pl app-avatar { grid-row: 1 / 3; }
+    .pname { font-weight: 600; font-size: var(--step--1); min-width: 0; }
+    .marks { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 0; }
+    .marks:empty { display: none; }
+    .pl.can { cursor: pointer; }
+    .pl.can:hover { background: var(--surface-2); }
+    .pl.mine .pname { color: var(--turf); }
+    .pl:disabled { opacity: 1; }
+    .roster.right .pl { grid-template-columns: 1fr auto; text-align: right; }
+    .roster.right .pl app-avatar { grid-column: 2; grid-row: 1 / 3; }
+    .roster.right .pname, .roster.right .marks { grid-column: 1; justify-content: flex-end; }
+    .times { font-size: 0.7rem; font-weight: 700; color: var(--muted); }
+    .lk { color: var(--muted); margin-left: 2px; }
+    .legend { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
+    .legend app-ball, .legend app-boot { margin-left: 8px; }
+    .legend app-ball:first-child { margin-left: 0; }
+    /* pannello di inserimento */
+    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; border: 0; color: var(--ink);
+             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
+    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
+    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+    .sc-head { display: flex; align-items: center; gap: 12px; }
+    .sc-row { display: flex; align-items: center; gap: 12px; min-height: 48px; border-top: 1px solid var(--line); }
+    .sc-ic { width: 24px; display: grid; place-items: center; }
     .scorer { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
     .scorer.mine .grow { font-weight: 700; }
     .scorer .tag { margin-left: 6px; font-size: 0.7rem; }
@@ -275,21 +323,6 @@ export class ResultTab {
     return this.store.amParticipant() || this.session.isLeader();
   });
 
-  /** marcatori di una squadra: i suoi gol e gli autogol degli avversari; più gli assist */
-  protected scorersBy(t: Team): { goals: { id: string; n: number; own: boolean }[]; assists: string } {
-    const team = this.store.teamOf();
-    const goals: { id: string; n: number; own: boolean }[] = [];
-    const assists: string[] = [];
-    for (const s of this.store.scorers()) {
-      const st = team.get(s.user_id);
-      if (st === t && s.goals > 0) goals.push({ id: s.user_id, n: s.goals, own: false });
-      if (st && st !== t && s.own_goals > 0) goals.push({ id: s.user_id, n: s.own_goals, own: true });
-      if (st === t && s.assists > 0) assists.push(this.session.name(s.user_id) + (s.assists > 1 ? ` ×${s.assists}` : ''));
-    }
-    goals.sort((a, b) => b.n - a.n || Number(a.own) - Number(b.own));
-    return { goals, assists: assists.join(', ') };
-  }
-
   /** ognuno modifica solo la propria riga (se non l'ha fissata il Leader); il Leader tutte */
   protected editable(id: string): boolean {
     if (this.session.isLeader()) return true;
@@ -340,10 +373,8 @@ export class ResultTab {
 
   constructor() {
     effect(() => {
-      const map = new Map<string, Line>();
-      for (const s of this.store.scorers()) map.set(s.user_id, { goals: s.goals, assists: s.assists, own_goals: s.own_goals });
-      this.lines.set(map);
-      this.dirty.set(false);
+      this.store.scorers();
+      untracked(() => this.fromStore());
     });
     effect(() => {
       const r = this.store.result();
@@ -444,6 +475,73 @@ export class ResultTab {
       await this.store.reload('results');
       this.toasts.show('Risultato omologato.');
     });
+  }
+
+  /** valori in modifica = quelli salvati */
+  private fromStore(): void {
+    const map = new Map<string, Line>();
+    for (const s of this.store.scorers()) map.set(s.user_id, { goals: s.goals, assists: s.assists, own_goals: s.own_goals });
+    this.lines.set(map);
+    this.dirty.set(false);
+  }
+
+  // --------------------------------------------- pannello per un giocatore
+  private readonly scorerDlg = viewChild<ElementRef<HTMLDialogElement>>('scorerDlg');
+  protected readonly editing = signal<string | null>(null);
+
+  protected openScorer(id: string): void {
+    if (!this.editable(id)) return;
+    this.fromStore();
+    this.editing.set(id);
+    const d = this.scorerDlg()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  protected closeScorer(): void {
+    this.scorerDlg()?.nativeElement.close();
+  }
+
+  /** chiudere senza salvare annulla le modifiche */
+  protected cancelScorer(): void {
+    this.editing.set(null);
+    this.fromStore();
+  }
+
+  protected scorerBackdrop(e: MouseEvent): void {
+    if (e.target === this.scorerDlg()?.nativeElement) this.closeScorer();
+  }
+
+  /** salva e, se è andata bene, chiude il pannello */
+  protected async saveFromSheet(): Promise<void> {
+    if (this.reprimand.guard()) return;
+    const rows = [...this.lines()].filter(([user_id]) => this.editable(user_id)).map(([user_id, l]) => ({ user_id, ...l }));
+    this.busy.set(true);
+    try {
+      await this.api.saveScorers(this.store.match()!.id, rows);
+      await this.store.reload('scorers');
+      this.toasts.show('Gol e assist salvati.');
+      this.closeScorer();
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** squadra con chi ha segnato in cima, poi in ordine di nome */
+  protected rosterOf(t: Team): string[] {
+    return [...this.players(t)].sort((a, b) =>
+      this.val(b, 'goals') - this.val(a, 'goals') || this.val(b, 'assists') - this.val(a, 'assists') || this.session.name(a).localeCompare(this.session.name(b)));
+  }
+
+  /** fino a 3 segni; oltre si scrive ×n */
+  protected marks(n: number): number[] {
+    return n > 0 && n <= 3 ? Array.from({ length: n }, (_, i) => i) : n > 3 ? [0] : [];
+  }
+
+  protected kitOf(t: Team) {
+    const m = this.store.match();
+    return kit(t === 'white' ? m?.team_a_kit : m?.team_b_kit);
   }
 
   protected async saveScorers(): Promise<void> {
