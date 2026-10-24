@@ -2,24 +2,26 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { FormsModule } from '@angular/forms';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { age, fmtDate, fmtWhen } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { teamNames } from '../core/kits';
+import { Location } from '@angular/common';
 import { Avatar } from '../ui/avatar';
+import { Icon } from '../ui/icon';
 import { StickerStrip } from '../ui/sticker-strip';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule, StickerStrip],
+  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
       @if (member(); as m) {
         <header class="stack">
-          <a class="small muted back" routerLink="/classifica">Classifica</a>
+          <button type="button" class="back" (click)="back()"><app-icon name="back" [size]="18" /> Indietro</button>
           <div class="id">
             <app-avatar [userId]="m.id" [size]="88" />
             <h1>{{ session.fullName(m.id) }}</h1>
@@ -89,7 +91,8 @@ import { StickerStrip } from '../ui/sticker-strip';
     </main>
   `,
   styles: `
-    .back { text-decoration: none; }
+    .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0; border: 0; background: none;
+            color: var(--ink); opacity: 0.85; font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; }
     .id { display: flex; align-items: center; gap: 16px; }
     hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-m); overflow: hidden; }
@@ -101,6 +104,15 @@ import { StickerStrip } from '../ui/sticker-strip';
   `,
 })
 export class PlayerPage {
+  private readonly routerNav = inject(Router);
+  private readonly location = inject(Location);
+
+  /** torna alla pagina da cui si è arrivati (lista, chat, classifica...); se si è entrati da un link, alla Classifica */
+  protected back(): void {
+    if (this.routerNav.lastSuccessfulNavigation()?.previousNavigation) this.location.back();
+    else void this.routerNav.navigate(['/classifica']);
+  }
+
   readonly id = input.required<string>();
   protected readonly session = inject(Session);
   private readonly api = inject(Api);

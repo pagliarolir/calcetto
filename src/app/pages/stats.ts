@@ -18,12 +18,12 @@ type Col = { key: keyof StatsRow; label: string; title: string; fmt?: 'dec' | 'p
 
 const COLUMNS: Col[] = [
   { key: 'goals', label: 'Gol', title: 'Gol segnati' },
-  { key: 'own_goals', label: 'Aut', title: 'Autogol' },
   { key: 'points', label: 'Pt', title: 'Punti (3 vittoria, 1 pareggio)' },
   { key: 'played', label: 'PG', title: 'Partite giocate' },
   { key: 'wins', label: 'V', title: 'Vittorie' },
   { key: 'draws', label: 'N', title: 'Pareggi' },
   { key: 'losses', label: 'P', title: 'Sconfitte' },
+  { key: 'own_goals', label: 'Aut', title: 'Autogol' },
   { key: 'points_per_game', label: 'Pt/PG', title: 'Punti per partita', fmt: 'dec' },
   { key: 'win_pct', label: '%V', title: 'Percentuale vittorie', fmt: 'pct' },
   { key: 'goals_per_game', label: 'Gol/PG', title: 'Gol per partita', fmt: 'dec' },
@@ -367,11 +367,13 @@ const RECORDS: Record[] = [
     .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold .pairs { margin-top: 10px; }
-    .stabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin-top: -8px; }
-    .stabs::-webkit-scrollbar { display: none; }
-    .stabs button { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 12px; min-height: 44px;
-      font: 600 var(--step-0)/1 var(--font-body); color: var(--muted); white-space: nowrap; cursor: pointer; }
-    .stabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
+    /* schede su più righe (come le finestre di Windows): tutte visibili, niente scorrimento */
+    .stabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -8px; }
+    .stabs button {
+      flex: 1 1 auto; appearance: none; cursor: pointer; min-height: 40px; padding: 8px 12px; border-radius: 10px;
+      border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
+    }
+    .stabs button[aria-selected='true'] { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
     .tabpanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
     .pair { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; }
     .chip.neg[aria-pressed='true'] { background: var(--danger); border-color: var(--danger); }

@@ -7,7 +7,7 @@ export type Choice = 'present' | 'absent' | 'reserve';
 export type List = 'team' | 'reserve' | 'out' | 'pending';
 export type Team = 'white' | 'black';
 
-export type VisibilityKey = 'last_name' | 'nickname' | 'field_role' | 'birth_date' | 'weight_kg' | 'height_cm' | 'avatar';
+export type VisibilityKey = 'first_name' | 'last_name' | 'nickname' | 'field_role' | 'birth_date' | 'weight_kg' | 'height_cm' | 'avatar';
 
 export interface Profile {
   id: string;

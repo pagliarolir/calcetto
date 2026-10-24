@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
@@ -57,9 +57,18 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         <header><h2>I tuoi dati</h2></header>
         <p class="small muted">Solo il nome è obbligatorio. Con l'interruttore decidi cosa vedono gli altri.</p>
         <div class="panel stack">
-          <label class="field"><span>Nome</span>
-            <input class="input" name="first_name" [(ngModel)]="form.first_name" required maxlength="40" autocomplete="given-name" />
-          </label>
+          <div class="opt">
+            <label class="field grow"><span>Nome</span>
+              <input class="input" name="first_name" [(ngModel)]="form.first_name" required maxlength="40" autocomplete="given-name" />
+            </label>
+            <label class="vis">
+              <input type="checkbox" class="toggle" [checked]="visibility().first_name !== false" (change)="toggleName($event)"
+                     aria-label="Mostra agli altri: Nome (se lo nascondi vedono il soprannome)" />
+            </label>
+          </div>
+          @if (visibility().first_name === false) {
+            <p class="small muted">Gli altri vedono il tuo soprannome al posto del nome.</p>
+          }
           @for (f of optional; track f.key) {
             <div class="opt">
               <label class="field grow"><span>{{ f.label }}</span>
@@ -78,6 +87,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
               </label>
               <label class="vis">
                 <input type="checkbox" class="toggle" [checked]="visibility()[f.key]" (change)="toggleVis(f.key)"
+                       [disabled]="f.key === 'nickname' && visibility().first_name === false"
                        [attr.aria-label]="'Mostra agli altri: ' + f.label" />
               </label>
             </div>
@@ -85,6 +95,20 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         </div>
         <button class="btn primary block" type="submit" [disabled]="busy()">Salva il profilo</button>
       </form>
+
+      <!-- nascondere il nome: al suo posto il soprannome -->
+      <dialog #nickDlg class="sheet" (click)="nickBackdrop($event)" aria-labelledby="nick-h">
+        <div class="grab" aria-hidden="true"></div>
+        <h2 id="nick-h">Mostra il soprannome</h2>
+        <p class="small muted">Al posto del nome, gli altri vedranno il tuo soprannome: in lista, in classifica, nella chat e negli avvisi.</p>
+        <label class="field"><span>Soprannome</span>
+          <input class="input" name="nick_popup" [(ngModel)]="nickDraft" maxlength="60" autocomplete="nickname" />
+        </label>
+        <div class="row">
+          <button type="button" class="btn ghost grow" (click)="closeNick()">Annulla</button>
+          <button type="button" class="btn primary grow" [disabled]="!nickDraft.trim() || busy()" (click)="confirmNick()">Usa il soprannome</button>
+        </div>
+      </dialog>
           }
           @case ('foto') {
       <section class="section">
@@ -174,6 +198,12 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
     label.btn { position: relative; }
     label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .opt { display: flex; align-items: flex-end; gap: 12px; }
+    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; border: 0; color: var(--ink);
+             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
+    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
+    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+    .toggle:disabled { opacity: 0.6; cursor: not-allowed; }
     .opt .field { min-width: 0; }
     .opt .input { min-width: 0; }
     /* su iPhone il campo data ha una larghezza propria: lo si accorcia e lo si lascia restringere */
@@ -242,7 +272,7 @@ export class ProfilePage {
 
   protected form: Form = { first_name: '', last_name: '', nickname: '', field_role: '', birth_date: '', weight_kg: null, height_cm: null };
   protected readonly visibility = signal<Record<VisibilityKey, boolean>>({
-    last_name: true, nickname: true, field_role: true, birth_date: false, weight_kg: false, height_cm: false, avatar: true,
+    first_name: true, last_name: true, nickname: true, field_role: true, birth_date: false, weight_kg: false, height_cm: false, avatar: true,
   });
   protected readonly preview = signal<{ blob: Blob; url: string } | null>(null);
   protected readonly photoBusy = signal(false);
@@ -260,6 +290,40 @@ export class ProfilePage {
     });
   }
 
+  // ------------------------------------------------ nome nascosto => soprannome
+  private readonly nickDlg = viewChild<ElementRef<HTMLDialogElement>>('nickDlg');
+  protected nickDraft = '';
+
+  /** spegnere il nome apre la finestra del soprannome; riaccenderlo basta */
+  protected toggleName(e: Event): void {
+    const box = e.target as HTMLInputElement;
+    if (box.checked) {
+      this.visibility.update((v) => ({ ...v, first_name: true }));
+      return;
+    }
+    box.checked = true;   // resta acceso finché non si conferma il soprannome
+    this.nickDraft = this.form.nickname;
+    const d = this.nickDlg()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  protected closeNick(): void {
+    this.nickDlg()?.nativeElement.close();
+  }
+
+  protected nickBackdrop(e: MouseEvent): void {
+    if (e.target === this.nickDlg()?.nativeElement) this.closeNick();
+  }
+
+  protected async confirmNick(): Promise<void> {
+    const nick = this.nickDraft.trim();
+    if (!nick) return;
+    this.form.nickname = nick;
+    this.visibility.update((v) => ({ ...v, first_name: false, nickname: true }));
+    this.closeNick();
+    await this.save();
+  }
+
   protected toggleVis(k: VisibilityKey): void {
     this.visibility.update((v) => ({ ...v, [k]: !v[k] }));
   }
@@ -267,6 +331,10 @@ export class ProfilePage {
   protected async save(): Promise<void> {
     if (!this.form.first_name.trim()) {
       this.toasts.error('Il nome è obbligatorio.');
+      return;
+    }
+    if (this.visibility().first_name === false && !this.form.nickname.trim()) {
+      this.toasts.error('Hai nascosto il nome: serve un soprannome.');
       return;
     }
     this.busy.set(true);

@@ -19,7 +19,7 @@ import { Icon } from './icon';
     <div class="stack-l">
       <div class="intro panel">
         <p>Completa le missioni per vincere gli sticker. <strong>Il primo che li completerà tutti riceverà tutti i poteri del Leader.</strong></p>
-        <p class="small muted">Di ogni sticker vedi il nome; la missione si scopre solo dopo averlo sbloccato.</p>
+        <p class="small muted">Di ogni sticker vedi il nome; la missione si scopre appena qualcuno lo sblocca.</p>
       </div>
 
       <section class="section" aria-labelledby="album-h">
@@ -37,7 +37,6 @@ import { Icon } from './icon';
                   } @else {
                     <span class="ph" aria-hidden="true"><app-icon name="lock" [size]="22" /></span>
                   }
-                  <span class="num">{{ a.number }}</span>
                 </span>
                 <span class="sname">{{ a.name }}</span>
               </button>
@@ -97,11 +96,12 @@ import { Icon } from './icon';
           <h2 id="st-h">{{ a.name }}</h2>
           @if (mission(a); as m) {
             <p class="mission"><strong>Missione:</strong> {{ m }}</p>
-            @if (!ach.mine(a.id) && session.isLeader()) { <p class="small muted">La missione la vedi solo tu, finché un giocatore non lo sblocca.</p> }
+            @if (!ach.holders(a.id).length && session.isLeader()) { <p class="small muted">La missione la vedi solo tu, finché un giocatore non lo sblocca.</p> }
+            @if (!ach.mine(a.id) && ach.holders(a.id).length) { <p class="small muted">Qualcuno l'ha già sbloccato: ora tutti vedono come si ottiene.</p> }
           } @else if (ach.mine(a.id) || session.isLeader()) {
             <p class="small muted">Nessuna missione scritta: lo assegna il Leader.</p>
           } @else {
-            <p class="mission secret">Missione segreta: la scoprirai sbloccando lo sticker.</p>
+            <p class="mission secret">Missione segreta: si scopre appena qualcuno sblocca lo sticker.</p>
           }
           @if (ach.mine(a.id); as u) { <p class="small">Sbloccato {{ when(u.unlocked_at) }}.</p> }
         </div>
@@ -172,9 +172,6 @@ import { Icon } from './icon';
         drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff);
     }
     .ph.star { color: var(--armband-ink); font-size: 1.6rem; }
-    .num { position: absolute; right: -4px; bottom: -2px; min-width: 22px; height: 22px; border-radius: 11px; padding: 0 5px; display: grid; place-items: center;
-           font: 800 0.72rem/1 var(--font-display); background: var(--surface); color: var(--ink); box-shadow: 0 0 0 2px var(--line); }
-    .got .num { background: var(--armband); color: var(--armband-ink); box-shadow: 0 0 0 2px var(--surface); }
     .sname { font-size: 0.72rem; font-weight: 600; text-align: center; line-height: 1.15; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .sticker:not(.got) .sname { color: var(--muted); }
     /* classifica */
