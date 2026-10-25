@@ -87,12 +87,20 @@ const RECORDS: Record[] = [
         @if (tab() !== 'punti' && tab() !== 'obiettivi' && statsSince(); as d) { <p class="note">Classifica azzerata {{ whenFull(d) }}: contano solo le partite successive.</p> }
       </header>
 
+      <!-- schede su due righe: la prima giustificata, la seconda centrata -->
       <nav class="stabs" role="tablist" aria-label="Statistiche">
-        @for (t of tabs; track t.id; let i = $index) {
-          @if (i === 3) { <span class="stabs-break" aria-hidden="true"></span> }
-          <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
+        <div class="srow first" role="none">
+          @for (t of tabs.slice(0, 3); track t.id) {
+            <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
                   [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
-        }
+          }
+        </div>
+        <div class="srow" role="none">
+          @for (t of tabs.slice(3); track t.id) {
+            <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
+                  [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
+          }
+        </div>
       </nav>
       </div>
 
@@ -370,9 +378,10 @@ const RECORDS: Record[] = [
     .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold .pairs { margin-top: 10px; }
-    /* schede su due righe (3 sopra, 2 sotto), larghe quanto la parola */
-    .stabs { display: flex; flex-wrap: wrap; column-gap: 2px; border-bottom: 1px solid var(--line); }
-    .stabs-break { flex-basis: 100%; height: 0; }
+    /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
+    .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
+    .srow { display: flex; justify-content: center; column-gap: 2px; }
+    .srow.first { justify-content: space-between; }
     .stabs button {
       flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
       padding: 10px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
