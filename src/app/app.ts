@@ -9,6 +9,7 @@ import { Unread } from './core/unread';
 import { Icon } from './ui/icon';
 import { ReprimandView } from './ui/reprimand';
 import { Branding } from './core/branding';
+import { ScrollMemory } from './core/scroll-memory';
 import { AchievementBanner } from './ui/achievement-banner';
 
 @Component({
@@ -115,6 +116,8 @@ export class App {
   private readonly router = inject(Router);
   private readonly session = inject(Session);
   private readonly branding = inject(Branding);
+  /** «Indietro» riporta allo stesso punto della pagina */
+  private readonly scrollMemory = inject(ScrollMemory);
   protected readonly toasts = inject(Toasts);
   protected readonly unread = inject(Unread);
 

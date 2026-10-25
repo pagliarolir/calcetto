@@ -182,7 +182,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         <header><h2>Sicurezza</h2></header>
         <a class="btn" routerLink="/nuova-password">Cambia password</a>
       </section>
-      <button class="btn ghost" (click)="logout()">Esci dall'account</button>
+      <button class="btn danger" (click)="logout()">Esci dall'account</button>
           }
         }
       </div>
