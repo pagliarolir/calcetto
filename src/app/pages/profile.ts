@@ -29,8 +29,8 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
   imports: [FormsModule, RouterLink, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page stack-l">
-      <div class="sticky-top">
+    <div class="page-head">
+      <div class="head-in">
       <header class="me">
         @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="88" /> }
         <div class="stack">
@@ -51,6 +51,9 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         }
       </nav>
       </div>
+    </div>
+    <main class="scroll-area">
+      <div class="page stack-l in-body">
 
       <div class="ppanel" role="tabpanel" [id]="'ppanel-' + tab()" [attr.aria-labelledby]="'ptab-' + tab()">
         @switch (tab()) {
@@ -183,9 +186,11 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
           }
         }
       </div>
+    </div>
     </main>
   `,
   styles: `
+    :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .me { display: flex; align-items: center; gap: 16px; }
     /* schede del profilo: icona sopra, nome sotto */
     .ptabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }

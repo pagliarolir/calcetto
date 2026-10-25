@@ -68,6 +68,8 @@ import { AchievementBanner } from './ui/achievement-banner';
       /* contenitore di riferimento per gli elementi posizionati (anche quelli nascosti, come le caselle dei chip) */
       position: relative;
       flex: 1 1 auto; min-height: 0;
+      /* colonna: le pagine con la parte alta fissa occupano l'altezza rimasta e scorrono al loro interno */
+      display: flex; flex-direction: column;
       overflow-y: auto; overflow-x: hidden;
       overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
