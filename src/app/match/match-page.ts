@@ -93,6 +93,8 @@ import { MatchStore } from './match-store';
         radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(241 245 239 / 35%) 89px 91px, transparent 92px),
         linear-gradient(var(--turf), var(--turf));
       padding-top: env(safe-area-inset-top);
+      /* resta ferma in cima: scorre solo il contenuto sotto */
+      position: sticky; top: 0; z-index: 20;
     }
     @media (prefers-color-scheme: dark) { .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
     .hero-in { max-width: 640px; margin: 0 auto; padding: 0 16px 6px; display: flex; flex-direction: column; gap: 2px; }
