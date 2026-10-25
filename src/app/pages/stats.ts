@@ -72,7 +72,7 @@ const RECORDS: Record[] = [
           @if (tab() !== 'punti' && tab() !== 'obiettivi') {
             <label class="period">
               <span class="sr-only">Periodo</span>
-              <select class="input" [ngModel]="period()" (ngModelChange)="period.set($event)" aria-label="Periodo">
+              <select class="input" [ngModel]="period()" (ngModelChange)="setPeriod($event)" aria-label="Periodo">
                 @for (p of periods; track p.id) { <option [value]="p.id">{{ p.label }}</option> }
               </select>
             </label>
@@ -80,8 +80,8 @@ const RECORDS: Record[] = [
         </div>
         @if (tab() !== 'punti' && tab() !== 'obiettivi' && period() === 'custom') {
           <div class="row">
-            <label class="field grow"><span>Dal</span><input class="input" type="date" [(ngModel)]="customFrom" (change)="reload()" /></label>
-            <label class="field grow"><span>Al</span><input class="input" type="date" [(ngModel)]="customTo" (change)="reload()" /></label>
+            <label class="field grow"><span>Dal</span><input class="input" type="date" [(ngModel)]="customFrom" (change)="onDates()" /></label>
+            <label class="field grow"><span>Al</span><input class="input" type="date" [(ngModel)]="customTo" (change)="onDates()" /></label>
           </div>
         }
         @if (tab() !== 'punti' && tab() !== 'obiettivi' && statsSince(); as d) { <p class="note">Classifica azzerata {{ whenFull(d) }}: contano solo le partite successive.</p> }
@@ -274,7 +274,7 @@ const RECORDS: Record[] = [
               </div>
             </section>
 
-            <details class="panel fold">
+            <details class="panel fold" [open]="folds().has('coppie')" (toggle)="foldToggled('coppie', $event)">
               <summary><span class="grow"><strong>Coppie più affiatate</strong><br /><span class="small muted">più partite da compagni</span></span><app-icon name="chevron" [size]="18" /></summary>
               <ol class="pairs">
                 @for (x of topTogether(); track x.a_id + x.b_id) {
@@ -284,7 +284,7 @@ const RECORDS: Record[] = [
                 }
               </ol>
             </details>
-            <details class="panel fold">
+            <details class="panel fold" [open]="folds().has('rivalita')" (toggle)="foldToggled('rivalita', $event)">
               <summary><span class="grow"><strong>Grandi rivalità</strong><br /><span class="small muted">più partite da avversari</span></span><app-icon name="chevron" [size]="18" /></summary>
               <ol class="pairs">
                 @for (x of topAgainst(); track x.a_id + x.b_id) {
@@ -298,7 +298,7 @@ const RECORDS: Record[] = [
             <section class="section" aria-labelledby="aff-h">
               <header><h2 id="aff-h">Affinità di un giocatore</h2></header>
               <label class="field"><span>Giocatore</span>
-                <select class="input" [ngModel]="focus()" (ngModelChange)="focus.set($event)">
+                <select class="input" [ngModel]="focus()" (ngModelChange)="setFocus($event)">
                   @for (r of played(); track r.user_id) { <option [value]="r.user_id">{{ session.name(r.user_id) }}</option> }
                 </select>
               </label>
@@ -565,11 +565,21 @@ export class StatsPage {
 
 
 
+  /** tendine aperte in «Squadre e coppie» (anche loro nell'indirizzo: si torna indietro con le stesse aperte) */
+  protected readonly folds = signal<Set<string>>(new Set());
+
   constructor() {
-    const raw = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda');
+    // tutto quello che si sceglie è nell'indirizzo: «Indietro» da una scheda giocatore riapre la stessa vista
+    const qp = inject(ActivatedRoute).snapshot.queryParamMap;
+    const raw = qp.get('scheda');
     const q = (raw === 'coppie' ? 'squadre' : raw === 'presenze' ? 'classifica' : raw) as Tab | null;
     if (q && this.tabs.some((t) => t.id === q)) this.tab.set(q);
-    this.focus.set(this.session.uid() ?? '');
+    const per = qp.get('periodo') as Period | null;
+    if (per && this.periods.some((x) => x.id === per)) this.period.set(per);
+    if (qp.get('dal')) this.customFrom = qp.get('dal')!;
+    if (qp.get('al')) this.customTo = qp.get('al')!;
+    this.focus.set(qp.get('giocatore') ?? this.session.uid() ?? '');
+    this.folds.set(new Set((qp.get('aperte') ?? '').split(',').filter(Boolean)));
     effect(() => {
       this.period();
       void this.reload();
@@ -580,7 +590,47 @@ export class StatsPage {
   // ------------------------------------------------------------------ schede
   protected selectTab(t: Tab): void {
     this.tab.set(t);
-    void this.router.navigate([], { queryParams: { scheda: t === 'classifica' ? null : t }, replaceUrl: true });
+    this.syncUrl();
+  }
+
+  protected setPeriod(p: Period): void {
+    this.period.set(p);
+    this.syncUrl();
+  }
+
+  protected onDates(): void {
+    void this.reload();
+    this.syncUrl();
+  }
+
+  protected setFocus(id: string): void {
+    this.focus.set(id);
+    this.syncUrl();
+  }
+
+  protected foldToggled(key: string, e: Event): void {
+    const open = (e.target as HTMLDetailsElement).open;
+    const next = new Set(this.folds());
+    if (open) next.add(key); else next.delete(key);
+    if (next.size === this.folds().size && [...next].every((k) => this.folds().has(k))) return;
+    this.folds.set(next);
+    this.syncUrl();
+  }
+
+  /** scrive le scelte nell'indirizzo senza aggiungere passaggi alla cronologia */
+  private syncUrl(): void {
+    const custom = this.period() === 'custom';
+    void this.router.navigate([], {
+      replaceUrl: true,
+      queryParams: {
+        scheda: this.tab() === 'classifica' ? null : this.tab(),
+        periodo: this.period() === 'year' ? null : this.period(),
+        dal: custom ? this.customFrom : null,
+        al: custom ? this.customTo : null,
+        giocatore: this.focus() && this.focus() !== this.session.uid() ? this.focus() : null,
+        aperte: this.folds().size ? [...this.folds()].sort().join(',') : null,
+      },
+    });
   }
 
   /** frecce sinistra e destra per passare da una scheda all'altra (tastiera) */

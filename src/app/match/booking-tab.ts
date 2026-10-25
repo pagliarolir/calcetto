@@ -1,3 +1,4 @@
+import { ActivatedRoute, Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -75,7 +76,7 @@ interface SlotView {
         <!-- Elenchi: una scheda alla volta, ognuna con quante persone ci sono -->
         <div class="seg lists" [class.four]="listTabs().length > 3" role="tablist" aria-label="Elenchi dei giocatori">
           @for (l of listTabs(); track l.id) {
-            <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="listTab.set(l.id)">
+            <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="setListTab(l.id)">
               {{ l.label }} <span class="count num">{{ l.count }}</span>
             </button>
           }
@@ -482,7 +483,25 @@ export class BookingTab {
   }
 
   /** scheda degli elenchi aperta: titolari, disponibili, riserve, assenti */
-  protected readonly listTab = signal<'team' | 'pending' | 'reserve' | 'out'>('team');
+  // la sotto-scheda è nell'indirizzo (?elenco=assenti): tornando indietro da una scheda giocatore si riapre la stessa
+  private readonly listRoute = inject(ActivatedRoute);
+  private readonly listRouter = inject(Router);
+  private static readonly LIST_PARAM = { team: 'titolari', pending: 'disponibili', reserve: 'riserve', out: 'assenti' } as const;
+  protected readonly listTab = signal<'team' | 'pending' | 'reserve' | 'out'>(
+    ((): 'team' | 'pending' | 'reserve' | 'out' => {
+      const q = this.listRoute.snapshot.queryParamMap.get('elenco');
+      const hit = Object.entries(BookingTab.LIST_PARAM).find(([, v]) => v === q);
+      return (hit?.[0] as 'team' | 'pending' | 'reserve' | 'out') ?? 'team';
+    })(),
+  );
+
+  protected setListTab(id: 'team' | 'pending' | 'reserve' | 'out'): void {
+    this.listTab.set(id);
+    void this.listRouter.navigate([], {
+      relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge',
+      queryParams: { elenco: id === 'team' ? null : BookingTab.LIST_PARAM[id] },
+    });
+  }
   protected readonly listTabs = computed(() => {
     const out: { id: 'team' | 'pending' | 'reserve' | 'out'; label: string; count: string }[] = [
       { id: 'team', label: 'Titolari', count: `${this.store.team().length}/${this.store.size()}` },
