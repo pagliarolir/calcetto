@@ -65,6 +65,7 @@ const RECORDS: Record[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
+      <div class="sticky-top">
       <header class="stack">
         <div class="titlebar">
           <h1>Classifica</h1>
@@ -87,11 +88,13 @@ const RECORDS: Record[] = [
       </header>
 
       <nav class="stabs" role="tablist" aria-label="Statistiche">
-        @for (t of tabs; track t.id) {
+        @for (t of tabs; track t.id; let i = $index) {
+          @if (i === 3) { <span class="stabs-break" aria-hidden="true"></span> }
           <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
                   [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
         }
       </nav>
+      </div>
 
       <div class="tabpanel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
       @if (tab() === 'punti') {
@@ -367,13 +370,14 @@ const RECORDS: Record[] = [
     .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold .pairs { margin-top: 10px; }
-    /* schede su più righe (come le finestre di Windows): tutte visibili, niente scorrimento */
-    .stabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -8px; }
+    /* schede su due righe (3 sopra, 2 sotto), larghe quanto la parola */
+    .stabs { display: flex; flex-wrap: wrap; column-gap: 2px; border-bottom: 1px solid var(--line); }
+    .stabs-break { flex-basis: 100%; height: 0; }
     .stabs button {
-      flex: 1 1 auto; appearance: none; cursor: pointer; min-height: 40px; padding: 8px 12px; border-radius: 10px;
-      border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
+      flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
+      padding: 10px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
     }
-    .stabs button[aria-selected='true'] { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
+    .stabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
     .tabpanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
     .pair { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; }
     .chip.neg[aria-pressed='true'] { background: var(--danger); border-color: var(--danger); }

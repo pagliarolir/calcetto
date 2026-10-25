@@ -30,6 +30,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
+      <div class="sticky-top">
       <header class="me">
         @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="88" /> }
         <div class="stack">
@@ -49,6 +50,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
           </button>
         }
       </nav>
+      </div>
 
       <div class="ppanel" role="tabpanel" [id]="'ppanel-' + tab()" [attr.aria-labelledby]="'ptab-' + tab()">
         @switch (tab()) {
@@ -186,7 +188,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
   styles: `
     .me { display: flex; align-items: center; gap: 16px; }
     /* schede del profilo: icona sopra, nome sotto */
-    .ptabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); margin-top: -8px; }
+    .ptabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
     .ptabs button {
       appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
       min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
