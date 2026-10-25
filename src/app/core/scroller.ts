@@ -4,7 +4,8 @@
  * quando una pagina carica e cambia altezza. Per scorrere via codice usare queste funzioni.
  */
 export function appScroller(): HTMLElement | null {
-  return document.querySelector<HTMLElement>('.app-scroller');
+  // nelle pagine con la parte alta fissa scorre il contenitore centrale, non tutto il riquadro
+  return document.querySelector<HTMLElement>('.app-scroller .scroll-area') ?? document.querySelector<HTMLElement>('.app-scroller');
 }
 
 export function scrollAppTo(top: 'start' | 'end', behavior: ScrollBehavior = 'smooth'): void {

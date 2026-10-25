@@ -64,8 +64,8 @@ const RECORDS: Record[] = [
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page stack-l">
-      <div class="sticky-top">
+    <div class="page-head">
+      <div class="head-in">
       <header class="stack">
         <div class="titlebar">
           <h1>Classifica</h1>
@@ -103,6 +103,9 @@ const RECORDS: Record[] = [
         </div>
       </nav>
       </div>
+    </div>
+    <main class="scroll-area">
+      <div class="page stack-l in-body">
 
       <div class="tabpanel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
       @if (tab() === 'punti') {
@@ -338,9 +341,11 @@ const RECORDS: Record[] = [
         }
       }
       </div>
+    </div>
     </main>
   `,
   styles: `
+    :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .big { font-size: var(--step-2); font-weight: 700; margin-left: 8px; }
     .list-item .small.muted:last-child { margin-left: 4px; min-width: 52px; }
     td a { text-decoration: none; font-weight: 600; }
@@ -380,8 +385,8 @@ const RECORDS: Record[] = [
     .fold .pairs { margin-top: 10px; }
     /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
-    .srow { display: flex; justify-content: center; column-gap: 2px; }
-    .srow.first { justify-content: space-between; }
+    /* schede equidistanti, sopra e sotto */
+    .srow { display: flex; justify-content: space-evenly; }
     .stabs button {
       flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
       padding: 10px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;

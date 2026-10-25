@@ -131,14 +131,24 @@ a { color: inherit; }
   margin: 0 auto;
   padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 32px;
 }
-/* Parte alta che resta ferma mentre scorre il resto (Classifica, Profilo): si aggancia sotto la barra di stato */
-.sticky-top {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
-  display: flex; flex-direction: column; gap: 14px;
-  margin: -8px -16px 0; padding: 8px 16px 10px;
+/* Pagine con la parte alta fissa (Classifica, Profilo, Partita): la pagina occupa l'altezza disponibile,
+   la parte alta non scorre e scorre solo il contenitore centrale (.scroll-area). */
+.page-head {
+  flex: none; z-index: 2;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
   background: var(--bg);
   box-shadow: 0 10px 12px -12px rgb(20 32 25 / 35%);
 }
+.page-head .head-in { max-width: 640px; margin: 0 auto; padding: 0 16px 10px; display: flex; flex-direction: column; gap: 14px; }
+.scroll-area {
+  /* riferimento anche per gli elementi nascosti posizionati, come .app-scroller (vedi CLAUDE.md) */
+  position: relative;
+  flex: 1 1 0; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.page.in-body { padding-top: 16px; }
 /* Pagine sotto un'intestazione che ha già lasciato spazio alla barra di stato */
 .page.below-header { padding-top: 16px; }
 
