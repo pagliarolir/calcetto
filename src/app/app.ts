@@ -10,19 +10,25 @@ import { Icon } from './ui/icon';
 import { ReprimandView } from './ui/reprimand';
 import { Branding } from './core/branding';
 import { ScrollMemory } from './core/scroll-memory';
+import { Refresher } from './core/refresher';
+import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
          elemento della colonna, quindi non dipende dall'altezza della pagina che si sta caricando. -->
     <div class="app-scroller" #scroller>
       <app-achievement-banner />
-      <router-outlet />
+      <!-- «trascina per aggiornare» ricrea la pagina corrente, che ricarica i suoi dati -->
+      @for (k of [refresher.key()]; track k) {
+        <router-outlet />
+      }
     </div>
+    <app-pull-refresh [target]="scroller" />
 
     @if (showTabs()) {
       <nav class="tabbar" aria-label="Sezioni">
@@ -118,6 +124,7 @@ export class App {
   private readonly branding = inject(Branding);
   /** «Indietro» riporta allo stesso punto della pagina */
   private readonly scrollMemory = inject(ScrollMemory);
+  protected readonly refresher = inject(Refresher);
   protected readonly toasts = inject(Toasts);
   protected readonly unread = inject(Unread);
 
