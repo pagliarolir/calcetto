@@ -189,7 +189,6 @@ const RECORDS: Record[] = [
             <h2>Classifica</h2>
             <button class="btn small ghost cols-btn" (click)="openCols()" aria-haspopup="dialog"><app-icon name="table" [size]="16" /> Colonne</button>
           </header>
-          <p class="small muted">Tocca una colonna per ordinare. Con «Colonne» scegli cosa vedere.</p>
           <div class="fit-wrap">
             <table class="data fit">
               <thead>

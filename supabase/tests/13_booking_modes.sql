@@ -52,7 +52,8 @@ select title, count(*) from notifications where kind = 'lists_confirmed' group b
 select bookings_close_at <= now() as chiuse from matches where id = fm();
 \set ON_ERROR_STOP 0
 set role authenticated;
-select as_user('P14'), book(fm(), 'absent');
+-- dopo la chiusura ci si può ritirare, ma non cambiare risposta (atteso errore)
+select as_user('P14'), book(fm(), 'present');
 select as_user('P1'), leader_confirm_lists(fm());
 \set ON_ERROR_STOP 1
 
@@ -98,8 +99,8 @@ select leader_close_bookings((select id from om));
 -- P5 non aveva risposto: dopo la chiusura può ancora prenotarsi, ma come riserva
 select as_user('P5'), (book((select id from om), 'present'))->>'list' as p5_dopo_la_chiusura;
 \set ON_ERROR_STOP 0
--- ora ha risposto: per cambiare deve passare dal Leader (atteso errore)
-select as_user('P5'), book((select id from om), 'absent');
+-- ora ha risposto: per cambiare (non per ritirarsi) deve passare dal Leader (atteso errore)
+select as_user('P5'), book((select id from om), 'present');
 \set ON_ERROR_STOP 1
 select as_user('P1'), leader_reopen_bookings((select id from om));
 select as_user('P5'), (book((select id from om), 'present'))->>'list' as dopo_la_riapertura;

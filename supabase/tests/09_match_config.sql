@@ -54,11 +54,11 @@ reset role;
 select min(slot) filter (where list = 'team') as primo, max(slot) filter (where list = 'team') as ultimo,
        string_agg(n || '=' || slot, ' ') filter (where list = 'reserve') as riserve from board6;
 
-\echo '--- 6) prenotazioni chiuse: il giocatore no (atteso errore), il Leader si'
+\echo '--- 6) prenotazioni chiuse: il giocatore non cambia risposta (atteso errore; ritirarsi invece si può), il Leader si'
 update matches set bookings_close_at = now() - interval '1 minute' where id = m6();
 \set ON_ERROR_STOP 0
 set role authenticated;
-select as_user('P14'), book(m6(), 'absent');
+select as_user('P14'), book(m6(), case when (select list from bookings where match_id = m6() and user_id = pid('P14')) = 'reserve' then 'present' else 'reserve' end);
 \set ON_ERROR_STOP 1
 select as_user('P1'), leader_book(m6(), pid('P14'), 'absent');
 reset role;

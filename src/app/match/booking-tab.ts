@@ -1,5 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { fmtTime, fmtWeekday, fmtWhen, fromLocalInput, toLocalInput } from '../core/format';
@@ -36,7 +36,11 @@ interface SlotView {
           } @else if (store.t()?.started) {
             <p class="muted">La partita è iniziata: le prenotazioni sono chiuse.</p>
           } @else if (store.t()?.bookingClosed && !amLeaderTitular() && store.mine()) {
-            <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
+            @if (store.mine()!.list === 'out') {
+              <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
+            } @else {
+              <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}.</p>
+            }
           } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
             <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}: puoi ancora metterti tra le riserve.</p>
@@ -97,7 +101,7 @@ interface SlotView {
                 @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" /></li>
+                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
                   } @empty { <li class="empty">Ancora nessun titolare.</li> }
                 </ul>
               } @else {
@@ -107,6 +111,7 @@ interface SlotView {
                       @if (s.row; as r) {
                         <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       [note]="r.is_leader ? 'Leader' : r.placed_by ? 'messo dal Leader' : null" />
+                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
                       }
@@ -129,7 +134,7 @@ interface SlotView {
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" /></li>
+                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
                     }
                   </ul>
                 } @else {
@@ -139,6 +144,7 @@ interface SlotView {
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
                                       [note]="r.reserve_reply === 'confirmed' ? 'disponibile' : r.choice === 'present' ? 'in coda' : 'se serve'"
                                       [noteTone]="r.reserve_reply === 'confirmed' ? 'turf' : 'muted'" />
+                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }
                       </li>
                     }
                   </ol>
@@ -308,18 +314,32 @@ interface SlotView {
           </section>
         }
       </div>
+      <!-- conferma del ritiro -->
+      <dialog #wdDlg class="ask" (click)="wdBackdrop($event)" aria-labelledby="wd-q">
+        <p id="wd-q" class="ask-q">Sicuro di volerti ritirare?</p>
+        <div class="row">
+          <button type="button" class="btn ghost grow" (click)="closeWd()">Annulla</button>
+          <button type="button" class="btn danger grow" [disabled]="busy()" (click)="confirmWd()">Mi ritiro</button>
+        </div>
+      </dialog>
     }
   `,
   styles: `
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
-    .board li { display: grid; min-width: 0; }
+    .board li { display: grid; min-width: 0; position: relative; }
+    /* X rossa per ritirarsi, nell'angolo della propria figurina */
+    .wd { position: absolute; top: -6px; right: -6px; z-index: 2; width: 28px; height: 28px; border-radius: 50%; border: 0; cursor: pointer;
+          display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 3px var(--bg), 0 3px 8px rgb(0 0 0 / 25%); }
+    dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
+    dialog.ask::backdrop { background: rgb(10 20 14 / 45%); }
+    .ask-q { margin: 0 0 16px; text-align: center; font: 700 var(--step-1)/1.25 var(--font-body); }
     .who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-decoration: none; color: inherit; font-weight: 600; }
     .who .tag { font-weight: 600; }
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
     .pick { display: flex; flex-wrap: wrap; gap: 6px; }
     .people { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .people li { display: grid; min-width: 0; }
+    .people li { display: grid; min-width: 0; position: relative; }
     .people li.empty { grid-column: 1 / -1; }
     /* schede degli elenchi */
     /* le schede si dividono sempre la riga: niente scorrimento */
@@ -436,6 +456,34 @@ export class BookingTab {
       this.venueUrl = m.venue_url ?? '';
       this.priorityAt = toLocalInput(new Date(new Date(m.bookings_open_at).getTime() - 24 * 3600_000).toISOString());
     });
+  }
+
+  // ------------------------------------------------ ritiro dopo la chiusura: X rossa sulla propria figurina
+  private readonly wdDlg = viewChild<ElementRef<HTMLDialogElement>>('wdDlg');
+
+  /** la X compare sulla propria figurina (titolare o riserva) dopo la chiusura e prima dell'inizio */
+  protected canWithdraw(userId: string): boolean {
+    const mine = this.store.mine();
+    return userId === this.session.uid() && !!this.store.t()?.bookingClosed && !this.store.t()?.started
+      && this.store.match()?.status === 'scheduled' && !this.amLeaderTitular() && (mine?.list === 'team' || mine?.list === 'reserve');
+  }
+
+  protected askWithdraw(): void {
+    const d = this.wdDlg()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  protected closeWd(): void {
+    this.wdDlg()?.nativeElement.close();
+  }
+
+  protected wdBackdrop(e: MouseEvent): void {
+    if (e.target === this.wdDlg()?.nativeElement) this.closeWd();
+  }
+
+  protected async confirmWd(): Promise<void> {
+    this.closeWd();
+    await this.book('absent');
   }
 
   protected async book(choice: Choice): Promise<void> {
