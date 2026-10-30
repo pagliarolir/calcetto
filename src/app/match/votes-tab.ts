@@ -25,8 +25,8 @@ import { kit } from '../core/kits';
           <!-- sotto-schede: niente pagine infinite da scorrere -->
           <div class="seg" role="tablist" aria-label="Pagelle">
             @for (p of panes(); track p.id) {
-              <button role="tab" [attr.aria-selected]="pane() === p.id" (click)="pane.set(p.id)">
-                {{ p.label }}@if (p.id === 'vota') { <span class="pip" aria-hidden="true"></span> }
+              <button role="tab" [attr.aria-selected]="pane() === p.id" [disabled]="p.disabled" (click)="pane.set(p.id)">
+                {{ p.label }}@if (p.id === 'vota' && !p.disabled) { <span class="pip" aria-hidden="true"></span> }
               </button>
             }
           </div>
@@ -78,20 +78,7 @@ import { kit } from '../core/kits';
                 @if (summary(); as s) {
                   @if (s.voters && s.players) {
                     @if (s.mvp_hidden) {
-                      <p class="note">★ Il migliore in campo resta segreto finché non hanno votato {{ s.mvp_threshold }} giocatori: per ora {{ s.voters }}.</p>
-                    } @else if (mvpTop().length) {
-                      <div class="mvp-hero" aria-label="Migliore in campo">
-                        @for (p of mvpTop(); track p.user_id) {
-                          <div class="mvp-one">
-                            <span class="mvp-pic">
-                              <app-avatar [userId]="p.user_id" [team]="team(p.user_id)" [size]="76" />
-                              <span class="mvp-badge" [attr.aria-label]="p.mvp_votes + ' voti da migliore'">★ {{ p.mvp_votes }}</span>
-                            </span>
-                            <strong>{{ session.name(p.user_id) }}</strong>
-                            <span class="small muted">migliore in campo</span>
-                          </div>
-                        }
-                      </div>
+                      <p class="small muted">★ Il migliore in campo si scopre quando avranno votato {{ s.mvp_threshold }} giocatori: per ora {{ s.voters }}.</p>
                     }
                     @if (s.avgs_hidden) {
                       <p class="empty">Le medie compaiono quando avranno votato almeno {{ s.avg_threshold }} giocatori: per ora {{ s.voters }}.</p>
@@ -101,7 +88,12 @@ import { kit } from '../core/kits';
                       @for (p of s.players; track p.user_id; let i = $index) {
                         <li>
                           <span class="pos num">{{ i + 1 }}</span>
-                          <app-avatar [userId]="p.user_id" [team]="team(p.user_id)" [size]="38" />
+                          <span class="av" [class.is-mvp]="p.is_mvp && p.mvp_votes > 0">
+                            <app-avatar [userId]="p.user_id" [team]="team(p.user_id)" [size]="38" />
+                            @if (p.is_mvp && p.mvp_votes > 0) {
+                              <span class="mvp-dot" [attr.aria-label]="'Migliore in campo, ' + p.mvp_votes + (p.mvp_votes === 1 ? ' voto' : ' voti')">★ {{ p.mvp_votes }}</span>
+                            }
+                          </span>
                           <span class="grow ellipsis name">{{ session.name(p.user_id) }}
                           </span>
                           <span [class]="'rate static ' + tone(p.avg)">{{ p.avg !== null ? p.avg.toFixed(2).replace('.', ',') : '–' }}</span>
@@ -168,9 +160,6 @@ import { kit } from '../core/kits';
             }
           }
 
-          @if (!canVote() && store.t()?.votesOpen && !done() && !store.amParticipant() && !session.isLeader()) {
-            <p class="note">Votano i giocatori della partita e il Leader.</p>
-          }
           @if (store.t()?.votesClosed && !done() && (store.amParticipant() || session.isLeader())) {
             <p class="note">Le votazioni sono chiuse.</p>
           }
@@ -236,14 +225,11 @@ import { kit } from '../core/kits';
     .rate:not(.touched) { opacity: 0.85; }
     .top { background: #1d5fd1; } .good { background: #1f7a4a; } .ok { background: #4f7a12; } .meh { background: #b45309; } .bad { background: #b93a26; } .none { background: var(--surface-2); color: var(--muted); }
 
-    .mvp-hero { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; padding: 6px 0 4px; }
-    .mvp-one { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-    .mvp-pic { position: relative; display: inline-block; border-radius: 50%; box-shadow: 0 0 0 3px var(--armband), 0 8px 20px rgb(0 0 0 / 18%); }
-    .mvp-badge {
-      position: absolute; right: -8px; bottom: -4px; min-width: 30px; height: 24px; padding: 0 7px; border-radius: 12px;
-      display: grid; place-items: center; background: var(--armband); color: var(--armband-ink);
-      font: 800 0.8rem/1 var(--font-display); box-shadow: 0 0 0 3px var(--surface);
-    }
+    .seg button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .av { position: relative; display: inline-grid; flex: none; border-radius: 50%; }
+    .av.is-mvp { box-shadow: 0 0 0 2px var(--armband); }
+    .mvp-dot { position: absolute; right: -10px; bottom: -6px; height: 20px; min-width: 30px; padding: 0 6px; border-radius: 10px; display: grid; place-items: center;
+               background: var(--armband); color: var(--armband-ink); font: 800 0.72rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); white-space: nowrap; }
     .warn-text { color: var(--danger); font-weight: 600; }
     .mvp-card {
       display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; min-height: 64px; padding: 10px 14px;
@@ -321,12 +307,14 @@ export class VotesTab {
   protected readonly canVote = computed(() =>
     (this.store.amParticipant() || this.session.isLeader()) && !!this.store.t()?.votesOpen && !this.done());
 
+  /** «Vota» resta sempre tra le schede: disattivata quando non si può votare (non ha giocato, ha già votato, votazioni chiuse) */
   protected readonly panes = computed(() => {
-    const out: { id: 'vota' | 'medie' | 'miei' | 'tutti'; label: string }[] = [];
-    if (this.canVote()) out.push({ id: 'vota', label: 'Vota' });
-    out.push({ id: 'medie', label: 'Medie' });
-    if (this.done()) out.push({ id: 'miei', label: 'I miei voti' });
-    if (this.canSeeAll()) out.push({ id: 'tutti', label: 'Per votante' });
+    const out: { id: 'vota' | 'medie' | 'miei' | 'tutti'; label: string; disabled: boolean }[] = [
+      { id: 'vota', label: 'Vota', disabled: !this.canVote() },
+      { id: 'medie', label: 'Medie', disabled: false },
+    ];
+    if (this.done()) out.push({ id: 'miei', label: 'I miei voti', disabled: false });
+    if (this.canSeeAll()) out.push({ id: 'tutti', label: 'Per votante', disabled: false });
     return out;
   });
 

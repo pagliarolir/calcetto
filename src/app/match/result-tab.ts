@@ -21,6 +21,7 @@ type Field = keyof Line;
   selector: 'app-result-tab',
   imports: [FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
     @if (store.match(); as m) {
       <div class="stack-l">
@@ -31,6 +32,26 @@ type Field = keyof Line;
           <section class="section">
             @if (store.result(); as r) {
               <div class="panel stack result">
+                <!-- «i»: chi ha inserito il risultato, omologazione, conferme -->
+                <button type="button" class="info-btn" [attr.aria-expanded]="infoOpen()" aria-label="Informazioni sul risultato" (click)="toggleInfo($event)">
+                  <app-icon name="info" [size]="18" />
+                </button>
+                @if (infoOpen()) {
+                  <div class="info-pop" role="dialog" aria-label="Informazioni sul risultato" (click)="$event.stopPropagation()">
+                    <p>Inserito da <strong>{{ session.name(r.entered_by) }}</strong>.</p>
+                    <p>{{ r.status === 'homologated' ? homologatedBy() : 'Da omologare: lo omologa il Leader.' }}</p>
+                    @if (r.status === 'pending' || store.reviews().length) {
+                      <p class="muted">{{ agrees() === 1 ? '1 conferma' : agrees() + ' conferme' }}, {{ contests() === 1 ? '1 contestazione' : contests() + ' contestazioni' }}</p>
+                    }
+                    @if (store.reviews().length) {
+                      <ul>
+                        @for (rv of store.reviews(); track rv.user_id) {
+                          <li><span [class]="rv.agree ? 'ok' : 'ko'">{{ rv.agree ? '✓' : '✗' }}</span> {{ session.name(rv.user_id) }}@if (rv.note) { <span class="muted">: {{ rv.note }}</span> }</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
                 <div class="scoreline">
                   <app-kit-shirt [color]="kitOf('white').color" [ink]="kitOf('white').ink" [size]="82" [tight]="true" />
                   <div class="score-mid">
@@ -39,12 +60,6 @@ type Field = keyof Line;
                   </div>
                   <app-kit-shirt [color]="kitOf('black').color" [ink]="kitOf('black').ink" [size]="82" [tight]="true" />
                 </div>
-                <p class="small muted">Inserito da {{ session.name(r.entered_by) }}.
-                  @if (r.status === 'homologated') { {{ homologatedBy() }} }
-                </p>
-                @if (r.status === 'pending') {
-                  <p class="small">{{ agrees() === 1 ? '1 conferma' : agrees() + ' conferme' }}@if (contests()) {, {{ contests() === 1 ? '1 contestazione' : contests() + ' contestazioni' }}}: il risultato lo omologa il Leader.</p>
-                }
               </div>
 
               @if (canReview()) {
@@ -60,17 +75,6 @@ type Field = keyof Line;
                 </div>
               }
 
-              @if (store.reviews().length) {
-                <ul class="list">
-                  @for (rv of store.reviews(); track rv.user_id) {
-                    <li class="list-item">
-                      <span class="grow">{{ session.name(rv.user_id) }}
-                        @if (rv.note) { <span class="small muted">: {{ rv.note }}</span> }</span>
-                      <span class="tag" [class.turf]="rv.agree" [class.danger]="!rv.agree">{{ rv.agree ? 'conferma' : 'contesta' }}</span>
-                    </li>
-                  }
-                </ul>
-              }
 
               @if (canHomologate()) {
                 <button class="btn block" [disabled]="busy()" (click)="homologate()">Omologa il risultato</button>
@@ -191,6 +195,22 @@ type Field = keyof Line;
     .fold summary app-icon { transform: rotate(90deg); transition: transform 200ms; }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold-body { margin-top: 12px; }
+    /* «i» in alto a destra nel riquadro del risultato e fumetto ancorato */
+    .result { position: relative; }
+    /* sull'angolo del riquadro, a cavallo del bordo: non copre maglie e punteggio */
+    .info-btn { position: absolute; top: -12px; right: -8px; z-index: 3; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
+                display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(0 0 0 / 12%); }
+    .info-btn[aria-expanded='true'] { color: var(--turf); box-shadow: 0 0 0 2px var(--turf), 0 2px 6px rgb(0 0 0 / 12%); }
+    .info-pop {
+      position: absolute; top: 28px; right: -8px; z-index: 4; width: min(270px, calc(100% - 16px)); padding: 12px 14px; border-radius: 14px;
+      background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px rgb(0 0 0 / 22%), 0 0 0 1px var(--line); font-size: var(--step--1);
+      display: flex; flex-direction: column; gap: 6px; text-align: left;
+    }
+    .info-pop::before { content: ''; position: absolute; top: -6px; right: 16px; width: 12px; height: 12px; background: var(--surface); transform: rotate(45deg); box-shadow: -1px -1px 0 var(--line); }
+    .info-pop p { margin: 0; }
+    .info-pop ul { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+    .info-pop .ok { color: var(--turf); font-weight: 800; }
+    .info-pop .ko { color: var(--danger); font-weight: 800; }
     /* punteggio centrato tra le due maglie */
     .scoreline { display: flex; align-items: center; justify-content: center; gap: 14px; }
     .score-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -456,6 +476,19 @@ export class ResultTab {
       await this.store.reload('results');
       this.toasts.show('Risultato omologato.');
     });
+  }
+
+  // ------------------------------------------------ fumetto delle informazioni («i»)
+  protected readonly infoOpen = signal(false);
+
+  protected toggleInfo(e: Event): void {
+    e.stopPropagation();
+    this.infoOpen.update((v) => !v);
+  }
+
+  /** un tocco fuori dal fumetto o Esc lo chiudono */
+  protected closeInfo(): void {
+    if (this.infoOpen()) this.infoOpen.set(false);
   }
 
   /** valori in modifica = quelli salvati */

@@ -25,8 +25,15 @@ const SEEN_KEY = 'gdl-sticker-visti';
     }
   `,
   styles: `
-    :host { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px 0; max-width: 640px; margin: 0 auto; }
+    /* sovrapposto in cima all'app: non sposta la pagina */
+    :host {
+      position: fixed; z-index: 70; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; transform: translateX(-50%);
+      width: min(616px, calc(100% - 24px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+    }
     :host:empty { display: none; }
+    .win { pointer-events: auto; animation: drop 260ms var(--ease-out, ease-out); }
+    @keyframes drop { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .win { animation: none; } }
     .win { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 10px; border-radius: 16px; min-width: 0;
            background: linear-gradient(120deg, #fff6cf, #ffe58a); color: #3b2f00; box-shadow: 0 4px 14px rgb(0 0 0 / 12%), inset 0 0 0 1px rgb(0 0 0 / 6%); }
     .pic { width: 44px; height: 44px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; background: #fff; box-shadow: 0 0 0 2px #e0b400; }
