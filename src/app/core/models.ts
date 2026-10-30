@@ -258,6 +258,9 @@ export interface AttendanceRow {
 }
 
 export interface AppSettings {
+  /** testo della pagina Info, lo scrive il Leader */
+  info_text: string | null;
+  info_updated_at: string | null;
   timezone: string;
   game_weekday: number;
   game_time: string;

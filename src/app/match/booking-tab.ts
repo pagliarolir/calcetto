@@ -36,7 +36,17 @@ interface SlotView {
           } @else if (store.t()?.started) {
             <p class="muted">La partita è iniziata: le prenotazioni sono chiuse.</p>
           } @else if (store.t()?.bookingClosed && !amLeaderTitular() && store.mine()) {
-            <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
+            @if (store.mine()!.list === 'out') {
+              <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
+            } @else {
+              <!-- dopo la chiusura ci si può sempre ritirare -->
+              <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}: per cambiare scrivi al Leader, ma puoi sempre ritirarti.</p>
+              @if (monnezzaRisk()) { <p class="small warn-text">Ritirandoti ora vinci il premio «Monnezza».</p> }
+              @if (store.mine()!.list === 'team' && !store.free() && store.reserves().length) {
+                <p class="small muted">Al tuo posto entra la prima riserva.</p>
+              }
+              <button class="btn danger block" [disabled]="busy()" (click)="withdraw()">Mi ritiro</button>
+            }
           } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
             <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}: puoi ancora metterti tra le riserve.</p>
@@ -311,6 +321,7 @@ interface SlotView {
     }
   `,
   styles: `
+    .warn-text { color: var(--danger); font-weight: 600; }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; }
@@ -436,6 +447,21 @@ export class BookingTab {
       this.venueUrl = m.venue_url ?? '';
       this.priorityAt = toLocalInput(new Date(new Date(m.bookings_open_at).getTime() - 24 * 3600_000).toISOString());
     });
+  }
+
+  /** ritirarsi da titolare quando i titolari sono già scelti fa vincere «Monnezza» */
+  protected readonly monnezzaRisk = computed(() => {
+    const m = this.store.match();
+    const mine = this.store.mine();
+    if (!m || mine?.list !== 'team') return false;
+    const inLineup = m.lineup_status === 'official' && this.store.teamOf().has(mine.user_id);
+    return inLineup || (m.booking_mode === 'order' && !!this.store.t()?.bookingClosed) || (m.booking_mode === 'free' && !!m.lists_confirmed_at);
+  });
+
+  protected async withdraw(): Promise<void> {
+    const extra = this.monnezzaRisk() ? ' Vinci il premio «Monnezza».' : '';
+    if (!confirm(`Ti ritiri da questa partita?${extra} Per tornare dovrai chiedere al Leader.`)) return;
+    await this.book('absent');
   }
 
   protected async book(choice: Choice): Promise<void> {

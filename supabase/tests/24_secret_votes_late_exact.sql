@@ -45,7 +45,7 @@ insert into bookings (match_id, user_id, choice, list) select id, pid('P2'), 'pr
 set role authenticated;
 select as_user('P11'), (book((select id from matches where status = 'scheduled'), 'present'))->>'list' as p11_dopo_la_chiusura;
 \set ON_ERROR_STOP 0
-select as_user('P2'), book((select id from matches where status = 'scheduled'), 'absent');
+select as_user('P2'), book((select id from matches where status = 'scheduled'), 'reserve');
 \echo '--- 6) risultato con il solo scarto (atteso errore): si inserisce solo il risultato esatto'
 select as_user('P2'), submit_result(mid(), 2);
 \set ON_ERROR_STOP 1

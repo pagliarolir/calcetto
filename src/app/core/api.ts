@@ -418,6 +418,11 @@ export class Api {
     return must(await this.sb.from('app_settings').select('*').single()) as AppSettings;
   }
 
+  /** il Leader scrive il testo della pagina Info */
+  async setInfoText(text: string): Promise<void> {
+    must(await this.sb.rpc('set_info_text', { p_text: text }));
+  }
+
   async updateSettings(patch: Partial<AppSettings>) {
     return must(await this.sb.from('app_settings').update(patch).eq('id', 1));
   }
