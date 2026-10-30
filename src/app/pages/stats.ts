@@ -17,17 +17,17 @@ type Tab = 'classifica' | 'record' | 'squadre' | 'punti' | 'obiettivi';
 type Col = { key: keyof StatsRow; label: string; title: string; fmt?: 'dec' | 'pct' | 'form'; asc?: boolean };
 
 const COLUMNS: Col[] = [
-  { key: 'goals', label: 'Gol', title: 'Gol segnati' },
   { key: 'points', label: 'Pt', title: 'Punti (3 vittoria, 1 pareggio)' },
   { key: 'played', label: 'PG', title: 'Partite giocate' },
   { key: 'wins', label: 'V', title: 'Vittorie' },
   { key: 'draws', label: 'N', title: 'Pareggi' },
   { key: 'losses', label: 'P', title: 'Sconfitte' },
+  { key: 'goals', label: 'Gol', title: 'Gol segnati' },
   { key: 'own_goals', label: 'Aut', title: 'Autogol' },
+  { key: 'avg_vote', label: 'Voto', title: 'Media voto ricevuto', fmt: 'dec' },
   { key: 'points_per_game', label: 'Pt/PG', title: 'Punti per partita', fmt: 'dec' },
   { key: 'win_pct', label: '%V', title: 'Percentuale vittorie', fmt: 'pct' },
   { key: 'goals_per_game', label: 'Gol/PG', title: 'Gol per partita', fmt: 'dec' },
-  { key: 'avg_vote', label: 'Voto', title: 'Media voto ricevuto', fmt: 'dec' },
   { key: 'best_avg_vote', label: 'Max', title: 'Miglior media in una partita', fmt: 'dec' },
   { key: 'worst_avg_vote', label: 'Min', title: 'Peggior media in una partita', fmt: 'dec' },
   { key: 'mvp_count', label: 'MVP', title: 'Volte migliore in campo' },
@@ -35,7 +35,7 @@ const COLUMNS: Col[] = [
 ];
 
 /** colonne visibili all'inizio (le altre si aggiungono dalla finestra «Colonne») */
-const DEFAULT_COLS = ['goals', 'own_goals', 'points', 'played', 'wins', 'draws', 'losses', 'avg_vote'];
+const DEFAULT_COLS = ['points', 'played', 'wins', 'draws', 'losses', 'goals', 'own_goals', 'avg_vote'];
 const COLS_KEY = 'gdl-classifica-colonne';
 
 interface Record { label: string; key: keyof StatsRow; suffix: string; open?: boolean; minPlayed?: number }
@@ -205,7 +205,7 @@ const RECORDS: Record[] = [
               <tbody>
                 @for (r of sorted(); track r.user_id) {
                   <tr [class.me]="r.user_id === session.uid()">
-                    <td><a class="who" [routerLink]="['/giocatore', r.user_id]"><app-avatar [userId]="r.user_id" [size]="26" />{{ session.name(r.user_id) }}</a></td>
+                    <td><a class="who" [routerLink]="['/giocatore', r.user_id]"><app-avatar [userId]="r.user_id" [size]="22" /><span class="nm">{{ session.name(r.user_id) }}</span></a></td>
                     @for (c of shownCols(); track c.key) { <td [class.wide]="c.fmt === 'form'">{{ cell(r, c) }}</td> }
                   </tr>
                 }
@@ -352,11 +352,15 @@ const RECORDS: Record[] = [
     .who { display: inline-flex; align-items: center; gap: 8px; }
     /* classifica senza scorrimento laterale */
     .fit-wrap { overflow: hidden; }
-    table.fit { table-layout: fixed; width: 100%; }
-    table.fit th:first-child, table.fit td:first-child { width: auto; }
-    table.fit th:not(:first-child), table.fit td:not(:first-child) { width: 32px; padding-left: 1px; padding-right: 1px; text-align: center; font-size: 0.85rem; }
-    table.fit td.wide, table.fit th.wide { width: 64px; }
-    table.fit .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* tabella con il bordo, celle strette: i nomi lunghi (es. Massimiliano) entrano, i più lunghi finiscono con … */
+    .fit-wrap { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    table.fit { table-layout: fixed; width: 100%; border-collapse: collapse; }
+    table.fit th, table.fit td { padding-top: 7px; padding-bottom: 7px; }
+    table.fit th:first-child, table.fit td:first-child { width: auto; padding-left: 8px; padding-right: 4px; overflow: hidden; }
+    table.fit th:not(:first-child), table.fit td:not(:first-child) { width: 30px; padding-left: 0; padding-right: 0; text-align: center; font-size: 0.82rem; }
+    table.fit td.wide, table.fit th.wide { width: 60px; }
+    table.fit .who { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 0.86rem; }
+    table.fit .who .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     table.fit th button { font-size: 0.72rem; padding: 0; }
     .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .cols-btn { gap: 6px; }
@@ -435,7 +439,8 @@ export class StatsPage {
   private readonly viewport = signal(typeof window === 'undefined' ? 400 : window.innerWidth);
   protected readonly chosen = signal<string[]>(this.loadCols());
   /** quante colonne entrano: larghezza utile meno il nome, diviso la larghezza di una colonna */
-  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 32 - 92) / 32)));
+  // almeno 122 px per il nome (avatar compreso): i nomi lunghi come «Massimiliano» entrano interi; poi colonne da 30 px
+  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 34 - 122) / 30)));
   /** colonne mostrate: quelle scelte, nell'ordine della tabella, finché c'è posto */
   protected readonly shownCols = computed(() => {
     const out: Col[] = [];

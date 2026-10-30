@@ -132,27 +132,6 @@ type Field = keyof Line;
           }
 
           <ng-template #entry>
-                <div class="chips">
-                  <button class="chip" [attr.aria-pressed]="!exact()" (click)="exact.set(false)">Solo chi ha vinto e di quanto</button>
-                  <button class="chip" [attr.aria-pressed]="exact()" (click)="exact.set(true)">Punteggio esatto</button>
-                </div>
-                @if (!exact()) {
-                  <div class="choice three">
-                    <button [attr.aria-pressed]="winner() === 'white'" (click)="winner.set('white')">{{ teamLabel().white }}</button>
-                    <button [attr.aria-pressed]="winner() === 'draw'" (click)="winner.set('draw')">Pari</button>
-                    <button [attr.aria-pressed]="winner() === 'black'" (click)="winner.set('black')">{{ teamLabel().black }}</button>
-                  </div>
-                  @if (winner() !== 'draw') {
-                    <div class="spread">
-                      <span>Di quanti gol</span>
-                      <div class="stepper">
-                        <button (click)="margin.set(margin() - 1)" [disabled]="margin() <= 1" aria-label="Uno in meno">−</button>
-                        <output>{{ margin() }}</output>
-                        <button (click)="margin.set(margin() + 1)" aria-label="Uno in più">+</button>
-                      </div>
-                    </div>
-                  }
-                } @else {
                   <div class="score-in">
                     <div class="stack"><span class="small muted">{{ teamLabel().white }}</span>
                       <div class="stepper"><button (click)="wg.set(dec(wg()))" [attr.aria-label]="teamLabel().white + ' meno'">−</button><output>{{ wg() }}</output><button (click)="wg.set(wg() + 1)" [attr.aria-label]="teamLabel().white + ' più'">+</button></div>
@@ -162,7 +141,6 @@ type Field = keyof Line;
                       <div class="stepper"><button (click)="bg.set(dec(bg()))" [attr.aria-label]="teamLabel().black + ' meno'">−</button><output>{{ bg() }}</output><button (click)="bg.set(bg() + 1)" [attr.aria-label]="teamLabel().black + ' più'">+</button></div>
                     </div>
                   </div>
-                }
                 <button class="btn primary" [disabled]="busy()" (click)="submit()">Salva {{ previewText() }}</button>
           </ng-template>
 
@@ -280,7 +258,7 @@ export class ResultTab {
 
   protected readonly busy = signal(false);
   protected readonly contesting = signal(false);
-  protected readonly exact = signal(false);
+  protected readonly exact = signal(true);   // si inserisce solo il risultato esatto
   protected readonly winner = signal<'white' | 'draw' | 'black'>('white');
   protected readonly margin = signal(1);
   protected readonly wg = signal(0);
@@ -418,7 +396,10 @@ export class ResultTab {
       const max = this.goalsOf(opp);
       return max === null || c[opp] < max;
     }
-    return t === 'white' ? c.wAst < c.wGoals : c.bAst < c.bGoals;
+    // assist fino ai gol della squadra nel risultato (anche se i compagni non hanno ancora inserito i loro gol)
+    const maxA = this.goalsOf(t);
+    const ast = t === 'white' ? c.wAst : c.bAst;
+    return maxA === null || ast < maxA;
   }
 
   protected creditText(t: Team): string {

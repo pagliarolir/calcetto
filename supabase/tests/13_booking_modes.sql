@@ -90,13 +90,16 @@ select update_matches_config(array[fm()], cfg(5, 'free'), array['booking_mode'],
 reset role;
 select list, count(*) from bookings where match_id = fm() and list <> 'out' group by list order by list;
 
-\echo '--- 11) chiusura anticipata e riapertura (partita in ordine di arrivo)'
+\echo '--- 11) chiusura anticipata e riapertura (partita in ordine di arrivo): chi non aveva risposto entra come riserva'
 create temp table om as select id from matches where booking_mode = 'order' order by starts_at limit 1; grant select on om to authenticated;
 update matches set bookings_open_at = now() - interval '1 hour', starts_at = now() + interval '3 days', bookings_close_at = now() + interval '2 days' where id = (select id from om);
 set role authenticated; select as_user('P1');
 select leader_close_bookings((select id from om));
+-- P5 non aveva risposto: dopo la chiusura può ancora prenotarsi, ma come riserva
+select as_user('P5'), (book((select id from om), 'present'))->>'list' as p5_dopo_la_chiusura;
 \set ON_ERROR_STOP 0
-select as_user('P5'), book((select id from om), 'present');
+-- ora ha risposto: per cambiare deve passare dal Leader (atteso errore)
+select as_user('P5'), book((select id from om), 'absent');
 \set ON_ERROR_STOP 1
 select as_user('P1'), leader_reopen_bookings((select id from om));
 select as_user('P5'), (book((select id from om), 'present'))->>'list' as dopo_la_riapertura;

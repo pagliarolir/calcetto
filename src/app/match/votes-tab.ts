@@ -77,7 +77,9 @@ import { kit } from '../core/kits';
               <section class="stack" aria-label="Medie">
                 @if (summary(); as s) {
                   @if (s.voters && s.players) {
-                    @if (mvpTop().length) {
+                    @if (s.mvp_hidden) {
+                      <p class="note">★ Il migliore in campo resta segreto finché non hanno votato {{ s.mvp_threshold }} giocatori: per ora {{ s.voters }}.</p>
+                    } @else if (mvpTop().length) {
                       <div class="mvp-hero" aria-label="Migliore in campo">
                         @for (p of mvpTop(); track p.user_id) {
                           <div class="mvp-one">
@@ -91,6 +93,9 @@ import { kit } from '../core/kits';
                         }
                       </div>
                     }
+                    @if (s.avgs_hidden) {
+                      <p class="empty">Le medie compaiono quando avranno votato almeno {{ s.avg_threshold }} giocatori: per ora {{ s.voters }}.</p>
+                    } @else {
                     <p class="small muted">{{ s.voters === 1 ? '1 ha votato' : s.voters + ' hanno votato' }}: le medie si aggiornano a ogni voto.</p>
                     <ol class="rows ranked">
                       @for (p of s.players; track p.user_id; let i = $index) {
@@ -103,6 +108,7 @@ import { kit } from '../core/kits';
                         </li>
                       }
                     </ol>
+                    }
                   } @else {
                     <p class="empty">Ancora nessuno ha votato.</p>
                   }
