@@ -131,8 +131,8 @@ import { scrollAppTo } from '../core/scroller';
       }
 
       @if (session.isLeader() && !editingGuest()) {
-        <section class="section" aria-labelledby="guest-h">
-          <header><h2 id="guest-h">Giocatore senza account</h2></header>
+        <details class="section fold sec" aria-labelledby="guest-h">
+          <summary><h2 id="guest-h">Giocatore senza account</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
           <div class="panel stack">
             <p class="small muted">Per chi non usa l'app: lo metti tu in lista, entra nelle formazioni, viene votato e resta nelle statistiche. Quando vuole, con <strong>Invita</strong> gli mandi un link per collegare un account.</p>
             <div class="pair">
@@ -150,7 +150,7 @@ import { scrollAppTo } from '../core/scroller';
             </div>
             <button class="btn small primary" [disabled]="busy() || !gFirst.trim()" (click)="addGuest()">Aggiungi il giocatore</button>
           </div>
-        </section>
+        </details>
       }
 
       <section class="section">
@@ -200,8 +200,8 @@ import { scrollAppTo } from '../core/scroller';
           }
         </ul>
         @if (removed().length) {
-          <details class="panel">
-            <summary>Ex giocatori ({{ removed().length }})</summary>
+          <details class="panel fold">
+            <summary><strong>Ex giocatori ({{ removed().length }})</strong><app-icon name="chevron" [size]="18" class="chev" /></summary>
             <ul class="plain">
               @for (m of removed(); track m.id) {
                 <li class="spread"><span class="grow">{{ session.fullName(m.id) }}</span>
@@ -219,8 +219,8 @@ import { scrollAppTo } from '../core/scroller';
       </section>
 
       @if (isTitular()) {
-        <section class="section">
-          <header><h2>Delega i tuoi poteri</h2></header>
+        <details class="section fold sec">
+          <summary><h2>Delega i tuoi poteri</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
           <div class="panel stack">
             @if (session.me()?.delegation; as d) {
               <p>Ora ha i poteri del Leader: <strong>{{ session.name(d.delegate_id) }}</strong>{{ d.until ? ', fino a ' + when(d.until) : ', fino a revoca' }}.</p>
@@ -236,8 +236,8 @@ import { scrollAppTo } from '../core/scroller';
             <button class="btn small primary" [disabled]="!delegateId" (click)="delegate(delegateId)">Delega</button>
           </div>
 
-          <details class="panel">
-            <summary>Passa il ruolo di Leader</summary>
+          <details class="panel fold">
+            <summary><strong>Passa il ruolo di Leader</strong><app-icon name="chevron" [size]="18" class="chev" /></summary>
             <div class="stack" style="margin-top: 12px">
               <p class="small muted">Diventerai un giocatore normale. Non si torna indietro senza il nuovo Leader.</p>
               <select class="input" [(ngModel)]="newLeader" aria-label="Nuovo Leader">
@@ -247,12 +247,12 @@ import { scrollAppTo } from '../core/scroller';
               <button class="btn small danger" [disabled]="!newLeader" (click)="transfer()">Passa il ruolo</button>
             </div>
           </details>
-        </section>
+        </details>
       }
 
       @if (session.isLeader() && settings(); as s) {
-        <section class="section" aria-labelledby="logo-h">
-          <header><h2 id="logo-h">Logo del tabellone</h2></header>
+        <details class="section fold sec" aria-labelledby="logo-h">
+          <summary><h2 id="logo-h">Logo del tabellone</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
           <div class="panel stack">
             <div class="row">
               <span class="logo-stage" aria-hidden="true">
@@ -268,10 +268,10 @@ import { scrollAppTo } from '../core/scroller';
               @if (branding.headerId()) { <button class="btn small ghost" [disabled]="logoBusy()" (click)="removeHeader()">Rimuovi</button> }
             </div>
           </div>
-        </section>
+        </details>
 
-        <section class="section" aria-labelledby="icon-h">
-          <header><h2 id="icon-h">Icona dell'app</h2></header>
+        <details class="section fold sec" aria-labelledby="icon-h">
+          <summary><h2 id="icon-h">Icona dell'app</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
           <div class="panel stack">
             <div class="row">
               <span class="icon-prev" aria-hidden="true">
@@ -306,10 +306,10 @@ import { scrollAppTo } from '../core/scroller';
               </div>
             }
           </div>
-        </section>
+        </details>
 
-        <section class="section" aria-labelledby="stats-h">
-          <header><h2 id="stats-h">Statistiche</h2></header>
+        <details class="section fold sec" aria-labelledby="stats-h">
+          <summary><h2 id="stats-h">Statistiche</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
           <div class="panel stack">
             @if (s.stats_since) {
               <p class="small">Classifica azzerata {{ when(s.stats_since) }}: contano solo le partite successive.</p>
@@ -328,10 +328,12 @@ import { scrollAppTo } from '../core/scroller';
             </label>
             <button class="btn small danger" [disabled]="busy() || deleteAllText.trim().toLowerCase() !== 'elimina'" (click)="deleteAll()">Elimina tutto lo storico</button>
           </div>
-        </section>
+        </details>
 
-        <form class="section" (ngSubmit)="saveSettings()">
-          <header><h2>Regole del gruppo</h2></header>
+        <details class="section fold sec">
+          <summary><h2>Regole del gruppo</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
+        <form class="stack" (ngSubmit)="saveSettings()">
+          
           <div class="panel stack">
             <label class="field"><span>Codice invito (chi si registra senza resta in attesa di approvazione)</span>
               <input class="input" name="invite" [(ngModel)]="s.invite_code" autocomplete="off" /></label>
@@ -342,6 +344,7 @@ import { scrollAppTo } from '../core/scroller';
             <button class="btn primary" type="submit">Salva le regole</button>
           </div>
         </form>
+        </details>
       }
     </main>
   `,

@@ -14,6 +14,7 @@ import { Figurina } from '../ui/figurina';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
+import { Icon } from '../ui/icon';
 
 interface SlotView {
   slot: number;
@@ -22,7 +23,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Figurina, FormsModule, MatchConfigForm, ApplyDialog, Avatar],
+  imports: [Figurina, FormsModule, MatchConfigForm, ApplyDialog, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -34,8 +35,15 @@ interface SlotView {
             <p class="muted">Questa partita è stata annullata.</p>
           } @else if (store.t()?.started) {
             <p class="muted">La partita è iniziata: le prenotazioni sono chiuse.</p>
-          } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
+          } @else if (store.t()?.bookingClosed && !amLeaderTitular() && store.mine()) {
             <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
+          } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
+            <!-- non aveva risposto: può ancora mettersi tra le riserve -->
+            <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}: puoi ancora metterti tra le riserve.</p>
+            <div class="choice" role="group" aria-label="La tua presenza">
+              <button [disabled]="busy()" (click)="book('present')">Ci sono<small>come riserva</small></button>
+              <button class="absent" [disabled]="busy()" (click)="book('absent')">Non ci sono</button>
+            </div>
           } @else if (!canBook()) {
             <p class="note">Le prenotazioni aprono {{ when(m.bookings_open_at) }}.</p>
           } @else {
@@ -168,8 +176,8 @@ interface SlotView {
                                 (confirm)="applyNextTo($event)" (cancel)="applyNext.set(null)" />
             }
 
-            <details class="panel settings">
-              <summary><h3>Impostazioni di questa partita</h3></summary>
+            <details class="panel stack fold">
+              <summary><h3>Impostazioni di questa partita</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <div class="stack-l">
                 <p class="small muted">Ora, giocatori, colori, prenotazioni e votazioni. Dopo il salvataggio puoi applicarle anche alle partite successive già create.</p>
                 <label class="field"><span>Ora della partita</span><input class="input" type="time" [(ngModel)]="mTime" /></label>
@@ -178,8 +186,8 @@ interface SlotView {
               </div>
             </details>
 
-            <div class="panel stack">
-              <h3>Cambia la risposta di un giocatore</h3>
+            <details class="panel stack fold">
+              <summary><h3>Cambia la risposta di un giocatore</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <p class="small muted">In squadra entra nei 10 anche se la lista è piena: l'ultimo arrivato passa in testa alle riserve. «Azzera risposta» lo riporta tra chi non ha risposto. In ogni caso il giocatore riceve un avviso.</p>
               <select class="input" [(ngModel)]="placeUser" aria-label="Giocatore">
                 <option value="">Scegli un giocatore</option>
@@ -196,10 +204,10 @@ interface SlotView {
               @if (placeUser && isTitular(placeUser)) {
                 <p class="small muted">Il Leader è sempre il numero 1: si può solo segnare presente o assente.</p>
               }
-            </div>
+            </details>
 
-            <div class="panel stack">
-              <h3>Prenotazioni</h3>
+            <details class="panel stack fold">
+              <summary><h3>Prenotazioni</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               @if (store.t()?.bookingOpen) {
                 <p class="small muted">Aperte fino a {{ when(m.bookings_close_at) }}.</p>
                 <button class="btn small" [disabled]="busy()" (click)="closeBookings()">Chiudi le prenotazioni adesso</button>
@@ -209,11 +217,11 @@ interface SlotView {
               } @else {
                 <p class="small muted">Si aprono {{ when(m.bookings_open_at) }} e si chiudono {{ when(m.bookings_close_at) }}.</p>
               }
-            </div>
+            </details>
 
             @if (store.free()) {
-              <div class="panel stack">
-                <h3>Titolari e riserve</h3>
+              <details class="panel stack fold">
+                <summary><h3>Titolari e riserve</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
                 <p class="small"><strong>Titolari {{ store.team().length }}/{{ store.size() }}</strong>, riserve {{ store.reserves().length }}, da scegliere {{ store.pending().length }}</p>
                 @if (!m.lists_confirmed_at) {
                   <p class="small muted">Scegli tra i disponibili. Con «Conferma» chi resta da scegliere diventa riserva, le prenotazioni si chiudono e tutti ricevono un avviso.</p>
@@ -239,11 +247,11 @@ interface SlotView {
                 @if (!m.lists_confirmed_at) {
                   <button class="btn small primary" [disabled]="busy() || available().length <= 1" (click)="confirmLists()">Conferma e avvisa i giocatori</button>
                 }
-              </div>
+              </details>
             }
 
-            <div class="panel stack">
-              <h3>Precedenza</h3>
+            <details class="panel stack fold">
+              <summary><h3>Precedenza</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <p class="small muted">Apri le prenotazioni prima degli altri a chi vuoi tu. Ricevono una notifica quando si apre la loro finestra. I giocatori senza account li metti in lista tu, qui sopra.</p>
               <div class="pick">
                 @for (mb of session.accountMembers(); track mb.id) {
@@ -267,10 +275,10 @@ interface SlotView {
                   }
                 </ul>
               }
-            </div>
+            </details>
 
-            <div class="panel stack">
-              <h3>Dove si gioca</h3>
+            <details class="panel stack fold">
+              <summary><h3>Dove si gioca</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <p class="small muted">Nome, indirizzo e sito del circolo compaiono nella partita, con il collegamento alle mappe. Se cambi il campo di una partita già in programma, chi è in lista riceve un avviso.</p>
               <label class="field"><span>Campo o circolo</span>
                 <input class="input" [(ngModel)]="venueName" maxlength="80" placeholder="Es. Centro Sportivo Aurora" />
@@ -286,17 +294,17 @@ interface SlotView {
                 <input type="checkbox" [(ngModel)]="venueAsDefault" />
               </label>
               <button class="btn small primary" [disabled]="busy()" (click)="saveVenue()">Salva il campo</button>
-            </div>
+            </details>
 
-            <div class="panel stack">
-              <h3>Sposta la partita</h3>
+            <details class="panel stack fold">
+              <summary><h3>Sposta la partita</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <p class="small muted">Le prenotazioni seguono la nuova data: aprono sempre 3 giorni prima a mezzogiorno. Tutti ricevono un avviso.</p>
               <input class="input" type="datetime-local" [(ngModel)]="moveAt" aria-label="Nuova data e ora" />
               <div class="row-wrap">
                 <button class="btn small primary" [disabled]="!moveAt" (click)="move()">Sposta</button>
                 <button class="btn small danger" (click)="cancel()">Annulla la partita</button>
               </div>
-            </div>
+            </details>
           </section>
         }
       </div>
@@ -335,10 +343,6 @@ interface SlotView {
     .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
     .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); padding: 0 12px; min-height: 36px; cursor: pointer; }
     .seg button[aria-pressed='true'] { background: var(--turf); color: var(--on-turf, #fff); }
-    .settings summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
-    .settings summary::after { content: '+'; font: 600 1.4rem/1 var(--font-display); color: var(--muted); }
-    .settings[open] summary::after { content: '−'; }
-    .settings[open] summary { margin-bottom: 12px; }
     .pick .chip { display: inline-flex; align-items: center; }
     @media (max-width: 360px) { .board { grid-template-columns: 1fr; } }
   `,

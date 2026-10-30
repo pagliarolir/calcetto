@@ -169,6 +169,10 @@ export interface MvpVote {
 export interface VoteSummary {
   voters: number;
   threshold: number;
+  avgs_hidden?: boolean;
+  avg_threshold?: number;
+  mvp_hidden?: boolean;
+  mvp_threshold?: number;
   my_votes_done: boolean;
   players: { user_id: string; avg: number | null; votes: number; mvp_votes: number; is_mvp: boolean }[] | null;
 }

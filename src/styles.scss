@@ -421,3 +421,12 @@ router-outlet + * { display: block; animation: page-in 160ms ease-out both; }
 }
 .avatar.has-photo.white { box-shadow: 0 0 0 2px var(--team-a), 0 0 0 3px var(--line); }
 .avatar.has-photo.black { box-shadow: 0 0 0 2px var(--team-b), 0 0 0 3px var(--line); }
+
+/* Tendine (strumenti del Leader, Gestione): titolo e freccia che ruota */
+details.fold > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 44px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary > h2, details.fold > summary > h3 { margin: 0; }
+details.fold > summary .chev { margin-left: auto; flex: none; color: var(--muted); transform: rotate(90deg); transition: transform 200ms var(--ease-out); }
+details.fold[open] > summary .chev { transform: rotate(-90deg); }
+details.fold[open] > summary { margin-bottom: 10px; }
+details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
