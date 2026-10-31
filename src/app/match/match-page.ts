@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, untracked, viewChild } from '@angular/core';
+import { Skeleton } from '../ui/skeleton';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
@@ -10,7 +11,7 @@ import { MatchStore } from './match-store';
 
 @Component({
   selector: 'app-match-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Skeleton],
   providers: [MatchStore],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
@@ -23,7 +24,7 @@ import { MatchStore } from './match-store';
         <h1>Partita non trovata</h1>
         <a class="btn" routerLink="/">Vai alla prossima partita</a>
       </main>
-    } @else if (store.match(); as m) {
+    } @else if (!store.loading() && store.match(); as m) {
       <header class="hero">
           <!-- intestazione a biglietto: calendario, data, orario e luogo; sotto le squadre -->
           <div class="hero-in v-b">
@@ -85,7 +86,16 @@ import { MatchStore } from './match-store';
         </div>
       </main>
     } @else {
-      <header class="hero"><div class="hero-in skeleton"></div></header>
+      <!-- scheletro con la stessa forma della pagina: niente pezzi che compaiono uno alla volta -->
+      <header class="hero" aria-hidden="true">
+        <div class="hero-in sk-hero">
+          <div class="sk-top"><span class="skw w20"></span><span class="skw w30"></span></div>
+          <div class="sk-ticket"><span class="skw box"></span><span class="sk-lines"><span class="skw w70 h22"></span><span class="skw w50"></span><span class="skw w60"></span></span></div>
+          <span class="skw strip"></span>
+          <div class="sk-tabs"><span class="skw w15"></span><span class="skw w15"></span><span class="skw w15"></span></div>
+        </div>
+      </header>
+      <main class="scroll-area"><div class="page below-header"><app-skeleton kind="match" /></div></main>
     }
   `,
   styles: `
@@ -101,7 +111,13 @@ import { MatchStore } from './match-store';
     }
     @media (prefers-color-scheme: dark) { .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
     .hero-in { max-width: 640px; margin: 0 auto; padding: 0 16px 6px; display: flex; flex-direction: column; gap: 2px; }
-    .skeleton { height: 200px; }
+    .sk-hero { display: flex; flex-direction: column; gap: 14px; padding-bottom: 12px; }
+    .skw { display: block; height: 12px; border-radius: 6px; background: rgb(255 255 255 / 16%); }
+    .sk-top { display: flex; justify-content: space-between; } .sk-top .w20 { width: 22%; } .sk-top .w30 { width: 34%; }
+    .sk-ticket { display: flex; gap: 14px; align-items: center; } .skw.box { width: 84px; height: 92px; border-radius: 16px; flex: none; }
+    .sk-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; } .skw.w70 { width: 75%; } .skw.w50 { width: 50%; } .skw.w60 { width: 60%; } .skw.h22 { height: 22px; }
+    .skw.strip { height: 40px; border-radius: 12px; }
+    .sk-tabs { display: flex; gap: 22px; } .sk-tabs .w15 { width: 48px; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
     .link { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: 0.85; font-size: var(--step--1); font-weight: 600; text-decoration: none; min-height: 36px; }
     .status { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }

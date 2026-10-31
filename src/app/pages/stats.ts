@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { kit } from '../core/kits';
@@ -60,7 +61,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel],
+  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -178,7 +179,7 @@ const RECORDS: Record[] = [
         <!-- ======================================================= Obiettivi -->
         <app-achievements-panel />
       } @else if (loading()) {
-        <p class="muted">Calcolo in corso…</p>
+        <app-skeleton kind="table" [rows]="10" />
       } @else if (!played().length) {
         <p class="empty">Nessuna partita omologata in questo periodo.</p>
       } @else {
@@ -352,7 +353,8 @@ const RECORDS: Record[] = [
     /* classifica senza scorrimento laterale */
     .fit-wrap { overflow: hidden; }
     /* tabella con il bordo, celle strette: i nomi lunghi (es. Massimiliano) entrano, i più lunghi finiscono con … */
-    .fit-wrap { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    /* la tabella prende 8 px per lato dai margini della pagina: più spazio a nomi e colonne */
+    .fit-wrap { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-left: -8px; margin-right: -8px; }
     table.fit { table-layout: fixed; width: 100%; border-collapse: collapse; }
     table.fit th, table.fit td { padding-top: 7px; padding-bottom: 7px; }
     table.fit th:first-child, table.fit td:first-child { width: auto; padding-left: 8px; padding-right: 4px; overflow: hidden; }
@@ -439,7 +441,7 @@ export class StatsPage {
   protected readonly chosen = signal<string[]>(this.loadCols());
   /** quante colonne entrano: larghezza utile meno il nome, diviso la larghezza di una colonna */
   // almeno 122 px per il nome (avatar compreso): i nomi lunghi come «Massimiliano» entrano interi; poi colonne da 30 px
-  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 34 - 122) / 30)));
+  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 18 - 122) / 30)));
   /** colonne mostrate: quelle scelte, nell'ordine della tabella, finché c'è posto */
   protected readonly shownCols = computed(() => {
     const out: Col[] = [];

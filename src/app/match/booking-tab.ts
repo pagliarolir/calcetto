@@ -107,7 +107,7 @@ interface SlotView {
               } @else {
                 <ol class="board">
                   @for (s of slots(); track s.slot) {
-                    <li [class.enter-drop]="s.row?.user_id === session.uid()">
+                    <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id">
                       @if (s.row; as r) {
                         <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       [note]="r.is_leader ? 'Leader' : r.placed_by ? 'messo dal Leader' : null" />
@@ -140,7 +140,7 @@ interface SlotView {
                 } @else {
                   <ol class="board">
                     @for (r of store.reserves(); track r.user_id + ':' + r.slot) {
-                      <li [class.enter-drop]="r.user_id === session.uid()">
+                      <li [class.enter-drop]="dropFor() === r.user_id">
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
                                       [note]="r.reserve_reply === 'confirmed' ? 'disponibile' : r.choice === 'present' ? 'in coda' : 'se serve'"
                                       [noteTone]="r.reserve_reply === 'confirmed' ? 'turf' : 'muted'" />
@@ -486,10 +486,15 @@ export class BookingTab {
     await this.book('absent');
   }
 
+  /** la propria figurina «cade» al suo posto solo subito dopo essersi prenotati, non a ogni apertura della pagina */
+  protected readonly dropFor = signal<string | null>(null);
+
   protected async book(choice: Choice): Promise<void> {
     if (this.reprimand.guard()) return;
     await this.run(async () => {
       const res = await this.api.book(this.store.match()!.id, choice);
+      this.dropFor.set(this.session.uid());
+      setTimeout(() => this.dropFor.set(null), 900);
       await this.store.reload('bookings');
       // con «sceglie il Leader» i posti non sono numerati
       const n = res.slot ? ` con il numero ${res.slot}` : '';
