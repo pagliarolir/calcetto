@@ -1,5 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
+import { FantaLeader } from './fantaleader';
 import { Session } from './session';
 
 export const authGuard: CanActivateFn = async () => {
@@ -24,4 +25,13 @@ export const staffGuard: CanActivateFn = async () => {
   const router = inject(Router);   // prima dell'attesa: dopo, inject() non è più consentito (NG0203)
   await s.whenReady();
   return s.isStaff() ? true : router.parseUrl('/');
+};
+
+/** FantaLeader in anteprima: solo chi è ammesso (Leader ed elenco), gli altri tornano alla pagina principale. */
+export const fantaLeaderGuard: CanActivateFn = async () => {
+  const s = inject(Session);
+  const fl = inject(FantaLeader);
+  const router = inject(Router);
+  await s.whenReady();
+  return (await fl.checkVisible()) ? true : router.parseUrl('/');
 };

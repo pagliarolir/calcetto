@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
@@ -11,6 +11,7 @@ import { ReprimandView } from './ui/reprimand';
 import { Branding } from './core/branding';
 import { ScrollMemory } from './core/scroll-memory';
 import { Refresher } from './core/refresher';
+import { FantaLeader } from './core/fantaleader';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
 
@@ -125,6 +126,8 @@ export class App {
   /** «Indietro» riporta allo stesso punto della pagina */
   private readonly scrollMemory = inject(ScrollMemory);
   protected readonly refresher = inject(Refresher);
+  /** la voce «Fanta» compare solo a chi può vedere FantaLeader */
+  private readonly fl = inject(FantaLeader);
   protected readonly toasts = inject(Toasts);
   protected readonly unread = inject(Unread);
 
@@ -144,11 +147,15 @@ export class App {
     { path: '/avvisi', label: 'Avvisi', icon: 'bell' },
     { path: '/profilo', label: 'Profilo', icon: 'user' },
     ...(this.session.isStaff() ? [{ path: '/gestione', label: 'Gestione', icon: 'whistle' }] : []),
+    // in fondo, dopo Gestione: la pagina si chiama FantaLeader, in barra «Fanta» per stare in 6 voci su 360 px
+    ...(this.fl.visible() ? [{ path: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
   ]);
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   constructor() {
+    // chi può vedere FantaLeader: si chiede a ogni accesso (e a ogni «trascina per aggiornare»)
+    effect(() => { if (this.session.uid()) void this.fl.checkVisible(); else this.fl.visible.set(false); });
     // logo dell'app (icona e manifest): anche prima dell'accesso
     void this.branding.load();
     // rete di sicurezza: se un browser facesse comunque scorrere la colonna, torna subito a posto
