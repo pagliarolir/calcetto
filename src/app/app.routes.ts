@@ -28,6 +28,7 @@ export const routes: Routes = [
       { path: 'avvisi', loadComponent: () => import('./pages/inbox').then((m) => m.InboxPage), title: 'Avvisi' },
       { path: 'profilo', loadComponent: () => import('./pages/profile').then((m) => m.ProfilePage), title: 'Profilo' },
       { path: 'gestione', canActivate: [staffGuard], loadComponent: () => import('./pages/admin').then((m) => m.AdminPage), title: 'Gestione' },
+      { path: 'fantaleader', loadComponent: () => import('./pages/fantaleader').then((m) => m.FantaLeaderPage), title: 'FantaLeader' },
     ],
   },
   { path: '**', redirectTo: '' },
