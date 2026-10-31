@@ -9,7 +9,7 @@ $PSQL -d calcetto_test -f stubs.sql >/dev/null
 for f in ../migrations/*.sql; do
   sed -E 's/^create extension if not exists (pg_net|pg_cron);//' "$f" | $PSQL -d calcetto_test >/dev/null
 done
-for t in 01_slots.sql 02_partita_completa.sql 03_password.sql 04_leader_book_notify.sql 05_avatars.sql 06_reset_booking.sql 07_venue.sql 08_punishments.sql 09_match_config.sql 10_open_from_start.sql 11_stats_reset.sql 12_guests.sql 13_booking_modes.sql 14_leader_points_team_stats.sql 15_withdrawals.sql 16_grants_members.sql 17_votes_final.sql 18_notification_prefs.sql 19_scorers_logo_mvp.sql 20_delete_former.sql 21_achievements.sql 22_fixes_monnezza_salva.sql 23_nickname_missions.sql 24_secret_votes_late_exact.sql 25_withdraw_after_close_info.sql 26_fantaleader.sql; do
+for t in 01_slots.sql 02_partita_completa.sql 03_password.sql 04_leader_book_notify.sql 05_avatars.sql 06_reset_booking.sql 07_venue.sql 08_punishments.sql 09_match_config.sql 10_open_from_start.sql 11_stats_reset.sql 12_guests.sql 13_booking_modes.sql 14_leader_points_team_stats.sql 15_withdrawals.sql 16_grants_members.sql 17_votes_final.sql 18_notification_prefs.sql 19_scorers_logo_mvp.sql 20_delete_former.sql 21_achievements.sql 22_fixes_monnezza_salva.sql 23_nickname_missions.sql 24_secret_votes_late_exact.sql 25_withdraw_after_close_info.sql 26_fantaleader.sql 27_fantaleader_preview.sql; do
   echo "== $t"
   $PSQL -d calcetto_test -f "$t" -v ON_ERROR_STOP=0 2>&1 | grep -vE "^ *as_user|^-+(\+-+)*$|^$|NOTICE|wal_level|HINT|^ *\| *\{" || true
   $PSQL -d postgres -c "drop database calcetto_test" -c "create database calcetto_test" >/dev/null

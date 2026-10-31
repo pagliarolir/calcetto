@@ -14,6 +14,9 @@ export interface FlSettings {
   team_size: number;
   rules_version: number;
   params: Record<string, unknown>;
+  /** aperto a tutti, oppure solo Leader + elenco di anteprima */
+  public: boolean;
+  preview_users: string[];
 }
 export interface FlPlayer {
   user_id: string;
@@ -70,6 +73,8 @@ export class FantaLeader {
   private readonly session = inject(Session);
 
   readonly loaded = signal(false);
+  /** FantaLeader è visibile a questo utente? (per ora: Leader ed elenco di anteprima) */
+  readonly visible = signal(false);
   readonly settings = signal<FlSettings | null>(null);
   readonly players = signal<FlPlayer[]>([]);
   readonly ranking = signal<FlRank[]>([]);
@@ -88,6 +93,14 @@ export class FantaLeader {
   skillsOf(userId: string): FlSkill[] {
     const ids = new Set(this.playerSkills().filter((x) => x.user_id === userId).map((x) => x.skill_id));
     return this.skills().filter((s) => ids.has(s.id)).sort((a, b) => (a.kind === b.kind ? a.id - b.id : a.kind === 'pos' ? -1 : 1));
+  }
+
+  async checkVisible(): Promise<boolean> {
+    if (!this.session.uid()) { this.visible.set(false); return false; }
+    const res = await this.sb.rpc('fl_visible');
+    const v = !res.error && res.data === true;
+    this.visible.set(v);
+    return v;
   }
 
   async load(): Promise<void> {
@@ -144,6 +157,10 @@ export class FantaLeader {
   }
   async saveSkill(s: Pick<FlSkill, 'name' | 'kind' | 'description' | 'rule' | 'active'> & { id: number | null }): Promise<void> {
     must(await this.sb.rpc('fl_save_skill', { p_id: s.id, p_name: s.name, p_kind: s.kind, p_description: s.description, p_rule: s.rule, p_active: s.active }));
+    await this.load();
+  }
+  async setVisibility(isPublic: boolean, users: string[]): Promise<void> {
+    must(await this.sb.rpc('fl_set_visibility', { p_public: isPublic, p_users: users }));
     await this.load();
   }
   async recomputeAll(): Promise<number> {

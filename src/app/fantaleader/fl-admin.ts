@@ -23,6 +23,24 @@ import { Icon } from '../ui/icon';
       </div>
     </section>
 
+    <section class="panel stack-s">
+      <h3>Chi vede FantaLeader</h3>
+      <label class="check"><input type="checkbox" [ngModel]="st.public" (ngModelChange)="setPublic($event)" [disabled]="busy()" /> Visibile a tutti</label>
+      @if (!st.public) {
+        <p class="small muted">In anteprima: lo vedono solo il Leader e queste persone.</p>
+        <ul class="chips">
+          @for (u of st.preview_users; track u) {
+            <li><app-avatar [userId]="u" [size]="24" /> {{ session.name(u) }}
+              <button type="button" class="rm" [attr.aria-label]="'Togli ' + session.name(u)" [disabled]="busy()" (click)="removePreview(u)">✕</button></li>
+          } @empty { <li class="small muted">Nessuno oltre al Leader.</li> }
+        </ul>
+        <select class="input" [ngModel]="''" (ngModelChange)="addPreview($event)" aria-label="Aggiungi all'anteprima" [disabled]="busy()">
+          <option value="">Aggiungi una persona…</option>
+          @for (m of members(); track m.id) { @if (!st.preview_users.includes(m.id)) { <option [value]="m.id">{{ session.name(m.id) }}</option> } }
+        </select>
+      }
+    </section>
+
     @if (checks(); as c) {
       <section class="panel stack-s">
         <h3>Stato dei calcoli</h3>
@@ -123,6 +141,9 @@ import { Icon } from '../ui/icon';
   styles: `
     :host { display: flex; flex-direction: column; gap: 14px; }
     h3 { font-size: var(--step-0); margin: 0; }
+    .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips li { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 4px; border-radius: 999px; background: var(--surface-2); font-size: var(--step--1); }
+    .rm { border: 0; background: none; color: var(--muted); cursor: pointer; width: 24px; height: 24px; }
     .facts, .rows, .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .facts li { display: flex; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
     .facts li.warn strong { color: var(--danger); }
@@ -185,6 +206,23 @@ export class FlAdmin implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected setPublic(v: boolean): void {
+    const st = this.fl.settings()!;
+    if (v && !confirm('Rendere FantaLeader visibile a tutti i giocatori?')) { this.fl.settings.set({ ...st }); return; }
+    void this.run(() => this.fl.setVisibility(v, st.preview_users), v ? 'FantaLeader ora è visibile a tutti.' : 'FantaLeader torna in anteprima.');
+  }
+
+  protected addPreview(id: string): void {
+    if (!id) return;
+    const st = this.fl.settings()!;
+    void this.run(() => this.fl.setVisibility(st.public, [...st.preview_users, id]), `${this.session.name(id)} ora vede FantaLeader.`);
+  }
+
+  protected removePreview(id: string): void {
+    const st = this.fl.settings()!;
+    void this.run(() => this.fl.setVisibility(st.public, st.preview_users.filter((u) => u !== id)), `${this.session.name(id)} non vede più FantaLeader.`);
   }
 
   protected toggleMarket(): void {

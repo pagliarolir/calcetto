@@ -17,6 +17,7 @@ select fl_link_preset('leader', pid('P1')); select fl_link_preset('manuel', pid(
 select fl_link_preset('bobo', pid('P4'));   select fl_link_preset('ben', pid('P5'));    select fl_link_preset('bog', pid('P6'));
 select fl_link_preset('gl', pid('P7'));
 select fl_set_market(true);
+select fl_set_visibility(true, '{}');   -- questo scenario prova il gioco: aperto a tutti
 reset role;
 select nm(user_id) as giocatore, price_initial as quotazione, preset_code as scheda, (select count(*) from fl_player_skills s where s.user_id = f.user_id) as skill
 from fl_players f where preset_code is not null order by price_initial desc, 1;
