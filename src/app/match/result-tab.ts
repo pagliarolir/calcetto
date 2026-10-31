@@ -211,7 +211,8 @@ type Field = keyof Line;
     .info-pop ul { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
     .info-pop .ok { color: var(--turf); font-weight: 800; }
     .info-pop .ko { color: var(--danger); font-weight: 800; }
-    /* punteggio centrato tra le due maglie */
+    /* punteggio centrato tra le due maglie, sempre su una riga */
+    .score-mid h2, .score-mid .big { white-space: nowrap; }
     .scoreline { display: flex; align-items: center; justify-content: center; gap: 14px; }
     .score-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     /* formazioni complete, una colonna per squadra */

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -15,7 +16,7 @@ import { StickerStrip } from '../ui/sticker-strip';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon],
+  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -39,6 +40,9 @@ import { StickerStrip } from '../ui/sticker-strip';
         </header>
       }
 
+      @if (!loaded()) {
+        <app-skeleton kind="player" />
+      } @else {
       @if (stats(); as s) {
         <section class="grid">
           <div><span class="num v">{{ s.played }}</span><span class="small muted">partite</span></div>
@@ -87,6 +91,7 @@ import { StickerStrip } from '../ui/sticker-strip';
           </label>
           <button class="btn small danger" [disabled]="busy() || confirmText.trim().toLowerCase() !== 'elimina'" (click)="erase()">Elimina definitivamente</button>
         </section>
+      }
       }
     </main>
   `,
@@ -150,11 +155,23 @@ export class PlayerPage {
     });
   }
 
+  /** finché non è arrivato tutto si vede lo scheletro: niente «Ancora nessuna partita» che poi sparisce */
+  protected readonly loaded = signal(false);
+
   private async load(id: string): Promise<void> {
-    void this.api.stats(null, null).then((rows) => this.stats.set(rows.find((r) => r.user_id === id) ?? null));
-    void this.api.history(id, null, null).then((h) => this.history.set(h));
-    void this.api.matches(300).then((ms) => this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)]))));
-    void this.api.statsResetInfo(id).then((i) => this.info.set(i)).catch(() => undefined);
+    this.loaded.set(false);
+    const [rows, h, ms, info] = await Promise.all([
+      this.api.stats(null, null).catch(() => []),
+      this.api.history(id, null, null).catch(() => []),
+      this.api.matches(300).catch(() => []),
+      this.api.statsResetInfo(id).catch(() => null),
+    ]);
+    if (this.id() !== id) return;   // nel frattempo si è aperto un altro giocatore
+    this.stats.set(rows.find((r) => r.user_id === id) ?? null);
+    this.history.set(h);
+    this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)])));
+    if (info) this.info.set(info);
+    this.loaded.set(true);
   }
 
   protected async reset(): Promise<void> {
