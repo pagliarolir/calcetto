@@ -61,6 +61,7 @@ import { Avatar } from '../ui/avatar';
           <span>Capitano <strong>{{ captain() ? session.name(captain()) : '–' }}</strong></span>
         </div>
         <input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" />
+        <p class="small muted">Tu non puoi far parte della tua fantasquadra.</p>
         <ul class="pick">
           @for (p of list(); track p.user_id) {
             @let sel = picked().includes(p.user_id);
@@ -138,6 +139,7 @@ export class FlTeam {
   protected list() {
     const q = this.q.trim().toLowerCase();
     return this.fl.eligible()
+      .filter((p) => p.user_id !== this.session.uid())   // nessuno sceglie sé stesso
       .filter((p) => !q || this.session.name(p.user_id).toLowerCase().includes(q))
       .sort((a, b) => this.price(b.user_id) - this.price(a.user_id) || this.session.name(a.user_id).localeCompare(this.session.name(b.user_id)));
   }

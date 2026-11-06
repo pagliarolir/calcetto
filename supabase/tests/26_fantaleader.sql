@@ -9,6 +9,7 @@ create function ids_of(variadic p text[]) returns uuid[] language sql as $$ sele
 create function nm(u uuid) returns text language sql as $$ select n from ids where id = u $$;
 grant execute on function as_user(text), pid(text), ids_of(text[]), nm(uuid) to authenticated;
 delete from matches;
+load 'safeupdate';   -- come le richieste dell'app su Supabase: niente DELETE/UPDATE senza condizione
 
 \echo '=== Fase 2: il Leader prepara il FantaLeader'
 set role authenticated; select as_user('P1');
@@ -90,10 +91,10 @@ insert into lineup (match_id, user_id, team) select m('B'), pid(x), 'black' from
 insert into scorers (match_id, user_id, goals) values (m('B'), pid('P6'), 1), (m('B'), pid('P4'), 2), (m('B'), pid('P12'), 1), (m('B'), pid('P2'), 2);
 insert into results (match_id, diff, white_goals, black_goals, status) values (m('B'), 2, 4, 2, 'homologated');
 
-\echo '--- test 9 e 10: coefficienti della giornata B dalla classifica dopo A (1-6 -> 1,00; 7-12 -> 1,25; 13+ -> 1,50)'
+\echo '--- test 9 e 10: coefficienti della giornata B dalla classifica dopo A (1-5 -> 1,00; 6-10 -> 1,25; 11+ -> 1,50)'
 select coef, count(*) as giocatori, min(position) as da_posizione, max(position) as a_posizione
 from fl_coefficients where match_id = m('B') group by coef order by coef;
-select bool_and(coef = case when position <= 6 then 1.00 when position <= 12 then 1.25 else 1.50 end) as fasce_rispettate
+select bool_and(coef = case when position <= 5 then 1.00 when position <= 10 then 1.25 else 1.50 end) as fasce_rispettate
 from fl_coefficients where match_id = m('B');
 update matches set votes_closes_at = now() - interval '1 second' where id = m('B');
 select fl_refresh() as giornate;

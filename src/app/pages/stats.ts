@@ -36,6 +36,9 @@ const COLUMNS: Col[] = [
 ];
 
 /** colonne visibili all'inizio (le altre si aggiungono dalla finestra «Colonne») */
+/** larghezza della colonna dei nomi: entra «Massimiliano», i nomi più lunghi finiscono con … */
+const NAME_COL = 136;
+
 const DEFAULT_COLS = ['points', 'played', 'wins', 'draws', 'losses', 'goals', 'own_goals', 'avg_vote'];
 const COLS_KEY = 'gdl-classifica-colonne';
 
@@ -357,10 +360,11 @@ const RECORDS: Record[] = [
     .fit-wrap { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-left: -8px; margin-right: -8px; }
     table.fit { table-layout: fixed; width: 100%; border-collapse: collapse; }
     table.fit th, table.fit td { padding-top: 7px; padding-bottom: 7px; }
-    table.fit th:first-child, table.fit td:first-child { width: auto; padding-left: 8px; padding-right: 4px; overflow: hidden; }
-    table.fit th:not(:first-child), table.fit td:not(:first-child) { width: 30px; padding-left: 0; padding-right: 0; text-align: center; font-size: 0.82rem; }
+    table.fit th:first-child, table.fit td:first-child { width: 136px; padding-left: 8px; padding-right: 4px; overflow: hidden; }
+    table.fit th:not(:first-child), table.fit td:not(:first-child) { padding-left: 0; padding-right: 0; text-align: center; font-size: 0.9rem; }
+    table.fit th:last-child, table.fit td:last-child { padding-right: 6px; }
     table.fit td.wide, table.fit th.wide { width: 60px; }
-    table.fit .who { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 0.86rem; }
+    table.fit .who { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 0.92rem; }
     table.fit .who .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     table.fit th button { font-size: 0.72rem; padding: 0; }
     .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -441,7 +445,8 @@ export class StatsPage {
   protected readonly chosen = signal<string[]>(this.loadCols());
   /** quante colonne entrano: larghezza utile meno il nome, diviso la larghezza di una colonna */
   // almeno 122 px per il nome (avatar compreso): i nomi lunghi come «Massimiliano» entrano interi; poi colonne da 30 px
-  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 18 - 122) / 30)));
+  // colonna del nome larga quanto «Massimiliano» (NAME_COL px), le altre da 30 px; 6 px di respiro a destra
+  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 18 - NAME_COL - 6) / 30)));
   /** colonne mostrate: quelle scelte, nell'ordine della tabella, finché c'è posto */
   protected readonly shownCols = computed(() => {
     const out: Col[] = [];
