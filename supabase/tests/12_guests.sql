@@ -10,7 +10,7 @@ create function gid(p text) returns uuid language sql as $$ select id from g whe
 
 \echo '--- 1) il Leader crea due giocatori senza account; un giocatore normale no (atteso errore)'
 set role authenticated; select as_user('Marco');
-insert into g select 'Gianni', create_guest('Gianni', 'Esposito', null, 'pivot');
+insert into g select 'Gianni', create_guest('Gianni', 'Esposito', null, 'attaccante');
 insert into g select 'Tonio', create_guest('Tonio', null, 'Il Muro', 'difensore');
 \set ON_ERROR_STOP 0
 select as_user('Paolo'), create_guest('Abusivo');

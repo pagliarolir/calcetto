@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { PlayerCard } from '../ratings/player-card';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
@@ -26,7 +27,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, Avatar, Icon],
+  imports: [FormsModule, RouterLink, Avatar, Icon, PlayerCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
@@ -59,6 +60,7 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         @switch (tab()) {
           @case ('dati') {
       <form class="section" (ngSubmit)="save()">
+        <app-player-card [userId]="session.uid()!" />
         <header><h2>I tuoi dati</h2></header>
         <p class="small muted">Solo il nome è obbligatorio. Con l'interruttore decidi cosa vedono gli altri.</p>
         <div class="panel stack">

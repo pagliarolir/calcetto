@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Ratings } from '../core/ratings';
+import { HexChart, HexSeries } from '../ratings/charts';
 import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -64,7 +66,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton],
+  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -261,6 +263,28 @@ const RECORDS: Record[] = [
 
           }
           @case ('squadre') {
+            <!-- confronto tra due giocatori: esagoni sovrapposti -->
+            <details class="panel fold" (toggle)="cmpOpen($event)">
+              <summary><h3>Confronto</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
+              <div class="cmp-sel">
+                <select class="input" [ngModel]="cmpA()" (ngModelChange)="cmpA.set($event)" aria-label="Primo giocatore">
+                  <option value="">Scegli…</option>
+                  @for (m of cmpMembers(); track m.id) { <option [value]="m.id">{{ session.name(m.id) }}</option> }
+                </select>
+                <span class="small muted">contro</span>
+                <select class="input" [ngModel]="cmpB()" (ngModelChange)="cmpB.set($event)" aria-label="Secondo giocatore">
+                  <option value="">Scegli…</option>
+                  @for (m of cmpMembers(); track m.id) { <option [value]="m.id">{{ session.name(m.id) }}</option> }
+                </select>
+              </div>
+              @if (cmpSeries().length) {
+                <div class="cmp-chart"><app-hex-chart [series]="cmpSeries()" [size]="240" /></div>
+                <div class="cmp-legend">
+                  @for (x of cmpSeries(); track x.name) { <span><i [style.background]="x.color"></i>{{ x.name }}</span> }
+                </div>
+              } @else { <p class="small muted">Scegli due giocatori con i valori inseriti.</p> }
+            </details>
+
             <!-- ======================================================= Squadre e coppie -->
             <section class="section" aria-labelledby="kit-h">
               <header><h2 id="kit-h">Vittorie per colore</h2></header>
@@ -392,6 +416,10 @@ const RECORDS: Record[] = [
     .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold .pairs { margin-top: 10px; }
+    .cmp-sel { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+    .cmp-chart { display: grid; place-items: center; }
+    .cmp-legend { display: flex; justify-content: center; gap: 16px; font-size: var(--step--1); }
+    .cmp-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
     /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
     /* schede equidistanti, sopra e sotto */
@@ -575,6 +603,23 @@ export class StatsPage {
   );
 
 
+
+  // ------------------------------------------------ Confronto (esagoni di due giocatori)
+  private readonly ratings = inject(Ratings);
+  protected readonly cmpA = signal('');
+  protected readonly cmpB = signal('');
+  protected readonly cmpMembers = computed(() => [...this.session.members()].filter((m) => this.ratings.cards().get(m.id)?.has)
+    .sort((a, b) => this.session.name(a.id).localeCompare(this.session.name(b.id))));
+  protected readonly cmpSeries = computed(() => {
+    const out: HexSeries[] = [];
+    const a = this.ratings.cards().get(this.cmpA()), b = this.ratings.cards().get(this.cmpB());
+    if (a?.has && a.hex) out.push({ hex: a.hex, color: 'var(--turf)', name: this.session.name(a.user_id) });
+    if (b?.has && b.hex && this.cmpB() !== this.cmpA()) out.push({ hex: b.hex, color: 'hsl(28 90% 52%)', name: this.session.name(b.user_id) });
+    return out;
+  });
+  protected cmpOpen(e: Event): void {
+    if ((e.target as HTMLDetailsElement).open) void this.ratings.load(this.session.members().map((m) => m.id)).catch(() => undefined);
+  }
 
   /** tendine aperte in «Squadre e coppie» (anche loro nell'indirizzo: si torna indietro con le stesse aperte) */
   protected readonly folds = signal<Set<string>>(new Set());
