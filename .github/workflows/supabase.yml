@@ -15,9 +15,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # versione fissa: un nuovo rilascio di Supabase non cambia più il comportamento da un giorno all'altro
+          version: 3.0.0
       - run: supabase link --project-ref "$PROJECT_REF"
-      - run: supabase db push
-      - run: supabase functions deploy push-dispatch --no-verify-jwt --project-ref "$PROJECT_REF"
-      - run: supabase functions deploy quick-action --no-verify-jwt --project-ref "$PROJECT_REF"
-      - run: supabase functions deploy admin-reset-password --project-ref "$PROJECT_REF"
+      # CLI v3: i comandi sul database vanno sul progetto online solo con --remote;
+      # in automatico (senza nessuno che confermi) le modifiche al progetto vogliono --yes
+      - run: supabase db push --remote --yes
+      # le funzioni vanno sul progetto collegato con «supabase link»
+      - run: supabase functions deploy push-dispatch --no-verify-jwt --yes
+      - run: supabase functions deploy quick-action --no-verify-jwt --yes
+      - run: supabase functions deploy admin-reset-password --yes
