@@ -18,6 +18,13 @@ export interface FlSettings {
   public: boolean;
   preview_users: string[];
 }
+/** i numeri delle regole (fl_settings.params) */
+export interface FlParams {
+  presence: number; goal: number; own_goal: number; assist: number; win: number; loss: number; draw: number; mvp: number;
+  vote_default: number; vote_min_voters: number; captain_bonus: number; coef_bands: [number | null, number][]; coef_first: number;
+  price_k: number; price_cap: number; price_min: number; price_min_played: number;
+}
+
 export interface FlPlayer {
   user_id: string;
   preset_code: string | null;
@@ -40,7 +47,7 @@ export interface FlPreset { code: string; name: string; price: number; descripti
 export interface FlRule {
   when?: 'played' | 'absent' | 'always';
   outcome?: 'W' | 'L' | 'D';
-  goals_min?: number; goals_max?: number; conceded_lt?: number;
+  goals_min?: number; goals_max?: number; conceded_lt?: number; conceded_gt?: number;
   mvp?: boolean; worst?: boolean; avg_gt?: number; avg_lt?: number;
   per?: string; vs?: string; sign?: 'pos' | 'neg';
   amount?: number; to: string; zero?: boolean; special?: string;
@@ -84,6 +91,8 @@ export class FantaLeader {
   readonly teams = signal<FlTeamRank[]>([]);
   readonly teamMatches = signal<FlTeamMatch[]>([]);
   readonly myVersion = signal<FlTeamVersion | null>(null);
+  /** l'ultima giornata calcolata (per la Home) */
+  readonly lastRound = signal<{ match_id: string; starts_at: string } | null>(null);
 
   readonly rankOf = computed(() => new Map(this.ranking().map((r) => [r.user_id, r])));
   readonly playerOf = computed(() => new Map(this.players().map((p) => [p.user_id, p])));
@@ -105,7 +114,7 @@ export class FantaLeader {
 
   async load(): Promise<void> {
     const uid = this.session.uid();
-    const [st, pl, rk, pr, sk, ps, tr, tm, mine] = await Promise.all([
+    const [st, pl, rk, pr, sk, ps, tr, tm, mine, lr] = await Promise.all([
       this.sb.from('fl_settings').select('*').eq('id', 1).single(),
       this.sb.from('fl_players').select('*'),
       this.sb.rpc('fl_player_ranking'),
@@ -115,6 +124,7 @@ export class FantaLeader {
       this.sb.rpc('fl_team_ranking'),
       this.sb.rpc('fl_team_match_points'),
       uid ? this.sb.from('fl_teams').select('id, fl_team_versions(team_id, captain_id, members, prices, spent, valid_from, valid_to)').eq('owner_id', uid).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      this.sb.rpc('fl_last_round'),
     ]);
     this.settings.set(must(st) as FlSettings);
     this.players.set(must(pl) as FlPlayer[]);
@@ -126,6 +136,7 @@ export class FantaLeader {
     this.teamMatches.set((must(tm) as FlTeamMatch[]).map((t) => ({ ...t, points: +t.points })));
     const team = must(mine as { data: unknown; error: unknown }) as { fl_team_versions: (FlTeamVersion & { valid_to: string | null })[] } | null;
     this.myVersion.set(team?.fl_team_versions.find((v) => v.valid_to === null) ?? null);
+    this.lastRound.set(((must(lr) as { match_id: string; starts_at: string }[]) ?? [])[0] ?? null);
     this.loaded.set(true);
   }
 
@@ -185,6 +196,7 @@ export function ruleSummary(r: FlRule): string {
   if (r.goals_min !== undefined) parts.push(`con almeno ${r.goals_min} gol`);
   if (r.goals_max !== undefined) parts.push(r.goals_max === 0 ? 'senza segnare' : `con al massimo ${r.goals_max} gol`);
   if (r.conceded_lt !== undefined) parts.push(`se la squadra subisce meno di ${r.conceded_lt} gol`);
+  if (r.conceded_gt !== undefined) parts.push(`se la squadra subisce più di ${r.conceded_gt} gol`);
   if (r.mvp) parts.push('se è il migliore in campo');
   if (r.worst) parts.push('se è il peggiore della squadra');
   if (r.avg_gt !== undefined) parts.push(`con media sopra ${r.avg_gt}`);

@@ -27,6 +27,7 @@ import { kit } from '../core/kits';
             @for (p of panes(); track p.id) {
               <button role="tab" [attr.aria-selected]="pane() === p.id" [disabled]="p.disabled" (click)="pane.set(p.id)">
                 {{ p.label }}@if (p.id === 'vota' && !p.disabled) { <span class="pip" aria-hidden="true"></span> }
+                @if (p.count) { <span class="vcount" [attr.aria-label]="p.count === 1 ? '1 votante' : p.count + ' votanti'" [title]="p.count === 1 ? '1 votante' : p.count + ' votanti'">{{ p.count }}</span> }
               </button>
             }
           </div>
@@ -83,7 +84,6 @@ import { kit } from '../core/kits';
                     @if (s.avgs_hidden) {
                       <p class="empty">Le medie compaiono quando avranno votato almeno {{ s.avg_threshold }} giocatori: per ora {{ s.voters }}.</p>
                     } @else {
-                    <p class="small muted">{{ s.voters === 1 ? '1 ha votato' : s.voters + ' hanno votato' }}: le medie si aggiornano a ogni voto.</p>
                     <ol class="rows ranked">
                       @for (p of s.players; track p.user_id; let i = $index) {
                         <li>
@@ -111,7 +111,6 @@ import { kit } from '../core/kits';
             <!-- ================================================================ I MIEI VOTI -->
             @case ('miei') {
               <section class="stack" aria-label="I miei voti">
-                <p class="small muted">I voti che hai dato. Sono definitivi e li vedi solo tu (e il Leader).</p>
                 <ul class="rows">
                   @for (v of myGiven(); track v.id) {
                     <li>
@@ -225,6 +224,9 @@ import { kit } from '../core/kits';
     .rate:not(.touched) { opacity: 0.85; }
     .top { background: #1d5fd1; } .good { background: #1f7a4a; } .ok { background: #4f7a12; } .meh { background: #b45309; } .bad { background: #b93a26; } .none { background: var(--surface-2); color: var(--muted); }
 
+    .vcount { display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 9px;
+              background: var(--surface-2); color: var(--muted); font: 700 0.7rem/1 var(--font-body); }
+    .seg button[aria-selected='true'] .vcount { background: var(--turf); color: var(--turf-ink); }
     .seg button:disabled { opacity: 0.4; cursor: not-allowed; }
     .av { position: relative; display: inline-grid; flex: none; border-radius: 50%; }
     .av.is-mvp { box-shadow: 0 0 0 2px var(--armband); }
@@ -307,12 +309,18 @@ export class VotesTab {
   protected readonly canVote = computed(() =>
     (this.store.amParticipant() || this.session.isLeader()) && !!this.store.t()?.votesOpen && !this.done());
 
-  /** «Vota» resta sempre tra le schede: disattivata quando non si può votare (non ha giocato, ha già votato, votazioni chiuse) */
+  /**
+   * «Vota»: disattivata per chi non ha giocato; sparisce dopo aver votato (restano Medie e I miei voti).
+   * Il numero di votanti è un piccolo contatore sulla scheda «Medie».
+   */
   protected readonly panes = computed(() => {
-    const out: { id: 'vota' | 'medie' | 'miei' | 'tutti'; label: string; disabled: boolean }[] = [
-      { id: 'vota', label: 'Vota', disabled: !this.canVote() },
-      { id: 'medie', label: 'Medie', disabled: false },
-    ];
+    const out: { id: 'vota' | 'medie' | 'miei' | 'tutti'; label: string; disabled: boolean; count?: number }[] = [];
+    const player = this.store.amParticipant() || this.session.isLeader();
+    if (!this.done()) {
+      if (!player) out.push({ id: 'vota', label: 'Vota', disabled: true });
+      else if (this.store.t()?.votesOpen) out.push({ id: 'vota', label: 'Vota', disabled: false });
+    }
+    out.push({ id: 'medie', label: 'Medie', disabled: false, count: this.summary()?.voters ?? 0 });
     if (this.done()) out.push({ id: 'miei', label: 'I miei voti', disabled: false });
     if (this.canSeeAll()) out.push({ id: 'tutti', label: 'Per votante', disabled: false });
     return out;

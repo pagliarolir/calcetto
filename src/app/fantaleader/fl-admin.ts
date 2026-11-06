@@ -181,7 +181,7 @@ export class FlAdmin implements OnInit {
   protected readonly when = fmtWhen;
   private readonly drafts = new Map<number, { name: string; description: string; active: boolean; rule: FlRule }>();
   protected readonly labels: Record<string, string> = {
-    amount: 'Punti', goals_min: 'Gol almeno', goals_max: 'Gol al massimo', conceded_lt: 'Subiti meno di', avg_gt: 'Media sopra', avg_lt: 'Media sotto',
+    amount: 'Punti', goals_min: 'Gol almeno', goals_max: 'Gol al massimo', conceded_lt: 'Subiti meno di', conceded_gt: 'Subiti più di', avg_gt: 'Media sopra', avg_lt: 'Media sotto',
   };
   protected readonly members = computed(() =>
     [...this.session.members()].sort((a, b) => this.session.name(a.id).localeCompare(this.session.name(b.id))),

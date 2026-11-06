@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, v
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
-import { FantaLeader, fmtPts } from '../core/fantaleader';
+import { FantaLeader, FlParams, fmtPts } from '../core/fantaleader';
 import { fmtWhen } from '../core/format';
 import { Match } from '../core/models';
 import { Session } from '../core/session';
@@ -72,14 +72,35 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
                 <p class="note">Prossima giornata: {{ when(m.starts_at) }}. I punti arrivano quando il risultato è omologato e diventano definitivi alla chiusura delle pagelle.</p>
               }
 
+              @if (fl.lastRound(); as lr) {
+                <section class="stack-s">
+                  <h2>Ultima giornata · {{ day(lr.starts_at) }}</h2>
+                  <div class="last">
+                    <div class="stack-s">
+                      <p class="small muted">Punti delle fantasquadre</p>
+                      @for (t of lastTeams(); track t.team_id; let i = $index) {
+                        <div class="mini"><span class="pos num">{{ i + 1 }}</span><span class="grow"><strong>{{ t.name }}</strong></span><strong class="num">{{ fmt(t.last_points) }}</strong></div>
+                      } @empty { <p class="small muted">Nessuna fantasquadra.</p> }
+                    </div>
+                    <div class="stack-s">
+                      <p class="small muted">Punti portati dai giocatori</p>
+                      @for (r of lastPlayers(); track r.user_id; let i = $index) {
+                        <button type="button" class="mini" (click)="sheet()?.open(r.user_id)"><span class="pos num">{{ i + 1 }}</span><app-avatar [userId]="r.user_id" [size]="28" />
+                          <span class="grow"><strong>{{ session.name(r.user_id) }}</strong></span><strong class="num">{{ fmt(r.last_points) }}</strong></button>
+                      }
+                    </div>
+                  </div>
+                </section>
+              }
+
               <section class="stack-s">
-                <div class="spread"><h2>Fantasquadre</h2><button class="link" (click)="select('classifiche', 'squadre')">Classifica</button></div>
+                <div class="spread"><h2>Classifica generale delle fantasquadre</h2><button class="link" (click)="select('classifiche', 'squadre')">Tutta</button></div>
                 @for (t of fl.teams().slice(0, 3); track t.team_id) {
                   <div class="mini"><span class="pos num">{{ t.pos }}</span><span class="grow"><strong>{{ t.name }}</strong> <span class="small muted">{{ session.name(t.owner_id) }}</span></span><strong class="num">{{ fmt(t.total) }}</strong></div>
                 } @empty { <p class="small muted">Ancora nessuna fantasquadra.</p> }
               </section>
               <section class="stack-s">
-                <div class="spread"><h2>Giocatori</h2><button class="link" (click)="select('classifiche', 'giocatori')">Classifica</button></div>
+                <div class="spread"><h2>Classifica generale dei giocatori</h2><button class="link" (click)="select('classifiche', 'giocatori')">Tutta</button></div>
                 @for (r of fl.ranking().slice(0, 3); track r.user_id) {
                   <button type="button" class="mini" (click)="sheet()?.open(r.user_id)"><span class="pos num">{{ r.pos }}</span><app-avatar [userId]="r.user_id" [size]="28" />
                     <span class="grow"><strong>{{ session.name(r.user_id) }}</strong></span><strong class="num">{{ fmt(r.total) }}</strong></button>
@@ -88,12 +109,14 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
 
               <details class="panel fold">
                 <summary><h2>Come si fanno i punti</h2></summary>
+                @let pr = rules();
                 <ul class="rules small">
-                  <li>Presenza +1, gol +1, autogol −2, voto = media della pagella (6 se ci sono meno di 2 votanti), vittoria +3, sconfitta −2, pareggio 0, Punti Leader della settimana.</li>
+                  <li>Presenza {{ sg(pr.presence) }}, gol {{ sg(pr.goal) }}, autogol {{ sg(pr.own_goal) }}, migliore in campo {{ sg(pr.mvp) }}, voto = media della pagella ({{ pr.vote_default }} se ci sono meno di {{ pr.vote_min_voters }} votanti), vittoria {{ sg(pr.win) }}, sconfitta {{ sg(pr.loss) }}, pareggio {{ sg(pr.draw) }}, Punti Leader della settimana.</li>
                   <li>Chi non gioca prende 0, salvo le skill che dicono altrimenti.</li>
-                  <li>Coefficiente della settimana dalla classifica individuale prima della partita: 1°–6° ×1,00 · 7°–12° ×1,25 · dal 13° ×1,50.</li>
-                  <li>Capitano: se gioca e vince, gli altri 5 della fantasquadra valgono ×1,25.</li>
+                  <li>Coefficiente della settimana dalla classifica individuale prima della partita: {{ bands() }}.</li>
+                  <li>Capitano: se gioca e vince, gli altri della fantasquadra valgono ×{{ fmt(pr.captain_bonus) }}.</li>
                   <li>Le skill di fantasquadra si sommano alla fantasquadra, non alla classifica individuale.</li>
+                  <li>La quotazione attuale segue la media dei punti per giornata (le assenze contano 0) rispetto a quella di tutti, entro ±{{ fmt(pr.price_cap * 100) }}%.</li>
                   <li>Parità tra fantasquadre: punti del capitano, poi la squadra con il Leader, poi i punti dell’allenatore.</li>
                 </ul>
               </details>
@@ -151,7 +174,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
                   @for (r of fl.ranking(); track r.user_id) {
                     <li><button type="button" class="row-btn" (click)="sheet()?.open(r.user_id)">
                       <span class="pos num">{{ r.pos }}</span><app-avatar [userId]="r.user_id" [size]="32" />
-                      <span class="grow"><strong>{{ session.name(r.user_id) }}</strong><span class="small muted">ultima {{ fmt(r.last_points) }}@if (r.provisional) { · provvisori {{ fmt(r.provisional) }} }</span></span>
+                      <span class="grow"><strong>{{ session.name(r.user_id) }}</strong><span class="small muted">Q. {{ r.price_current }} · Q.i. {{ r.price_initial }} · ultima {{ fmt(r.last_points) }}</span></span>
                       <span class="coef" [class.c125]="r.next_coef === 1.25" [class.c150]="r.next_coef === 1.5">×{{ fmt(r.next_coef) }}</span>
                       <strong class="num">{{ fmt(r.total) }}</strong>
                     </button></li>
@@ -191,6 +214,8 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
     .mini { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line);
             border: 0; width: 100%; text-align: left; color: inherit; cursor: pointer; }
     .pos { width: 22px; text-align: center; font-weight: 800; color: var(--muted); flex: none; }
+    .last { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 560px) { .last { grid-template-columns: 1fr 1fr; } }
     .rules { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; }
     .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
     .cat, .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -244,6 +269,36 @@ export class FantaLeaderPage implements OnInit {
       .filter((r) => ids.has(r.user_id) && (!q || this.session.name(r.user_id).toLowerCase().includes(q)))
       .sort((a, b) => this.sortBy === 'name' ? this.session.name(a.user_id).localeCompare(this.session.name(b.user_id))
         : this.sortBy === 'pos' ? a.pos - b.pos : b.price_current - a.price_current);
+  }
+
+  /** ultima giornata: fantasquadre e giocatori ordinati per i punti fatti in quella partita */
+  protected lastTeams() {
+    return [...this.fl.teams()].filter((t) => t.last_points !== null).sort((a, b) => (b.last_points ?? 0) - (a.last_points ?? 0)).slice(0, 5);
+  }
+  protected lastPlayers() {
+    return [...this.fl.ranking()].filter((r) => r.last_points !== null).sort((a, b) => (b.last_points ?? 0) - (a.last_points ?? 0)).slice(0, 5);
+  }
+  protected day(iso: string): string {
+    return new Date(iso).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Rome' });
+  }
+  /** le regole scritte con i numeri veri delle impostazioni */
+  protected rules(): FlParams {
+    return (this.fl.settings()?.params ?? {}) as unknown as FlParams;
+  }
+  protected sg(n: number | undefined): string {
+    if (n === undefined || n === null) return '0';
+    return (n > 0 ? '+' : n < 0 ? '−' : '') + this.fmt(Math.abs(n));
+  }
+  protected bands(): string {
+    const b = this.rules().coef_bands ?? [];
+    let from = 1;
+    return b.map(([to, c]) => {
+      // «dall'11°», «dall'8°», «dal 6°»
+      const dal = /^(8|11|1\d?\d?$)/.test(String(from)) && (String(from).startsWith('8') || String(from) === '11' || String(from) === '1') ? "dall'" : 'dal ';
+      const txt = to === null ? `${dal}${from}° ×${this.fmt(c)}` : `${from}°–${to}° ×${this.fmt(c)}`;
+      if (to !== null) from = to + 1;
+      return txt;
+    }).join(' · ');
   }
 
   protected trend(teamId: string) {
