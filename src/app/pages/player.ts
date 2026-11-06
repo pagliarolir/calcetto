@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { PlayerCard } from '../ratings/player-card';
+import { RatingsEditor } from '../ratings/ratings-editor';
+import { ProfileAdmin } from '../ratings/profile-admin';
 import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { errorMessage } from '../core/supabase';
@@ -16,7 +19,7 @@ import { StickerStrip } from '../ui/sticker-strip';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton],
+  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -38,6 +41,18 @@ import { StickerStrip } from '../ui/sticker-strip';
           @if (bio()) { <p class="muted">{{ bio() }}</p> }
           @if (since(); as d) { <p class="note">Statistiche dal {{ when(d) }}: le partite precedenti non contano.</p> }
         </header>
+        <!-- valori del giocatore: tutti vedono la scheda, il Leader inserisce i valori e modifica profilo e foto -->
+        <app-player-card [userId]="id()" />
+        @if (session.isLeader()) {
+          <div class="row lead-tools">
+            <button type="button" class="btn small" (click)="profEd.open(id())">Modifica profilo e foto</button>
+          </div>
+          <details class="panel fold">
+            <summary><h3>Valori del giocatore</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
+            <app-ratings-editor [userId]="id()" />
+          </details>
+          <app-profile-admin #profEd />
+        }
       }
 
       @if (!loaded()) {

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { Ratings, SlotKind, suggestTeams, valueAt } from '../core/ratings';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { fmtWhen } from '../core/format';
@@ -11,7 +12,7 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 
-interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string }
+interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string; kind: SlotKind }
 interface Place { team: Team; slot: number | null }
 
 
@@ -26,7 +27,7 @@ interface Place { team: Team; slot: number | null }
           <section class="stack">
             <div class="spread">
               <h2>{{ statusTitle() }}</h2>
-              <button class="btn small" (click)="shuffle()">Sorteggia</button>
+              <button class="btn small" [disabled]="busy()" (click)="suggest()">Consigliate</button>
             </div>
             <p class="small muted">{{ selected() ? 'Ora tocca una posizione in campo.' : 'Tocca un giocatore, poi la sua posizione. Tocca chi è già in campo per spostarlo o scambiarlo.' }}</p>
           </section>
@@ -55,7 +56,14 @@ interface Place { team: Team; slot: number | null }
                   <span class="disc">{{ editing() ? '+' : '' }}</span>
                 }
                 <span class="name">{{ who ? session.name(who) : s.short }}</span>
+                @if (who) { <span class="val" [attr.aria-label]="'valore in questo posto ' + (posValue(who, s) ?? 'non disponibile')">{{ posValue(who, s) ?? '–' }}</span> }
               </button>
+            }
+            <!-- valore delle due squadre, ai lati del campo -->
+            @for (t of teams; track t) {
+              <div class="tv" [class.black]="t === 'black'" [attr.aria-label]="'Valore dei ' + teamLabel()[t] + ': ' + (teamValue()[t] ?? 'non disponibile')">
+                <span>{{ teamLabel()[t] }}</span><b>{{ teamValue()[t] ?? '–' }}</b>
+              </div>
             }
           </div>
 
@@ -135,6 +143,11 @@ interface Place { team: Team; slot: number | null }
     .mine { display: inline-flex; align-self: flex-start; padding: 10px 16px; border-radius: 999px; font: 700 var(--step-1)/1 var(--font-display);
       background: var(--team-a); color: var(--team-a-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
     .mine.black { background: var(--team-b); color: var(--team-b-ink); box-shadow: none; }
+    .spot .val { font: 800 0.68rem/1 var(--font-display); padding: 2px 5px; border-radius: 6px; background: rgb(0 0 0 / 45%); color: #fff; margin-top: 1px; }
+    .tv { position: absolute; left: 6px; top: 25%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 1px;
+          padding: 4px 7px; border-radius: 10px; background: rgb(255 255 255 / 88%); color: #14201a; font: 600 0.62rem/1.1 var(--font-body); z-index: 2; pointer-events: none; }
+    .tv b { font: 800 1.05rem/1 var(--font-display); }
+    .tv.black { top: 75%; background: rgb(20 32 26 / 88%); color: #fff; }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
       background: repeating-linear-gradient(180deg, #24774c 0 10%, #1f6b45 10% 20%);
@@ -187,7 +200,7 @@ export class LineupTab {
   protected readonly perTeam = computed(() => this.store.match()?.players_per_team ?? 5);
   protected readonly spots = computed<Spot[]>(() =>
     this.teams.flatMap((team) =>
-      formation(this.perTeam()).map(({ slot, label, short, x, y }) => ({ team, slot, label, short, x, y: team === 'white' ? y : 100 - y })),
+      formation(this.perTeam()).map(({ slot, label, short, x, y, kind }) => ({ team, slot, label, short, kind, x, y: team === 'white' ? y : 100 - y })),
     ),
   );
 
@@ -225,6 +238,11 @@ export class LineupTab {
   });
 
   constructor() {
+    // valori dei titolari e di chi è in formazione
+    effect(() => {
+      const ids = [...new Set([...this.store.team().map((b) => b.user_id), ...this.store.lineup().map((l) => l.user_id)])];
+      if (ids.length) void this.ratings.load(ids).catch(() => undefined);
+    });
     // la bozza riparte da quanto salvato ogni volta che il server cambia
     effect(() => {
       const players = new Set(this.store.team().map((b) => b.user_id));
@@ -281,12 +299,40 @@ export class LineupTab {
     this.selected.set(null);
   }
 
-  protected shuffle(): void {
-    const ids = this.store.team().map((b) => b.user_id).sort(() => Math.random() - 0.5);
+  // ------------------------------------------------ valori e formazioni consigliate
+  private readonly ratings = inject(Ratings);
+
+  /** valore del giocatore nel posto (portiere = valore generale con il bonus) */
+  protected posValue(id: string, s: Spot): number | null {
+    return valueAt(this.ratings.cards().get(id), s.kind);
+  }
+
+  /** valore di ogni squadra: media dei valori di chi è in campo */
+  protected readonly teamValue = computed(() => {
+    const out: Record<Team, number | null> = { white: null, black: null };
+    for (const t of this.teams) {
+      const vals = this.spots().filter((s) => s.team === t).map((s) => { const w = this.occupant(s); return w ? this.posValue(w, s) : null; })
+        .filter((v): v is number => v !== null);
+      out[t] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+    }
+    return out;
+  });
+
+  /** «Consigliate»: squadre il più equilibrate possibile, ognuno nel posto più adatto */
+  protected async suggest(): Promise<void> {
+    const ids = this.store.team().map((b) => b.user_id);
+    await this.ratings.load(ids).catch(() => undefined);
+    const f = formation(this.perTeam());
+    const missing = ids.filter((id) => !this.ratings.cards().get(id)?.has);
+    const r = suggestTeams(ids, f.map((p) => p.kind), (id, k) => valueAt(this.ratings.cards().get(id), k) ?? 50);
     const d = new Map<string, Place>();
-    ids.forEach((id, i) => d.set(id, { team: i % 2 === 0 ? 'white' : 'black', slot: i < this.perTeam() * 2 ? Math.floor(i / 2) + 1 : null }));
+    r.a.forEach((x) => d.set(x.id, { team: 'white', slot: x.slotIndex >= 0 ? f[x.slotIndex].slot : null }));
+    r.b.forEach((x) => d.set(x.id, { team: 'black', slot: x.slotIndex >= 0 ? f[x.slotIndex].slot : null }));
+    ids.filter((id) => !d.has(id)).forEach((id, i) => d.set(id, { team: i % 2 ? 'black' : 'white', slot: null }));
     this.draft.set(d);
     this.selected.set(null);
+    this.toasts.show(`Squadre consigliate: Bianchi ${Math.round(r.avgA)}, Neri ${Math.round(r.avgB)}.`
+      + (missing.length ? ` ${missing.length === 1 ? '1 giocatore senza valori, contato' : missing.length + ' giocatori senza valori, contati'} 50.` : ''));
   }
 
   protected async save(publish: boolean): Promise<void> {

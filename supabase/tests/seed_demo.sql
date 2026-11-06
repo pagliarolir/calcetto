@@ -6,8 +6,8 @@ from (values (1,'Marco','Rinaldi'),(2,'Luca','Ferri'),(3,'Andrea','Costa'),(4,'D
   (13,'Nicola','Santoro'),(14,'Emanuele','Rizzi')) v(o,n,c) order by o;
 update profiles set role='premier1' where first_name='Luca';
 update profiles set role='premier2' where first_name='Andrea';
-update profiles set nickname='Il Bomber', field_role='pivot' where first_name='Davide';
-update profiles set nickname='Saracinesca', field_role='portiere' where first_name='Giorgio';
+update profiles set nickname='Il Bomber', field_role='attaccante' where first_name='Davide';
+update profiles set nickname='Saracinesca', field_role='difensore' where first_name='Giorgio';
 create temp table ids as select first_name n, id from profiles;
 
 do $$
