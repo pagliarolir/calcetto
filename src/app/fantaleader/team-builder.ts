@@ -54,11 +54,15 @@ import { Avatar } from '../ui/avatar';
         <label class="field"><span>Nome della fantasquadra</span>
           <input class="input" [(ngModel)]="name" maxlength="40" placeholder="Es. I Galacticos del giovedì" />
         </label>
+        @if (removedSelf()) {
+          <p class="note">Ti ho tolto dalla squadra: non puoi far parte della tua fantasquadra. Scegli un altro giocatore al tuo posto.</p>
+        }
         <div class="bar" role="status">
           <span><strong>{{ picked().length }}</strong>/{{ st.team_size }}</span>
           <span>Spesi <strong>{{ spent() }}</strong></span>
           <span [class.over]="spent() > st.budget">Residui <strong>{{ st.budget - spent() }}</strong></span>
           <span>Capitano <strong>{{ captain() ? session.name(captain()) : '–' }}</strong></span>
+          <button type="button" class="zero" [disabled]="!picked().length" (click)="reset()">Azzera</button>
         </div>
         <input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" />
         <p class="small muted">Tu non puoi far parte della tua fantasquadra.</p>
@@ -68,7 +72,9 @@ import { Avatar } from '../ui/avatar';
             <li [class.sel]="sel">
               <button type="button" class="who" (click)="openPlayer.emit(p.user_id)" [attr.aria-label]="'Scheda di ' + session.name(p.user_id)">
                 <app-avatar [userId]="p.user_id" [size]="36" />
-                <span class="grow"><strong>{{ session.name(p.user_id) }}</strong><span class="small muted">{{ fmt(fl.rankOf().get(p.user_id)?.total) }} punti</span></span>
+                <span class="grow"><strong>{{ session.name(p.user_id) }}</strong>
+                  <span class="small muted">{{ fmt(fl.rankOf().get(p.user_id)?.total) }} punti · Q.i. {{ fl.rankOf().get(p.user_id)?.price_initial ?? '–' }}
+                    @if (delta(p.user_id); as d) { <span [class.up]="d > 0" [class.down]="d < 0">{{ d > 0 ? '+' : '' }}{{ d }}</span> }</span></span>
               </button>
               @if (sel) {
                 <button type="button" class="c" [class.on]="captain() === p.user_id" (click)="captain.set(p.user_id)"
@@ -97,6 +103,11 @@ import { Avatar } from '../ui/avatar';
     .budget strong, .bar strong { color: var(--ink); }
     .bar { position: sticky; top: 0; z-index: 2; padding: 10px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 6px 14px -10px rgb(0 0 0 / 30%); }
     .bar .over strong { color: var(--danger); }
+    .bar { align-items: center; }
+    .zero { margin-left: auto; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px;
+            font: 600 var(--step--1)/1.2 var(--font-body); cursor: pointer; }
+    .zero:disabled { opacity: 0.4; cursor: not-allowed; }
+    .up { color: var(--turf); font-weight: 700; } .down { color: var(--danger); font-weight: 700; }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 0; text-align: left; color: inherit; cursor: pointer; }
     .who .grow { min-width: 0; display: flex; flex-direction: column; }
@@ -134,6 +145,12 @@ export class FlTeam {
     return this.fl.rankOf().get(userId)?.price_current ?? this.fl.playerOf().get(userId)?.price_initial ?? 0;
   }
 
+  /** variazione della quotazione attuale rispetto all'iniziale (0 = nessuna) */
+  protected delta(userId: string): number {
+    const r = this.fl.rankOf().get(userId);
+    return r ? r.price_current - r.price_initial : 0;
+  }
+
   protected readonly spent = computed(() => this.picked().reduce((s, u) => s + this.price(u), 0));
 
   protected list() {
@@ -158,6 +175,12 @@ export class FlTeam {
     }
   }
 
+  /** «Azzera»: toglie tutti i giocatori e il capitano in un colpo */
+  protected reset(): void {
+    this.picked.set([]);
+    this.captain.set(null);
+  }
+
   protected readonly problem = computed(() => {
     const st = this.fl.settings()!;
     const n = this.picked().length;
@@ -167,10 +190,16 @@ export class FlTeam {
     return null;
   });
 
+  /** la squadra conteneva l'allenatore (creata prima della regola «non puoi sceglierti»): tolto in automatico */
+  protected readonly removedSelf = signal(false);
+
   protected startEdit(): void {
     const v = this.fl.myVersion();
-    this.picked.set(v ? [...v.members] : []);
-    this.captain.set(v?.captain_id ?? null);
+    const me = this.session.uid();
+    const members = v ? [...v.members] : [];
+    this.removedSelf.set(!!me && members.includes(me));
+    this.picked.set(members.filter((u) => u !== me));
+    this.captain.set(v?.captain_id && v.captain_id !== me ? v.captain_id : null);
     this.name = this.fl.myTeam()?.name ?? '';
     this.editing.set(true);
   }

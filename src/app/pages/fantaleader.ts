@@ -126,18 +126,22 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
               <div class="tools">
                 <input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" />
                 <select class="input" [(ngModel)]="sortBy" aria-label="Ordina per">
-                  <option value="price">Quotazione</option><option value="pos">Posizione</option><option value="name">Nome</option>
+                  <option value="price">Quota attuale</option><option value="initial">Quotazione iniziale</option><option value="pos">Posizione</option><option value="name">Nome</option>
                 </select>
               </div>
               <ul class="cat">
                 @for (r of catalog(); track r.user_id) {
+                  @let d = r.price_current - r.price_initial;
                   <li><button type="button" (click)="sheet()?.open(r.user_id)">
+                    <span class="pos num">{{ r.pos }}°</span>
                     <app-avatar [userId]="r.user_id" [size]="40" />
                     <span class="grow"><strong>{{ session.name(r.user_id) }}</strong>
-                      <span class="small muted">{{ r.pos }}° · {{ fmt(r.total) }} punti · {{ fl.skillsOf(r.user_id).length }} skill</span></span>
-                    <span class="q"><strong class="num">{{ r.price_current }}</strong>
-                      @if (r.price_current !== r.price_initial) { <span class="small" [class.up]="r.price_current > r.price_initial" [class.down]="r.price_current < r.price_initial">da {{ r.price_initial }}</span> }
-                      @else { <span class="small muted">Q.i.</span> }</span>
+                      <span class="small muted">Quotazione {{ r.price_initial }} · {{ fmt(r.total) }} punti · {{ fl.skillsOf(r.user_id).length }} skill</span></span>
+                    <span class="q" [attr.aria-label]="'Quota attuale ' + r.price_current + (d ? ', ' + (d > 0 ? 'più ' : 'meno ') + (d > 0 ? d : -d) : '')">
+                      <span class="small muted">Q. att.</span>
+                      <strong class="num" [class.up]="d > 0" [class.down]="d < 0">{{ r.price_current }}</strong>
+                      @if (d !== 0) { <span class="delta" [class.up]="d > 0" [class.down]="d < 0">{{ d > 0 ? '+' : '' }}{{ d }}</span> }
+                    </span>
                   </button></li>
                 } @empty { <li class="empty">Nessun giocatore acquistabile: il Leader li prepara in Gestione.</li> }
               </ul>
@@ -225,6 +229,8 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
     .cat strong, .row-btn strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .q { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
     .q strong { font: 800 var(--step-1)/1 var(--font-display); }
+    .q .delta { font: 800 0.75rem/1 var(--font-body); padding: 2px 5px; border-radius: 6px; background: var(--surface-2); }
+    .q .delta.up { background: var(--turf-soft); } .q .delta.down { background: color-mix(in srgb, var(--danger) 14%, transparent); }
     .up { color: var(--turf); } .down { color: var(--danger); }
     .rank details { border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); padding: 0 10px; }
     .rank summary { display: flex; align-items: center; gap: 10px; min-height: 52px; cursor: pointer; list-style: none; }
@@ -252,7 +258,8 @@ export class FantaLeaderPage implements OnInit {
   protected readonly when = fmtWhen;
   protected readonly next = signal<Match | null>(null);
   protected q = '';
-  protected sortBy: 'price' | 'pos' | 'name' = 'price';
+  /** la scheda Giocatori si apre ordinata per quota attuale */
+  protected sortBy: 'price' | 'initial' | 'pos' | 'name' = 'price';
 
   protected readonly tabs = computed(() => [
     { id: 'home' as Tab, label: 'Home' }, { id: 'squadra' as Tab, label: 'Squadra' }, { id: 'giocatori' as Tab, label: 'Giocatori' },
@@ -268,15 +275,17 @@ export class FantaLeaderPage implements OnInit {
     return this.fl.ranking()
       .filter((r) => ids.has(r.user_id) && (!q || this.session.name(r.user_id).toLowerCase().includes(q)))
       .sort((a, b) => this.sortBy === 'name' ? this.session.name(a.user_id).localeCompare(this.session.name(b.user_id))
-        : this.sortBy === 'pos' ? a.pos - b.pos : b.price_current - a.price_current);
+        : this.sortBy === 'pos' ? a.pos - b.pos
+        : this.sortBy === 'initial' ? b.price_initial - a.price_initial || b.price_current - a.price_current
+        : b.price_current - a.price_current || b.price_initial - a.price_initial);
   }
 
   /** ultima giornata: fantasquadre e giocatori ordinati per i punti fatti in quella partita */
   protected lastTeams() {
-    return [...this.fl.teams()].filter((t) => t.last_points !== null).sort((a, b) => (b.last_points ?? 0) - (a.last_points ?? 0)).slice(0, 5);
+    return [...this.fl.teams()].filter((t) => t.last_points !== null).sort((a, b) => (b.last_points ?? 0) - (a.last_points ?? 0));
   }
   protected lastPlayers() {
-    return [...this.fl.ranking()].filter((r) => r.last_points !== null).sort((a, b) => (b.last_points ?? 0) - (a.last_points ?? 0)).slice(0, 5);
+    return [...this.fl.ranking()].filter((r) => r.last_points !== null).sort((a, b) => (b.last_points ?? 0) - (a.last_points ?? 0));
   }
   protected day(iso: string): string {
     return new Date(iso).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Rome' });
