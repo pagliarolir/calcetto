@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { PALETTE } from '../core/color';
 import { Theme, ThemeChoice } from '../core/theme';
 import { PlayerCard } from '../ratings/player-card';
 import { FormsModule } from '@angular/forms';
@@ -202,6 +203,62 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                   </button>
                 }
               </div>
+              <!-- tema personalizzato: scelta dei colori -->
+              <button type="button" role="radio" class="theme custom" [class.on]="theme.choice() === 'custom'" [attr.aria-checked]="theme.choice() === 'custom'" (click)="theme.set('custom')">
+                <span class="prev" aria-hidden="true" [style.background]="customCard().bg">
+                  <i class="ph" [style.background]="customCard().hero"></i>
+                  <span class="pr"><i [style.background]="customCard().primary"></i><i [style.background]="customCard().accent"></i><i class="grow" [style.background]="customCard().soft"></i></span>
+                </span>
+                <span class="tn"><app-icon name="palette" [size]="16" /><strong>Personalizzato</strong>@if (theme.choice() === 'custom') { <app-icon name="check" [size]="16" class="ok" /> }</span>
+                <span class="small muted">I tuoi colori: l'app si adatta e resta leggibile</span>
+              </button>
+              @if (theme.choice() === 'custom') {
+                @let c = theme.custom();
+                <div class="panel stack custom-ed">
+                  <div class="stack-s">
+                    <span class="lab">Base</span>
+                    <div class="seg2" role="radiogroup" aria-label="Base del tema">
+                      <button type="button" role="radio" [attr.aria-checked]="c.base === 'light'" (click)="theme.setCustom({ base: 'light' })"><app-icon name="sun" [size]="16" /> Chiara</button>
+                      <button type="button" role="radio" [attr.aria-checked]="c.base === 'dark'" (click)="theme.setCustom({ base: 'dark' })"><app-icon name="moon" [size]="16" /> Scura</button>
+                    </div>
+                  </div>
+                  <div class="stack-s">
+                    <span class="lab">Colore principale</span>
+                    <div class="sw" role="radiogroup" aria-label="Colore principale">
+                      @for (p of palette; track p.hex) {
+                        <button type="button" role="radio" class="dot" [style.background]="p.hex" [attr.aria-checked]="c.primary === p.hex" [attr.aria-label]="p.name" [title]="p.name" (click)="pickPrimary(p.hex)">
+                          @if (c.primary === p.hex) { <app-icon name="check" [size]="16" /> }
+                        </button>
+                      }
+                      <label class="dot other" title="Altro colore" [class.on]="!isPal(c.primary)" [style.background]="isPal(c.primary) ? null : c.primary">
+                        <app-icon name="plus" [size]="16" /><input type="color" class="sr-only" [value]="c.primary" (input)="pickPrimary($any($event.target).value)" aria-label="Altro colore principale" />
+                      </label>
+                    </div>
+                  </div>
+                  <div class="stack-s">
+                    <span class="lab">Colore secondario <span class="muted">(fascia da capitano, migliore in campo, sticker)</span></span>
+                    <div class="sw" role="radiogroup" aria-label="Colore secondario">
+                      <button type="button" role="radio" class="auto" [attr.aria-checked]="c.accent === 'auto'" (click)="pickAccent('auto')"><app-icon name="sparkle" [size]="14" /> Automatico</button>
+                      @for (p of palette; track p.hex) {
+                        <button type="button" role="radio" class="dot" [style.background]="p.hex" [attr.aria-checked]="c.accent === p.hex" [attr.aria-label]="p.name" [title]="p.name" (click)="pickAccent(p.hex)">
+                          @if (c.accent === p.hex) { <app-icon name="check" [size]="16" /> }
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="stack-s">
+                    <span class="lab">Leggibilità</span>
+                    <div class="checks">
+                      @for (k of theme.derived().checks; track k.label) {
+                        <span class="chk" [class.aaa]="k.ratio >= 7"><app-icon name="check" [size]="14" /> {{ k.label }} {{ fmtRatio(k.ratio) }}:1</span>
+                      }
+                    </div>
+                    @if (theme.derived().adjusted.primary || theme.derived().adjusted.accent) {
+                      <p class="small muted">Ho regolato un po' {{ theme.derived().adjusted.primary ? 'il colore principale' : 'il secondario' }} per renderlo leggibile.</p>
+                    }
+                  </div>
+                </div>
+              }
               <p class="small muted">Il tema vale su questo dispositivo. Le animazioni si riducono da sole se lo chiedi al telefono.</p>
             </section>
           }
@@ -226,6 +283,25 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
              border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 44px; }
     .theme.on { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
     .theme:last-child { grid-column: 1 / -1; }
+    .theme.custom { width: 100%; }
+    .custom-ed { gap: 16px; }
+    .lab { font: 700 var(--step--1)/1.2 var(--font-body); }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--r-m); background: var(--surface-2); }
+    .seg2 button { appearance: none; border: 0; min-height: 44px; border-radius: calc(var(--r-m) - 4px); background: transparent; color: var(--muted);
+                   font: 700 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+    .seg2 button[aria-checked='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 14%); }
+    .sw { display: flex; flex-wrap: wrap; gap: 10px; }
+    .dot { width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff;
+           box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%); }
+    .dot[aria-checked='true'], .dot.on { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink); }
+    .dot.other { background: conic-gradient(#e53935, #fbc02d, #43a047, #1e88e5, #8e24aa, #e53935); position: relative; }
+    .auto { appearance: none; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+            font: 700 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+    .auto[aria-checked='true'] { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
+    .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chk { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 99px; font: 700 0.75rem/1.2 var(--font-body);
+           background: var(--turf-soft); color: var(--ink); }
+    .chk.aaa { box-shadow: inset 0 0 0 1.5px var(--turf); }
     .prev { display: grid; grid-template-rows: 18px 1fr; height: 58px; border-radius: 8px; overflow: hidden; border: 1px solid rgb(0 0 0 / 12%); }
     .ph { display: block; }
     .pr { display: flex; gap: 5px; align-items: center; padding: 6px; }
@@ -285,6 +361,16 @@ export class ProfilePage {
     { id: 'figurina', label: 'Figurina', icon: 'star', desc: "Album degli anni '90", bg: '#F5ECD7', hero: '#C81E36', primary: '#C81E36', accent: '#E9B44C', soft: '#EBDFC2' },
     { id: 'contrasto', label: 'Alto contrasto', icon: 'eye', desc: 'Massima leggibilità (AAA)', bg: '#FFFFFF', hero: '#000000', primary: '#003D24', accent: '#FFD400', soft: '#F0F0F0' },
   ];
+  // ------------------------------------------------ tema personalizzato
+  protected readonly palette = PALETTE;
+  protected readonly customCard = computed(() => {
+    const v = this.theme.derived().vars;
+    return { bg: v['--bg'], hero: v['--hero-bg'], primary: v['--turf'], accent: v['--armband'], soft: v['--surface-2'] };
+  });
+  protected pickPrimary(hex: string): void { this.theme.setCustom({ primary: hex.toUpperCase() }); }
+  protected pickAccent(hex: string | 'auto'): void { this.theme.setCustom({ accent: hex === 'auto' ? 'auto' : hex.toUpperCase() }); }
+  protected fmtRatio(r: number): string { return r.toFixed(1).replace('.', ','); }
+  protected isPal(hex: string): boolean { return PALETTE.some((p) => p.hex === hex); }
 
   protected readonly tabs: { id: ProfileTab; label: string; icon: string }[] = [
     { id: 'dati', label: 'Dati', icon: 'user' },

@@ -15,6 +15,12 @@
         var t = c === 'auto' ? (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'notturno' : 'gesso') : c;
         document.documentElement.setAttribute('data-theme', t);
         var bar = { gesso: '#1B6A43', notturno: '#0F1A14', figurina: '#C81E36', contrasto: '#000000' }[t];
+        if (t === 'custom') {
+          /* tema personalizzato: i colori già calcolati (con i contrasti garantiti) salvati dall'app */
+          var v = JSON.parse(localStorage.getItem('gdl-custom-vars') || '{}');
+          for (var k in v) document.documentElement.style.setProperty(k, v[k]);
+          bar = v['--turf'];
+        }
         if (bar) document.querySelector('meta[name="theme-color"]').setAttribute('content', bar);
       } catch (e) {}
     })();
