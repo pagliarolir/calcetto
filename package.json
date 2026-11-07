@@ -20,6 +20,9 @@
     "@angular/service-worker": "21.2.24",
     "@fontsource/barlow": "5.3.0",
     "@fontsource/barlow-condensed": "5.3.0",
+    "@fontsource/bebas-neue": "5.3.0",
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/space-grotesk": "5.3.0",
     "@supabase/supabase-js": "2.116.0",
     "rxjs": "7.8.2",
     "tslib": "2.8.1"

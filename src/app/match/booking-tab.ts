@@ -350,7 +350,8 @@ interface SlotView {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     }
     .seg.lists button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
-    .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--line); color: var(--ink); }
+    /* leggibile in tutti i temi: in Figurina e Alto contrasto i bordi hanno il colore del testo */
+    .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
     .seg.lists button[aria-selected='true'] .count { background: var(--turf); color: var(--turf-ink); }
     /* quattro schede («sceglie il Leader»): nome piccolo e numero sotto */
     .seg.lists.four button { flex-direction: column; gap: 4px; min-height: 56px; padding: 6px 2px; font-size: 0.86rem; letter-spacing: -0.015em; }

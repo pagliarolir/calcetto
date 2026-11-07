@@ -101,15 +101,15 @@ import { MatchStore } from './match-store';
   styles: `
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .hero {
-      color: var(--chalk);
+      color: var(--hero-ink, var(--chalk));
       background:
         radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(241 245 239 / 35%) 89px 91px, transparent 92px),
-        linear-gradient(var(--turf), var(--turf));
+        var(--hero-bg, linear-gradient(var(--turf), var(--turf)));
       padding-top: env(safe-area-inset-top);
       /* fissa in cima: scorre solo il contenuto sotto (.scroll-area) */
       flex: none; z-index: 2;
     }
-    @media (prefers-color-scheme: dark) { .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
+    @media (prefers-color-scheme: dark) { :host-context(html:not([data-theme])) .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
     .hero-in { max-width: 640px; margin: 0 auto; padding: 0 16px 6px; display: flex; flex-direction: column; gap: 2px; }
     .sk-hero { display: flex; flex-direction: column; gap: 14px; padding-bottom: 12px; }
     .skw { display: block; height: 12px; border-radius: 6px; background: rgb(255 255 255 / 16%); }

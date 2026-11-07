@@ -11,6 +11,7 @@ import { ReprimandView } from './ui/reprimand';
 import { Branding } from './core/branding';
 import { ScrollMemory } from './core/scroll-memory';
 import { Refresher } from './core/refresher';
+import { Theme } from './core/theme';
 import { FantaLeader } from './core/fantaleader';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
@@ -126,6 +127,8 @@ export class App {
   /** «Indietro» riporta allo stesso punto della pagina */
   private readonly scrollMemory = inject(ScrollMemory);
   protected readonly refresher = inject(Refresher);
+  /** tema scelto nel Profilo → Aspetto */
+  private readonly theme = inject(Theme);
   /** la voce «Fanta» compare solo a chi può vedere FantaLeader */
   private readonly fl = inject(FantaLeader);
   protected readonly toasts = inject(Toasts);

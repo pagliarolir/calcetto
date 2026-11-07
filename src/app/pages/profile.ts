@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Theme, ThemeChoice } from '../core/theme';
 import { PlayerCard } from '../ratings/player-card';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -23,7 +24,7 @@ interface Form {
   height_cm: number | null;
 }
 
-type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
+type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurezza';
 
 @Component({
   selector: 'app-profile',
@@ -60,7 +61,6 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         @switch (tab()) {
           @case ('dati') {
       <form class="section" (ngSubmit)="save()">
-        <app-player-card [userId]="session.uid()!" />
         <header><h2>I tuoi dati</h2></header>
         <p class="small muted">Solo il nome è obbligatorio. Con l'interruttore decidi cosa vedono gli altri.</p>
         <div class="panel stack">
@@ -179,6 +179,32 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
         </div>
       </section>
           }
+          @case ('stats') {
+            <!-- i valori del giocatore (inseriti dal Leader): cerchio, esagono e campo -->
+            <section class="section stack">
+              <header><h2>Le tue stats</h2></header>
+              <app-player-card [userId]="session.uid()!" />
+              <a class="btn block" [routerLink]="['/giocatore', session.uid()]">Vedi la tua scheda completa</a>
+            </section>
+          }
+          @case ('aspetto') {
+            <section class="section stack">
+              <header><h2>Tema</h2></header>
+              <div class="themes" role="radiogroup" aria-label="Tema dell'app">
+                @for (o of themeOptions; track o.id) {
+                  <button type="button" role="radio" class="theme" [class.on]="theme.choice() === o.id" [attr.aria-checked]="theme.choice() === o.id" (click)="theme.set(o.id)">
+                    <span class="prev" aria-hidden="true" [style.background]="o.bg">
+                      <i class="ph" [style.background]="o.hero"></i>
+                      <span class="pr"><i [style.background]="o.primary"></i><i [style.background]="o.accent"></i><i class="grow" [style.background]="o.soft"></i></span>
+                    </span>
+                    <span class="tn"><app-icon [name]="o.icon" [size]="16" /><strong>{{ o.label }}</strong>@if (theme.choice() === o.id) { <app-icon name="check" [size]="16" class="ok" /> }</span>
+                    <span class="small muted">{{ o.desc }}</span>
+                  </button>
+                }
+              </div>
+              <p class="small muted">Il tema vale su questo dispositivo. Le animazioni si riducono da sole se lo chiedi al telefono.</p>
+            </section>
+          }
           @case ('sicurezza') {
       <section class="section">
         <header><h2>Sicurezza</h2></header>
@@ -195,7 +221,17 @@ type ProfileTab = 'dati' | 'foto' | 'notifiche' | 'sicurezza';
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .me { display: flex; align-items: center; gap: 16px; }
     /* schede del profilo: icona sopra, nome sotto */
-    .ptabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
+    .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .theme { appearance: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: var(--r-m);
+             border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 44px; }
+    .theme.on { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
+    .theme:last-child { grid-column: 1 / -1; }
+    .prev { display: grid; grid-template-rows: 18px 1fr; height: 58px; border-radius: 8px; overflow: hidden; border: 1px solid rgb(0 0 0 / 12%); }
+    .ph { display: block; }
+    .pr { display: flex; gap: 5px; align-items: center; padding: 6px; }
+    .pr i { display: block; width: 24px; height: 11px; border-radius: 4px; } .pr i.grow { flex: 1; }
+    .tn { display: flex; align-items: center; gap: 6px; } .tn .ok { margin-left: auto; color: var(--turf); }
+    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
     .ptabs button {
       appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
       min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
@@ -241,16 +277,28 @@ export class ProfilePage {
   private readonly router = inject(Router);
 
   protected readonly roleLabel = ROLE_LABEL;
+  protected readonly theme = inject(Theme);
+  protected readonly themeOptions: { id: ThemeChoice; label: string; icon: string; desc: string; bg: string; hero: string; primary: string; accent: string; soft: string }[] = [
+    { id: 'auto', label: 'Automatico', icon: 'sun', desc: 'Gesso di giorno, Notturno con il telefono scuro', bg: 'linear-gradient(90deg, #F3F5F0 50%, #0A120E 50%)', hero: 'linear-gradient(90deg, #1F7A4D 50%, #0F1A14 50%)', primary: '#1B6A43', accent: '#8BE26A', soft: '#9AA59D' },
+    { id: 'gesso', label: 'Gesso', icon: 'sun', desc: 'Chiaro, verde campo', bg: '#F3F5F0', hero: '#1F7A4D', primary: '#1B6A43', accent: '#F2B705', soft: '#E6ECE4' },
+    { id: 'notturno', label: 'Notturno', icon: 'moon', desc: 'Scuro, luci dello stadio', bg: '#0A120E', hero: '#0F1A14', primary: '#8BE26A', accent: '#FFB547', soft: '#1B2721' },
+    { id: 'figurina', label: 'Figurina', icon: 'star', desc: "Album degli anni '90", bg: '#F5ECD7', hero: '#C81E36', primary: '#C81E36', accent: '#E9B44C', soft: '#EBDFC2' },
+    { id: 'contrasto', label: 'Alto contrasto', icon: 'eye', desc: 'Massima leggibilità (AAA)', bg: '#FFFFFF', hero: '#000000', primary: '#003D24', accent: '#FFD400', soft: '#F0F0F0' },
+  ];
+
   protected readonly tabs: { id: ProfileTab; label: string; icon: string }[] = [
     { id: 'dati', label: 'Dati', icon: 'user' },
+    { id: 'stats', label: 'Stats', icon: 'stats' },
     { id: 'foto', label: 'Foto', icon: 'camera' },
     { id: 'notifiche', label: 'Notifiche', icon: 'bell' },
+    { id: 'aspetto', label: 'Aspetto', icon: 'palette' },
     { id: 'sicurezza', label: 'Sicurezza', icon: 'key' },
   ];
   protected readonly tab = signal<ProfileTab>(
     ((): ProfileTab => {
       const q = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda') as ProfileTab | null;
-      return q && ['dati', 'foto', 'notifiche', 'sicurezza'].includes(q) ? q : 'dati';
+      // le schede valide sono quelle dell'elenco (anche quelle aggiunte in futuro)
+      return q && ['dati', 'stats', 'foto', 'notifiche', 'aspetto', 'sicurezza'].includes(q) ? q : 'dati';
     })(),
   );
 

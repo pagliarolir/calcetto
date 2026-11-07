@@ -7,6 +7,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Prenotazioni, squadre, risultati e statistiche del calcetto del giovedì.">
   <meta name="theme-color" content="#1F6B45">
+  <script>
+    /* tema scelto nel Profilo → Aspetto, applicato prima che l'app parta */
+    (function () {
+      try {
+        var c = localStorage.getItem('gdl-theme') || 'auto';
+        var t = c === 'auto' ? (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'notturno' : 'gesso') : c;
+        document.documentElement.setAttribute('data-theme', t);
+        var bar = { gesso: '#1B6A43', notturno: '#0F1A14', figurina: '#C81E36', contrasto: '#000000' }[t];
+        if (bar) document.querySelector('meta[name="theme-color"]').setAttribute('content', bar);
+      } catch (e) {}
+    })();
+  </script>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <!-- "default" e non "black-translucent": con la barra trasparente Safari sposta gli elementi fissati
