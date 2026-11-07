@@ -5,6 +5,14 @@
 @import '@fontsource/barlow-condensed/latin-500.css';
 @import '@fontsource/barlow-condensed/latin-600.css';
 @import '@fontsource/barlow-condensed/latin-700.css';
+/* caratteri dei temi (si scaricano solo quando il tema li usa) */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';
+@import '@fontsource/space-grotesk/latin-500.css';
+@import '@fontsource/space-grotesk/latin-700.css';
+@import '@fontsource/bebas-neue/latin-400.css';
 
 /* =====================================================================
    G.d.L. — sistema visivo
@@ -81,6 +89,69 @@
     --focus: #7fd1a3;
   }
 }
+
+/* =====================================================================
+   Temi scelti nel Profilo → Aspetto (data-theme su <html>, impostato prima dell'avvio).
+   «Automatico» = Gesso di giorno, Notturno con il telefono in modalità scura.
+   Contrasti verificati (WCAG): testo ≥ 4,5:1 in tutti i temi, ≥ 7:1 in Alto contrasto.
+   ===================================================================== */
+:root[data-theme='gesso'] {
+  color-scheme: light;
+  --bg: #f3f5f0; --surface: #ffffff; --surface-2: #e6ece4; --ink: #13201a; --muted: #4f5f55; --line: #cfdace;
+  --turf: #1b6a43; --turf-ink: #ffffff; --turf-soft: #dcefe3; --chalk: #f3f7f1; --armband: #f2b705; --armband-ink: #2b2000;
+  --kit-white: #fafaf7; --kit-white-ink: #13201a; --kit-black: #1a1c20; --kit-black-ink: #f4f4f1;
+  --danger: #b92f27; --danger-soft: #fbe4e2; --focus: #1d57c2;
+  --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  --r-s: 8px; --r-m: 14px; --r-l: 20px;
+  --hero-bg: linear-gradient(160deg, #1f7a4d 0%, #145235 100%); --hero-ink: #ffffff;
+}
+:root[data-theme='notturno'] {
+  color-scheme: dark;
+  --bg: #0a120e; --surface: #121c17; --surface-2: #1b2721; --ink: #e9f1eb; --muted: #a1b4a8; --line: #2c3b33;
+  --turf: #8be26a; --turf-ink: #0a120e; --turf-soft: #1f3a22; --chalk: #f2f8f3; --armband: #ffb547; --armband-ink: #1e1400;
+  --kit-white: #eceee9; --kit-white-ink: #13201a; --kit-black: #050607; --kit-black-ink: #eceee9;
+  --danger: #ff7a6e; --danger-soft: #3a1714; --focus: #8be26a;
+  --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --r-s: 10px; --r-m: 16px; --r-l: 22px;
+  --hero-bg: radial-gradient(120% 90% at 85% -10%, rgb(139 226 106 / 30%) 0%, transparent 55%),
+             radial-gradient(90% 70% at 0% 0%, rgb(127 178 255 / 16%) 0%, transparent 50%), #0f1a14;
+  --hero-ink: #f2f8f3;
+}
+:root[data-theme='figurina'] {
+  color-scheme: light;
+  font-synthesis: none;   /* Bebas Neue ha un solo peso: niente grassetto finto */
+  --bg: #f5ecd7; --surface: #fff9ec; --surface-2: #ebdfc2; --ink: #1d2d50; --muted: #4e4d62; --line: #1d2d50;
+  --turf: #c81e36; --turf-ink: #ffffff; --turf-soft: #f8d9dc; --chalk: #fff9ec; --armband: #e9b44c; --armband-ink: #1d2d50;
+  --kit-white: #fff9ec; --kit-white-ink: #1d2d50; --kit-black: #1d2d50; --kit-black-ink: #fff9ec;
+  --danger: #a3122a; --danger-soft: #f8d9dc; --focus: #1b4f9c;
+  --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
+  --r-s: 6px; --r-m: 10px; --r-l: 14px;
+  --hero-bg: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 18%) 1.2px, transparent 1.6px) 0 0 / 10px 10px, #c81e36;
+  --hero-ink: #ffffff;
+}
+:root[data-theme='contrasto'] {
+  color-scheme: light;
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #f0f0f0; --ink: #000000; --muted: #2e2e2e; --line: #000000;
+  --turf: #003d24; --turf-ink: #ffffff; --turf-soft: #e0f0e8; --chalk: #ffffff; --armband: #ffd400; --armband-ink: #000000;
+  --kit-white: #ffffff; --kit-white-ink: #000000; --kit-black: #000000; --kit-black-ink: #ffffff;
+  --danger: #9b0000; --danger-soft: #ffe5e5; --focus: #000000;
+  --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --r-s: 6px; --r-m: 10px; --r-l: 12px;
+  --hero-bg: #000000; --hero-ink: #ffffff;
+}
+/* Figurina: bordi netti e ombre «adesive», titoli maiuscoli */
+:root[data-theme='figurina'] .panel { border: 2px solid var(--line); box-shadow: 3px 3px 0 var(--line); }
+:root[data-theme='figurina'] h1, :root[data-theme='figurina'] h2 { text-transform: uppercase; letter-spacing: 0.02em; }
+/* Notturno: superfici separate da un filo di luce */
+:root[data-theme='notturno'] .panel { box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgb(0 0 0 / 35%); }
+/* Alto contrasto: bordi spessi, niente ombre, link sottolineati, fuoco giallo e nero */
+:root[data-theme='contrasto'] .panel { border: 2px solid #000; box-shadow: none; }
+:root[data-theme='contrasto'] a { text-decoration: underline; text-underline-offset: 3px; }
+:root[data-theme='contrasto'] :focus-visible { outline: 3px solid #000 !important; outline-offset: 2px; box-shadow: 0 0 0 6px #ffd400 !important; }
 
 * { box-sizing: border-box; }
 
