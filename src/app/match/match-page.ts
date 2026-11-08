@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, untracked, viewChild } from '@angular/core';
+import { MatchSkeleton } from '../ui/match-skeleton';
 import { Skeleton } from '../ui/skeleton';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -11,7 +12,7 @@ import { MatchStore } from './match-store';
 
 @Component({
   selector: 'app-match-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Skeleton],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
   providers: [MatchStore],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
@@ -86,16 +87,7 @@ import { MatchStore } from './match-store';
         </div>
       </main>
     } @else {
-      <!-- scheletro con la stessa forma della pagina: niente pezzi che compaiono uno alla volta -->
-      <header class="hero" aria-hidden="true">
-        <div class="hero-in sk-hero">
-          <div class="sk-top"><span class="skw w20"></span><span class="skw w30"></span></div>
-          <div class="sk-ticket"><span class="skw box"></span><span class="sk-lines"><span class="skw w70 h22"></span><span class="skw w50"></span><span class="skw w60"></span></span></div>
-          <span class="skw strip"></span>
-          <div class="sk-tabs"><span class="skw w15"></span><span class="skw w15"></span><span class="skw w15"></span></div>
-        </div>
-      </header>
-      <main class="scroll-area"><div class="page below-header"><app-skeleton kind="match" /></div></main>
+      <app-match-skeleton />
     }
   `,
   styles: `
