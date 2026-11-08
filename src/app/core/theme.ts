@@ -1,11 +1,11 @@
 import { computed, effect, Injectable, signal } from '@angular/core';
 import { CustomTheme, deriveTheme } from './color';
 
-export type ThemeChoice = 'auto' | 'gesso' | 'notturno' | 'figurina' | 'contrasto' | 'custom';
+export type ThemeChoice = 'auto' | 'gesso' | 'notturno' | 'figurina' | 'azzurro' | 'tramonto' | 'contrasto' | 'custom';
 export type ThemeName = Exclude<ThemeChoice, 'auto'>;
 
 /** colore della barra del telefono per ogni tema (come l'intestazione) */
-const BAR: Record<Exclude<ThemeName, 'custom'>, string> = { gesso: '#1B6A43', notturno: '#0F1A14', figurina: '#C81E36', contrasto: '#000000' };
+const BAR: Record<Exclude<ThemeName, 'custom'>, string> = { gesso: '#1B6A43', notturno: '#0F1A14', figurina: '#C81E36', azzurro: '#0B4EA2', tramonto: '#1E1219', contrasto: '#000000' };
 const KEY = 'gdl-theme';
 const KEY_CUSTOM = 'gdl-custom';            // le scelte (base, principale, secondario)
 const KEY_VARS = 'gdl-custom-vars';         // i colori calcolati, che index.html applica prima dell'avvio
@@ -95,7 +95,7 @@ export class Theme {
   private static read(): ThemeChoice {
     try {
       const v = localStorage.getItem(KEY) as ThemeChoice | null;
-      return v && ['auto', 'gesso', 'notturno', 'figurina', 'contrasto', 'custom'].includes(v) ? v : 'auto';
+      return v && ['auto', 'gesso', 'notturno', 'figurina', 'azzurro', 'tramonto', 'contrasto', 'custom'].includes(v) ? v : 'auto';
     } catch {
       return 'auto';
     }

@@ -49,7 +49,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
         @for (t of tabs; track t.id) {
           <button role="tab" [id]="'ptab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'ppanel-' + t.id"
                   [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">
-            <app-icon [name]="t.icon" [size]="20" /><span>{{ t.label }}</span>
+            <app-icon [name]="t.icon" [size]="16" /><span>{{ t.label }}</span>
           </button>
         }
       </nav>
@@ -202,16 +202,16 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                     <span class="small muted">{{ o.desc }}</span>
                   </button>
                 }
-              </div>
               <!-- tema personalizzato: scelta dei colori -->
-              <button type="button" role="radio" class="theme custom" [class.on]="theme.choice() === 'custom'" [attr.aria-checked]="theme.choice() === 'custom'" (click)="theme.set('custom')">
+              <button type="button" role="radio" class="theme" [class.on]="theme.choice() === 'custom'" [attr.aria-checked]="theme.choice() === 'custom'" (click)="theme.set('custom')">
                 <span class="prev" aria-hidden="true" [style.background]="customCard().bg">
                   <i class="ph" [style.background]="customCard().hero"></i>
                   <span class="pr"><i [style.background]="customCard().primary"></i><i [style.background]="customCard().accent"></i><i class="grow" [style.background]="customCard().soft"></i></span>
                 </span>
                 <span class="tn"><app-icon name="palette" [size]="16" /><strong>Personalizzato</strong>@if (theme.choice() === 'custom') { <app-icon name="check" [size]="16" class="ok" /> }</span>
-                <span class="small muted">I tuoi colori: l'app si adatta e resta leggibile</span>
+                <span class="small muted">Scegli tu i colori</span>
               </button>
+              </div>
               @if (theme.choice() === 'custom') {
                 @let c = theme.custom();
                 <div class="panel stack custom-ed">
@@ -246,17 +246,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                       }
                     </div>
                   </div>
-                  <div class="stack-s">
-                    <span class="lab">Leggibilità</span>
-                    <div class="checks">
-                      @for (k of theme.derived().checks; track k.label) {
-                        <span class="chk" [class.aaa]="k.ratio >= 7"><app-icon name="check" [size]="14" /> {{ k.label }} {{ fmtRatio(k.ratio) }}:1</span>
-                      }
-                    </div>
-                    @if (theme.derived().adjusted.primary || theme.derived().adjusted.accent) {
-                      <p class="small muted">Ho regolato un po' {{ theme.derived().adjusted.primary ? 'il colore principale' : 'il secondario' }} per renderlo leggibile.</p>
-                    }
-                  </div>
                 </div>
               }
               <!-- testo: dimensione e spaziatura -->
@@ -279,7 +268,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                   <button type="button" class="btn ghost small" (click)="theme.setText(100, 0)">Ripristina</button>
                 }
               </div>
-              <p class="small muted">Tema e testo valgono su questo dispositivo. Le animazioni si riducono da sole se lo chiedi al telefono.</p>
             </section>
           }
           @case ('sicurezza') {
@@ -302,7 +290,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     .theme { appearance: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: var(--r-m);
              border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 44px; }
     .theme.on { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
-    .theme:last-child { grid-column: 1 / -1; }
     .theme.custom { width: 100%; }
     .text-ed { gap: 14px; }
     .rng { display: flex; flex-direction: column; gap: 6px; }
@@ -333,11 +320,11 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     .pr { display: flex; gap: 5px; align-items: center; padding: 6px; }
     .pr i { display: block; width: 24px; height: 11px; border-radius: 4px; } .pr i.grow { flex: 1; }
     .tn { display: flex; align-items: center; gap: 6px; } .tn .ok { margin-left: auto; color: var(--turf); }
-    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
+    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border-radius: 14px; background: var(--surface-2); }
     .ptabs button {
       appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
-      min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-      font: 600 0.75rem/1 var(--font-body); transition: background 160ms, color 160ms;
+      min-height: 44px; padding: 0 6px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+      font: 600 0.8rem/1 var(--font-body); transition: background 160ms, color 160ms;
     }
     .ptabs button[aria-selected='true'] { background: var(--surface); color: var(--turf); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
     .ppanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
@@ -385,6 +372,8 @@ export class ProfilePage {
     { id: 'gesso', label: 'Gesso', icon: 'sun', desc: 'Chiaro, verde campo', bg: '#F3F5F0', hero: '#1F7A4D', primary: '#1B6A43', accent: '#F2B705', soft: '#E6ECE4' },
     { id: 'notturno', label: 'Notturno', icon: 'moon', desc: 'Scuro, luci dello stadio', bg: '#0A120E', hero: '#0F1A14', primary: '#8BE26A', accent: '#FFB547', soft: '#1B2721' },
     { id: 'figurina', label: 'Figurina', icon: 'star', desc: "Album degli anni '90", bg: '#F5ECD7', hero: '#C81E36', primary: '#C81E36', accent: '#E9B44C', soft: '#EBDFC2' },
+    { id: 'azzurro', label: 'Azzurro', icon: 'shirt', desc: 'Blu Nazionale e oro', bg: '#F2F5FA', hero: '#0D5BBF', primary: '#0B4EA2', accent: '#C9A227', soft: '#E3EAF5' },
+    { id: 'tramonto', label: 'Tramonto', icon: 'sun', desc: 'Scuro e caldo, corallo e oro', bg: '#170F14', hero: '#3A1A24', primary: '#FF8A5B', accent: '#FFD166', soft: '#2D1E27' },
     { id: 'contrasto', label: 'Alto contrasto', icon: 'eye', desc: 'Massima leggibilità (AAA)', bg: '#FFFFFF', hero: '#000000', primary: '#003D24', accent: '#FFD400', soft: '#F0F0F0' },
   ];
   // ------------------------------------------------ tema personalizzato
