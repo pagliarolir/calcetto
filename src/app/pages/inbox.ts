@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -14,7 +15,7 @@ import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-inbox',
-  imports: [Icon, FormsModule, Empty],
+  imports: [Icon, FormsModule, Empty, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -42,6 +43,8 @@ import { Icon } from '../ui/icon';
               <button class="btn ghost grow" [disabled]="busy()" (click)="editing.set(false)">Annulla</button>
               <button class="btn primary grow" [disabled]="busy()" (click)="saveInfo()">Salva</button>
             </div>
+          } @else if (!infoLoaded()) {
+            <app-skeleton kind="lines" />
           } @else {
             @for (b of blocks(); track $index) {
               @switch (b.kind) {
@@ -60,6 +63,9 @@ import { Icon } from '../ui/icon';
           }
         </article>
       } @else {
+      @if (!loaded()) {
+        <app-skeleton kind="lines" />
+      } @else {
       <ul class="list">
         @for (n of items(); track n.id) {
           <li>
@@ -74,6 +80,7 @@ import { Icon } from '../ui/icon';
           </li>
         } @empty { <li class="empty"><app-empty icon="bell" text="Nessun avviso. Qui trovi tutto quello che ti arriva come notifica." /></li> }
       </ul>
+      }
       }
     </main>
   `,
@@ -124,6 +131,8 @@ export class InboxPage implements OnInit {
       this.infoUpdated.set(st.info_updated_at ?? null);
     } catch (e) {
       this.toasts.error(errorMessage(e));
+    } finally {
+      this.infoLoaded.set(true);   // anche in caso di errore: niente scheletro per sempre
     }
   }
 
@@ -166,6 +175,9 @@ export class InboxPage implements OnInit {
   private readonly router = inject(Router);
   private readonly unread = inject(Unread);
   protected readonly items = signal<AppNotification[]>([]);
+  /** vero quando gli avvisi (e il testo Info) sono arrivati: prima lo scheletro, non «Nessun avviso» */
+  protected readonly loaded = signal(false);
+  protected readonly infoLoaded = signal(false);
   protected readonly ago = fmtAgo;
 
   protected hasUnread(): boolean {
@@ -174,7 +186,8 @@ export class InboxPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     if (this.tab() === 'info') void this.loadInfo();   // aperta direttamente sulla scheda Info
-    this.items.set(await this.api.notifications());
+    this.items.set(await this.api.notifications().catch(() => []));
+    this.loaded.set(true);
   }
 
   protected async readAll(): Promise<void> {

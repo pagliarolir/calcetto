@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -20,7 +21,7 @@ type Panel = 'none' | 'create' | 'defaults';
 
 @Component({
   selector: 'app-matches',
-  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty],
+  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -108,6 +109,9 @@ type Panel = 'none' | 'create' | 'defaults';
         </section>
       }
 
+      @if (!loaded()) {
+        <app-skeleton kind="lines" />
+      } @else {
       <ol class="list">
         @for (m of items(); track m.id) {
           <li>
@@ -125,6 +129,7 @@ type Panel = 'none' | 'create' | 'defaults';
           </li>
         } @empty { <li class="empty"><app-empty icon="calendar" text="Ancora nessuna partita." /></li> }
       </ol>
+      }
     </main>
   `,
   styles: `
@@ -151,6 +156,8 @@ export class MatchesPage implements OnInit {
   private readonly toasts = inject(Toasts);
 
   protected readonly items = signal<(Match & { results: Result | null })[]>([]);
+  /** vero quando l'elenco è arrivato: prima si vede lo scheletro, non «Ancora nessuna partita» */
+  protected readonly loaded = signal(false);
   protected readonly settings = signal<AppSettings | null>(null);
   protected readonly panel = signal<Panel>('none');
   protected readonly mode = signal<'one' | 'series'>('one');
@@ -197,6 +204,7 @@ export class MatchesPage implements OnInit {
     const [items, settings] = await Promise.all([this.api.matches(), this.api.settings()]);
     this.items.set(items);
     this.settings.set(settings);
+    this.loaded.set(true);
   }
 
   protected tick(): void {
