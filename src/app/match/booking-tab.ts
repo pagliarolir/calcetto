@@ -1,5 +1,7 @@
 import { ActivatedRoute, Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Empty } from '../ui/empty';
+import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { fmtTime, fmtWeekday, fmtWhen, fromLocalInput, toLocalInput } from '../core/format';
@@ -23,7 +25,7 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Figurina, FormsModule, MatchConfigForm, ApplyDialog, Avatar, Icon],
+  imports: [Figurina, FormsModule, MatchConfigForm, ApplyDialog, Avatar, Icon, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -102,7 +104,7 @@ interface SlotView {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
                     <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
-                  } @empty { <li class="empty">Ancora nessun titolare.</li> }
+                  } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
                 <ol class="board">
@@ -125,7 +127,7 @@ interface SlotView {
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
                   <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
-                } @empty { <li class="empty">Nessun disponibile.</li> }
+                } @empty { <li class="empty"><app-empty icon="user" text="Nessun disponibile." /></li> }
               </ul>
             }
             @case ('reserve') {
@@ -155,7 +157,7 @@ interface SlotView {
               <ul class="people board">
                 @for (r of byName(store.absents()); track r.user_id) {
                   <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.late_withdrawal ? 'forfait tardivo' : 'assente'" /></li>
-                } @empty { <li class="empty">Nessun assente.</li> }
+                } @empty { <li class="empty"><app-empty icon="user" text="Nessun assente." /></li> }
               </ul>
               @if (silent().length) {
                 <div class="panel stack silent">
@@ -493,6 +495,7 @@ export class BookingTab {
   protected async book(choice: Choice): Promise<void> {
     if (this.reprimand.guard()) return;
     await this.run(async () => {
+      haptic();
       const res = await this.api.book(this.store.match()!.id, choice);
       this.dropFor.set(this.session.uid());
       setTimeout(() => this.dropFor.set(null), 900);

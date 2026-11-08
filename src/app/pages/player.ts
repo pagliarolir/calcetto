@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { Empty } from '../ui/empty';
 import { PlayerCard } from '../ratings/player-card';
 import { RatingsEditor } from '../ratings/ratings-editor';
 import { ProfileAdmin } from '../ratings/profile-admin';
@@ -19,7 +20,7 @@ import { StickerStrip } from '../ui/sticker-strip';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin],
+  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -44,13 +45,21 @@ import { StickerStrip } from '../ui/sticker-strip';
         <!-- valori del giocatore: tutti vedono la scheda, il Leader inserisce i valori e modifica profilo e foto -->
         <app-player-card [userId]="id()" />
         @if (session.isLeader()) {
-          <div class="row lead-tools">
-            <button type="button" class="btn small" (click)="profEd.open(id())">Modifica profilo e foto</button>
+          <!-- strumenti del Leader: menu «⋯» in alto a destra -->
+          <div class="lead-menu">
+            <button type="button" class="more" aria-label="Azioni del Leader" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><app-icon name="more" [size]="20" /></button>
+            @if (menuOpen()) {
+              <div class="menu panel" role="menu">
+                <button type="button" role="menuitem" (click)="menuOpen.set(false); profEd.open(id())"><app-icon name="user" [size]="18" /> Modifica profilo e foto</button>
+                <button type="button" role="menuitem" (click)="menuOpen.set(false); openRatings()"><app-icon name="stats" [size]="18" /> Valori del giocatore</button>
+              </div>
+            }
           </div>
-          <details class="panel fold">
-            <summary><h3>Valori del giocatore</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-            <app-ratings-editor [userId]="id()" />
-          </details>
+          <dialog #ratingsDlg class="sheet" (click)="$event.target === ratingsDlg && ratingsDlg.close()" aria-label="Valori del giocatore">
+            <button type="button" class="x-close" (click)="ratingsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
+            <h3>Valori di {{ session.name(id()) }}</h3>
+            @if (ratingsOn()) { <app-ratings-editor [userId]="id()" /> }
+          </dialog>
           <app-profile-admin #profEd />
         }
       }
@@ -85,7 +94,7 @@ import { StickerStrip } from '../ui/sticker-strip';
                 @if (f.avg_vote !== null) { <span class="num">{{ dec(f.avg_vote) }}</span> }
               </a>
             </li>
-          } @empty { <li class="empty">Ancora nessuna partita omologata.</li> }
+          } @empty { <li class="empty"><app-empty icon="calendar" text="Ancora nessuna partita omologata." /></li> }
         </ol>
       </section>
       <!-- Leader: azzerare, ripristinare o eliminare le statistiche di questo giocatore -->
@@ -111,6 +120,17 @@ import { StickerStrip } from '../ui/sticker-strip';
     </main>
   `,
   styles: `
+    /* il menu ⋯ sta nell'angolo della pagina del giocatore (non dell'app: lì c'è la X del riquadro degli sticker) */
+    main.page { position: relative; }
+    .lead-menu { position: absolute; top: 6px; right: 6px; z-index: 5; }
+    .more { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; }
+    .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
+    .menu button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
+    .menu button:hover { background: var(--surface-2); }
+    dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 90dvh; overflow-y: auto; border: 0; color: var(--ink);
+                   background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+    dialog.sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    dialog.sheet h3 { margin: 4px 48px 12px 0; }
     .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0; border: 0; background: none;
             color: var(--ink); opacity: 0.85; font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; }
     .id { display: flex; align-items: center; gap: 16px; }
@@ -135,6 +155,13 @@ export class PlayerPage {
 
   readonly id = input.required<string>();
   protected readonly session = inject(Session);
+  protected readonly menuOpen = signal(false);
+  protected readonly ratingsOn = signal(false);
+  private readonly ratingsDlg = viewChild<ElementRef<HTMLDialogElement>>('ratingsDlg');
+  protected openRatings(): void {
+    this.ratingsOn.set(true);
+    queueMicrotask(() => this.ratingsDlg()?.nativeElement.showModal());
+  }
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
 

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
@@ -19,7 +20,7 @@ type Panel = 'none' | 'create' | 'defaults';
 
 @Component({
   selector: 'app-matches',
-  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog],
+  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -122,7 +123,7 @@ type Panel = 'none' | 'create' | 'defaults';
               @else if (m.status === 'scheduled') { <span class="tag turf">in programma</span> }
             </a>
           </li>
-        } @empty { <li class="empty">Ancora nessuna partita.</li> }
+        } @empty { <li class="empty"><app-empty icon="calendar" text="Ancora nessuna partita." /></li> }
       </ol>
     </main>
   `,

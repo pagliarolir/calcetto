@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, untracked, viewChild } from '@angular/core';
+import { haptic } from '../core/haptics';
 import { Api } from '../core/api';
 import { fmtWhen } from '../core/format';
 import { MvpVote, PlayerVote, Team, VoteSummary } from '../core/models';
@@ -462,6 +463,7 @@ export class VotesTab {
   }
 
   protected async submit(): Promise<void> {
+    haptic();
     if (this.reprimand.guard()) return;
     const id = this.store.match()!.id;
     if (!confirm('Confermare i voti? Una volta inviati non si possono più cambiare.')) return;

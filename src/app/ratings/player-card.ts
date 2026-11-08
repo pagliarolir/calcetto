@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { Session } from '../core/session';
 import { FIELD_ROLE_LABEL, FieldRole } from '../core/models';
 import { Ratings, ROLE_SHORT } from '../core/ratings';
 import { HexChart, PitchChart, RatingRing } from './charts';
@@ -20,7 +21,7 @@ import { HexChart, PitchChart, RatingRing } from './charts';
           <app-pitch-chart [card]="c" />
         </div>
       } @else {
-        <p class="small muted">Valori non ancora inseriti dal Leader.</p>
+        @if (session.isLeader()) { <p class="small muted">Valori non ancora inseriti: aprili dal menu ⋯.</p> }
       }
     }
   `,
@@ -33,6 +34,7 @@ import { HexChart, PitchChart, RatingRing } from './charts';
 })
 export class PlayerCard {
   private readonly ratings = inject(Ratings);
+  protected readonly session = inject(Session);
   readonly userId = input.required<string>();
   protected readonly card = computed(() => this.ratings.cards().get(this.userId()));
   protected readonly roleShort = computed(() => {

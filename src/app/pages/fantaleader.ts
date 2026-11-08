@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
@@ -18,7 +19,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
 
 @Component({
   selector: 'app-fantaleader-page',
-  imports: [FormsModule, Avatar, Skeleton, FlTeam, FlPlayerSheet, FlAdmin],
+  imports: [FormsModule, Avatar, Skeleton, FlTeam, FlPlayerSheet, FlAdmin, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
@@ -143,7 +144,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
                       @if (d !== 0) { <span class="delta" [class.up]="d > 0" [class.down]="d < 0">{{ d > 0 ? '+' : '' }}{{ d }}</span> }
                     </span>
                   </button></li>
-                } @empty { <li class="empty">Nessun giocatore acquistabile: il Leader li prepara in Gestione.</li> }
+                } @empty { <li class="empty"><app-empty icon="trophy" text="Nessun giocatore acquistabile: il Leader li prepara in Gestione." /></li> }
               </ul>
             }
             @case ('classifiche') {
@@ -170,7 +171,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
                         <p class="small muted">Andamento: @for (x of trend(t.team_id); track x.match_id; let last = $last) { {{ fmt(x.points) }}@if (!last) { · } } @empty { nessuna giornata }</p>
                       </details>
                     </li>
-                  } @empty { <li class="empty">Ancora nessuna fantasquadra.</li> }
+                  } @empty { <li class="empty"><app-empty icon="trophy" text="Ancora nessuna fantasquadra." /></li> }
                 </ol>
               } @else {
                 <p class="small muted">Coefficiente: il moltiplicatore della prossima giornata. Punti provvisori finché le pagelle sono aperte.</p>
