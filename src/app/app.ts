@@ -145,13 +145,12 @@ export class App {
   });
 
   protected readonly tabs = computed(() => [
+    // al massimo 5 voci (linee guida Apple e Google): Gestione è nel Profilo («Area Leader»)
     { path: '/', label: 'Partita', icon: 'pitch' },
     { path: '/classifica', label: 'Classifica', icon: 'table' },
+    ...(this.fl.visible() ? [{ path: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
     { path: '/avvisi', label: 'Avvisi', icon: 'bell' },
     { path: '/profilo', label: 'Profilo', icon: 'user' },
-    ...(this.session.isStaff() ? [{ path: '/gestione', label: 'Gestione', icon: 'whistle' }] : []),
-    // in fondo, dopo Gestione: la pagina si chiama FantaLeader, in barra «Fanta» per stare in 6 voci su 360 px
-    ...(this.fl.visible() ? [{ path: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
   ]);
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');

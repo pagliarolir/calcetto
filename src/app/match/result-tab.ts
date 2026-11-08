@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { diffText, fmtWhen } from '../core/format';
@@ -448,6 +449,7 @@ export class ResultTab {
   }
 
   protected async submit(): Promise<void> {
+    haptic();
     if (this.reprimand.guard()) return;
     await this.run(async () => {
       const id = this.store.match()!.id;

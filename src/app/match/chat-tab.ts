@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, OnDestroy, signal, viewChild } from '@angular/core';
+import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { fmtTime, fmtWhen, fmtDayShort } from '../core/format';
@@ -14,7 +15,7 @@ import { scrollAppTo } from '../core/scroller';
 /** Chat di partita: aperta dalla creazione della partita fino a 24 ore dopo la fine. */
 @Component({
   selector: 'app-chat-tab',
-  imports: [FormsModule, Avatar],
+  imports: [FormsModule, Avatar, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -43,7 +44,7 @@ import { scrollAppTo } from '../core/scroller';
               </div>
             </li>
           } @empty {
-            @if (store.t()?.chatOpen) { <li class="empty">Nessun messaggio. Rompi il ghiaccio.</li> }
+            @if (store.t()?.chatOpen) { <li class="empty"><app-empty icon="chat" text="Nessun messaggio. Rompi il ghiaccio." /></li> }
           }
         </ol>
         @if (store.t()?.chatOpen) {

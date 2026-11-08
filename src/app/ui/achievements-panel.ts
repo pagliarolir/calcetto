@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Empty } from './empty';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Achievements } from '../core/achievements';
@@ -13,7 +14,7 @@ import { Icon } from './icon';
 /** Scheda «Obiettivi»: album degli sticker, dettaglio, classifica e strumenti del Leader. */
 @Component({
   selector: 'app-achievements-panel',
-  imports: [FormsModule, RouterLink, Avatar, Icon],
+  imports: [FormsModule, RouterLink, Avatar, Icon, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack-l">
@@ -59,7 +60,7 @@ import { Icon } from './icon';
               </span>
               <span class="count num">{{ r.count }}/{{ ach.list().length }}</span>
             </li>
-          } @empty { <li class="empty">Nessuno sticker sbloccato, per ora.</li> }
+          } @empty { <li class="empty"><app-empty icon="star" text="Nessuno sticker sbloccato, per ora." /></li> }
         </ol>
       </section>
 

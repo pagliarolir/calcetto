@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
@@ -13,7 +14,7 @@ import { Icon } from '../ui/icon';
 
 @Component({
   selector: 'app-inbox',
-  imports: [Icon, FormsModule],
+  imports: [Icon, FormsModule, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -71,7 +72,7 @@ import { Icon } from '../ui/icon';
               <span class="small muted">{{ ago(n.created_at) }}</span>
             </button>
           </li>
-        } @empty { <li class="empty">Nessun avviso. Qui trovi tutto quello che ti arriva come notifica.</li> }
+        } @empty { <li class="empty"><app-empty icon="bell" text="Nessun avviso. Qui trovi tutto quello che ti arriva come notifica." /></li> }
       </ul>
       }
     </main>
