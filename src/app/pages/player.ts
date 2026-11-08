@@ -120,6 +120,8 @@ import { StickerStrip } from '../ui/sticker-strip';
     </main>
   `,
   styles: `
+    /* il menu ⋯ sta nell'angolo della pagina del giocatore (non dell'app: lì c'è la X del riquadro degli sticker) */
+    main.page { position: relative; }
     .lead-menu { position: absolute; top: 6px; right: 6px; z-index: 5; }
     .more { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; }
     .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
