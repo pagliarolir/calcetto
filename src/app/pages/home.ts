@@ -1,15 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { Skeleton } from '../ui/skeleton';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 
 /** Porta direttamente alla prossima partita. */
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
-      @if (none()) {
+      @if (!none()) {
+        <!-- mentre cerca la prossima partita: lo scheletro della partita (non una pagina bianca) -->
+        <app-skeleton kind="match" />
+      } @else {
         <h1>Nessuna partita in calendario</h1>
         <p class="muted">La prossima viene creata in automatico dal sistema. Se non compare entro qualche minuto, avvisa il Leader.</p>
         <a class="btn" routerLink="/partite">Vedi le partite passate</a>
