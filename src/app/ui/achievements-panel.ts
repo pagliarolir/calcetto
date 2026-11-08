@@ -81,6 +81,7 @@ import { Icon } from './icon';
 
     <dialog #dlg class="sheet" (click)="backdrop($event)" (close)="sel.set(null)" aria-labelledby="st-h">
       @if (sel(); as a) {
+        <button type="button" class="x-close" (click)="close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
         <div class="grab" aria-hidden="true"></div>
         <div class="detail">
           <span class="pic big" [class.got]="!!ach.mine(a.id)" [class.shadowed]="!ach.mine(a.id) && !session.isLeader() && !!a.image_path">
@@ -143,7 +144,6 @@ import { Icon } from './icon';
             </div>
           </div>
         }
-        <button class="btn block ghost" (click)="close()">Chiudi</button>
       }
     </dialog>
   `,
