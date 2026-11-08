@@ -345,10 +345,6 @@ interface SlotView {
     .people li.empty { grid-column: 1 / -1; }
     /* schede degli elenchi */
     /* le schede si dividono sempre la riga: niente scorrimento */
-      min-width: 0; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
-      min-height: 40px; padding: 0 12px; border-radius: 10px; font: 600 var(--step--1)/1 var(--font-body);
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    }
     /* leggibile in tutti i temi: in Figurina e Alto contrasto i bordi hanno il colore del testo */
     .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
     /* quattro schede («sceglie il Leader»): nome piccolo e numero sotto */
