@@ -143,6 +143,31 @@
   --r-s: 6px; --r-m: 10px; --r-l: 12px;
   --hero-bg: #000000; --hero-ink: #ffffff;
 }
+:root[data-theme='azzurro'] {
+  color-scheme: light;
+  --bg: #f2f5fa; --surface: #ffffff; --surface-2: #e3eaf5; --ink: #0d1b33; --muted: #4a5872; --line: #c9d4e6;
+  --turf: #0b4ea2; --turf-ink: #ffffff; --turf-soft: #dce7f7; --chalk: #ffffff; --armband: #c9a227; --armband-ink: #1a1400;
+  --kit-white: #fafbfd; --kit-white-ink: #0d1b33; --kit-black: #111827; --kit-black-ink: #f4f6fa;
+  --danger: #b3261e; --danger-soft: #f9dedc; --focus: #0b4ea2;
+  --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  --r-s: 8px; --r-m: 12px; --r-l: 16px;
+  --hero-bg: linear-gradient(160deg, #0d5bbf 0%, #08367a 100%); --hero-ink: #ffffff;
+}
+:root[data-theme='tramonto'] {
+  color-scheme: dark;
+  --bg: #170f14; --surface: #22161d; --surface-2: #2d1e27; --ink: #f7ece8; --muted: #c2a9a8; --line: #4a3340;
+  --turf: #ff8a5b; --turf-ink: #1a0d08; --turf-soft: #4a2618; --chalk: #fff4ee; --armband: #ffd166; --armband-ink: #1a1300;
+  --kit-white: #f7ece8; --kit-white-ink: #170f14; --kit-black: #0b0709; --kit-black-ink: #f7ece8;
+  --danger: #ff6b81; --danger-soft: #3d1520; --focus: #ff8a5b;
+  --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --r-s: 10px; --r-m: 16px; --r-l: 22px;
+  --hero-bg: radial-gradient(120% 90% at 90% -10%, rgb(255 138 91 / 38%) 0%, transparent 55%),
+             radial-gradient(90% 70% at 0% 0%, rgb(214 64 120 / 26%) 0%, transparent 50%), #1e1219;
+  --hero-ink: #fff4ee;
+}
+:root[data-theme='tramonto'] .panel { box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgb(0 0 0 / 35%); }
 /* Figurina: bordi netti e ombre «adesive», titoli maiuscoli */
 :root[data-theme='figurina'] .panel { border: 2px solid var(--line); box-shadow: 3px 3px 0 var(--line); }
 :root[data-theme='figurina'] h1, :root[data-theme='figurina'] h2 { text-transform: uppercase; letter-spacing: 0.02em; }
