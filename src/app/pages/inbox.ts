@@ -24,7 +24,7 @@ import { Icon } from '../ui/icon';
         @if (tab() === 'info' && session.isLeader() && !editing()) { <button class="btn small" (click)="startEdit()">Modifica</button> }
       </header>
 
-      <div class="itabs" role="tablist" aria-label="Avvisi e informazioni">
+      <div class="ui-seg" role="tablist" aria-label="Avvisi e informazioni">
         <button role="tab" [attr.aria-selected]="tab() === 'avvisi'" (click)="selectTab('avvisi')"><app-icon name="bell" [size]="18" /> Avvisi</button>
         <button role="tab" [attr.aria-selected]="tab() === 'info'" (click)="selectTab('info')"><app-icon name="info" [size]="18" /> Info</button>
       </div>

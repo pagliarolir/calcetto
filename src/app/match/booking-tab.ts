@@ -88,10 +88,10 @@ interface SlotView {
         </section>
 
         <!-- Elenchi: una scheda alla volta, ognuna con quante persone ci sono -->
-        <div class="seg lists" [class.four]="listTabs().length > 3" role="tablist" aria-label="Elenchi dei giocatori">
+        <div class="ui-tabs lists" role="tablist" aria-label="Elenchi dei giocatori">
           @for (l of listTabs(); track l.id) {
             <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="setListTab(l.id)">
-              {{ l.label }} <span class="count num">{{ l.count }}</span>
+              {{ l.label }} <span class="ui-count num">{{ l.count }}</span>
             </button>
           }
         </div>
@@ -345,19 +345,9 @@ interface SlotView {
     .people li.empty { grid-column: 1 / -1; }
     /* schede degli elenchi */
     /* le schede si dividono sempre la riga: niente scorrimento */
-    .seg.lists { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
-    .seg.lists button {
-      min-width: 0; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap;
-      min-height: 40px; padding: 0 12px; border-radius: 10px; font: 600 var(--step--1)/1 var(--font-body);
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .seg.lists button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
     /* leggibile in tutti i temi: in Figurina e Alto contrasto i bordi hanno il colore del testo */
     .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
-    .seg.lists button[aria-selected='true'] .count { background: var(--turf); color: var(--turf-ink); }
     /* quattro schede («sceglie il Leader»): nome piccolo e numero sotto */
-    .seg.lists.four button { flex-direction: column; gap: 4px; min-height: 56px; padding: 6px 2px; font-size: 0.86rem; letter-spacing: -0.015em; }
-    .seg.lists.four .count { min-width: 24px; height: 21px; font-size: 0.78rem; }
     .list-panel { margin-top: -8px; }
     .silent { margin-top: 12px; }
     .silent h3 { display: flex; align-items: center; gap: 8px; }

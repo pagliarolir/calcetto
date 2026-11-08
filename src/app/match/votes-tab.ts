@@ -24,11 +24,11 @@ import { kit } from '../core/kits';
       } @else {
         <div class="stack-l">
           <!-- sotto-schede: niente pagine infinite da scorrere -->
-          <div class="seg" role="tablist" aria-label="Pagelle">
+          <div class="ui-seg" role="tablist" aria-label="Pagelle">
             @for (p of panes(); track p.id) {
               <button role="tab" [attr.aria-selected]="pane() === p.id" [disabled]="p.disabled" (click)="pane.set(p.id)">
                 {{ p.label }}@if (p.id === 'vota' && !p.disabled) { <span class="pip" aria-hidden="true"></span> }
-                @if (p.count) { <span class="vcount" [attr.aria-label]="p.count === 1 ? '1 votante' : p.count + ' votanti'" [title]="p.count === 1 ? '1 votante' : p.count + ' votanti'">{{ p.count }}</span> }
+                @if (p.count) { <span class="ui-count" [attr.aria-label]="p.count === 1 ? '1 votante' : p.count + ' votanti'" [title]="p.count === 1 ? '1 votante' : p.count + ' votanti'">{{ p.count }}</span> }
               </button>
             }
           </div>

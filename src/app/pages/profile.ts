@@ -223,7 +223,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                 <div class="panel stack custom-ed">
                   <div class="stack-s">
                     <span class="lab">Base</span>
-                    <div class="seg2" role="radiogroup" aria-label="Base del tema">
+                    <div class="ui-seg" role="radiogroup" aria-label="Base del tema">
                       <button type="button" role="radio" [attr.aria-checked]="c.base === 'light'" (click)="theme.setCustom({ base: 'light' })"><app-icon name="sun" [size]="16" /> Chiara</button>
                       <button type="button" role="radio" [attr.aria-checked]="c.base === 'dark'" (click)="theme.setCustom({ base: 'dark' })"><app-icon name="moon" [size]="16" /> Scura</button>
                     </div>
