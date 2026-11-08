@@ -9,7 +9,7 @@ create function ids_of(variadic p text[]) returns uuid[] language sql as $$ sele
 create function nm(u uuid) returns text language sql as $$ select n from ids where id = u $$;
 grant execute on function as_user(text), pid(text), ids_of(text[]), nm(uuid) to authenticated;
 delete from matches;
-load 'safeupdate';   -- come le richieste dell'app su Supabase: niente DELETE/UPDATE senza condizione
+do $$ begin execute 'load ''safeupdate'''; exception when others then raise notice 'safeupdate non disponibile: test senza il controllo di Supabase'; end $$;   -- come le richieste dell'app su Supabase (se la libreria c'è)
 
 \echo '=== Fase 2: il Leader prepara il FantaLeader'
 set role authenticated; select as_user('P1');
