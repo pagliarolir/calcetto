@@ -74,9 +74,8 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
               <input class="input" name="first_name" [(ngModel)]="form.first_name" required maxlength="40" autocomplete="given-name" />
             </label>
             <label class="vis">
-              <input type="checkbox" [checked]="visibility().first_name !== false" (change)="toggleName($event)"
+              <input type="checkbox" class="toggle" [checked]="visibility().first_name !== false" (change)="toggleName($event)"
                      aria-label="Mostra agli altri: Nome (se lo nascondi vedono il soprannome)" />
-              <span class="eye" [class.off]="visibility().first_name === false" aria-hidden="true"><app-icon [name]="visibility().first_name === false ? 'eye-off' : 'eye'" [size]="18" />{{ visibility().first_name === false ? 'Solo tu' : 'Tutti' }}</span>
             </label>
           </div>
           @if (visibility().first_name === false) {
@@ -99,10 +98,9 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                 }
               </label>
               <label class="vis">
-                <input type="checkbox" [checked]="visibility()[f.key]" (change)="toggleVis(f.key)"
+                <input type="checkbox" class="toggle" [checked]="visibility()[f.key]" (change)="toggleVis(f.key)"
                        [disabled]="f.key === 'nickname' && visibility().first_name === false"
                        [attr.aria-label]="'Mostra agli altri: ' + f.label" />
-                <span class="eye" [class.off]="!visibility()[f.key]" aria-hidden="true"><app-icon [name]="visibility()[f.key] ? 'eye' : 'eye-off'" [size]="18" />{{ visibility()[f.key] ? 'Tutti' : 'Solo tu' }}</span>
               </label>
             </div>
           }
@@ -330,14 +328,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                  background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .lead-area > app-icon:first-child { color: var(--turf); }
     .lead-area .grow { display: flex; flex-direction: column; gap: 2px; }
-    /* visibilità: occhio aperto «Tutti» / barrato «Solo tu»; la casella resta per tastiera e lettori di schermo */
-    .vis { position: relative; align-self: flex-end; }
-    .vis input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
-    .eye { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; min-width: 88px; padding: 0 12px; border-radius: 22px;
-           background: var(--turf-soft); color: var(--turf); font: 700 var(--step--1)/1 var(--font-body); justify-content: center; }
-    .eye.off { background: var(--surface-2); color: var(--muted); }
-    .vis input:focus-visible + .eye { outline: 3px solid var(--focus); outline-offset: 2px; }
-    .vis input:disabled + .eye { opacity: .45; }
     .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border-radius: 14px; background: var(--surface-2); }
     .ptabs button {
       appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
