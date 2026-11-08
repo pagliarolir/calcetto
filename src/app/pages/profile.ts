@@ -259,7 +259,27 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                   </div>
                 </div>
               }
-              <p class="small muted">Il tema vale su questo dispositivo. Le animazioni si riducono da sole se lo chiedi al telefono.</p>
+              <!-- testo: dimensione e spaziatura -->
+              <div class="panel stack text-ed">
+                <h3>Testo</h3>
+                <label class="rng">
+                  <span class="rl"><app-icon name="type" [size]="18" /><span class="grow">Dimensione</span><strong class="num">{{ theme.textScale() }}%</strong></span>
+                  <input type="range" min="85" max="130" step="5" [value]="theme.textScale()" (input)="theme.setText(+$any($event.target).value, theme.textSpacing())"
+                         aria-label="Dimensione del testo" [attr.aria-valuetext]="theme.textScale() + ' per cento'" />
+                  <span class="ends small muted"><span>A</span><span class="big">A</span></span>
+                </label>
+                <label class="rng">
+                  <span class="rl"><app-icon name="spacing" [size]="18" /><span class="grow">Spaziatura</span><strong class="num">{{ spacingLabel() }}</strong></span>
+                  <input type="range" min="0" max="100" step="25" [value]="theme.textSpacing()" (input)="theme.setText(theme.textScale(), +$any($event.target).value)"
+                         aria-label="Spaziatura del testo" [attr.aria-valuetext]="spacingLabel()" />
+                  <span class="ends small muted"><span>normale</span><span>ampia</span></span>
+                </label>
+                <p class="sample">Giovedì alle 21:00 al Centro Sportivo Aurora: rispondi entro mercoledì.</p>
+                @if (theme.textScale() !== 100 || theme.textSpacing() !== 0) {
+                  <button type="button" class="btn ghost small" (click)="theme.setText(100, 0)">Ripristina</button>
+                }
+              </div>
+              <p class="small muted">Tema e testo valgono su questo dispositivo. Le animazioni si riducono da sole se lo chiedi al telefono.</p>
             </section>
           }
           @case ('sicurezza') {
@@ -284,6 +304,12 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     .theme.on { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
     .theme:last-child { grid-column: 1 / -1; }
     .theme.custom { width: 100%; }
+    .text-ed { gap: 14px; }
+    .rng { display: flex; flex-direction: column; gap: 6px; }
+    .rl { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .rng input[type='range'] { width: 100%; min-height: 44px; accent-color: var(--turf); }
+    .ends { display: flex; justify-content: space-between; margin-top: -6px; } .ends .big { font-size: 1.3rem; }
+    .sample { margin: 0; padding: 10px 12px; border-radius: var(--r-m); background: var(--surface-2); }
     .custom-ed { gap: 16px; }
     .lab { font: 700 var(--step--1)/1.2 var(--font-body); }
     .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--r-m); background: var(--surface-2); }
@@ -370,6 +396,9 @@ export class ProfilePage {
   protected pickPrimary(hex: string): void { this.theme.setCustom({ primary: hex.toUpperCase() }); }
   protected pickAccent(hex: string | 'auto'): void { this.theme.setCustom({ accent: hex === 'auto' ? 'auto' : hex.toUpperCase() }); }
   protected fmtRatio(r: number): string { return r.toFixed(1).replace('.', ','); }
+  protected spacingLabel(): string {
+    return ['normale', 'un po\' più ampia', 'ampia', 'molto ampia', 'massima'][Math.round(this.theme.textSpacing() / 25)] ?? 'normale';
+  }
   protected isPal(hex: string): boolean { return PALETTE.some((p) => p.hex === hex); }
 
   protected readonly tabs: { id: ProfileTab; label: string; icon: string }[] = [

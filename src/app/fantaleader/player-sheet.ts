@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Icon } from '../ui/icon';
 import { Api } from '../core/api';
 import { FantaLeader, FlPoints, fmtPts, ruleSummary } from '../core/fantaleader';
 import { fmtWhen } from '../core/format';
@@ -10,7 +11,7 @@ import { Skeleton } from '../ui/skeleton';
 /** Scheda di un giocatore del FantaLeader: quotazioni, descrizione, skill, statistiche e punti per giornata. */
 @Component({
   selector: 'app-fl-player-sheet',
-  imports: [Avatar, Skeleton],
+  imports: [Avatar, Skeleton, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog #dlg class="sheet" (click)="backdrop($event)" aria-labelledby="fls-h" (close)="userId.set(null)">
@@ -24,7 +25,7 @@ import { Skeleton } from '../ui/skeleton';
               <p class="small muted">{{ r.pos }}° in classifica · {{ fmt(r.total) }} punti · prossimo coefficiente ×{{ fmt(r.next_coef) }}</p>
             }
           </div>
-          <button type="button" class="x" (click)="close()" aria-label="Chiudi">✕</button>
+          <button type="button" class="x-close" (click)="close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
         </header>
 
         @if (fl.rankOf().get(id); as r) {
@@ -102,7 +103,7 @@ import { Skeleton } from '../ui/skeleton';
     .sheet[open] { display: flex; flex-direction: column; gap: 14px; }
     .sheet::backdrop { background: rgb(10 20 14 / 45%); }
     .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; flex: none; }
-    .head { display: flex; align-items: center; gap: 12px; }
+    .head { display: flex; align-items: center; gap: 12px; padding-right: 40px; }
     .head h2 { font-size: var(--step-1); }
     .x { border: 0; background: var(--surface-2); color: var(--muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; flex: none; }
     .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

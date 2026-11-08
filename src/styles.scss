@@ -157,13 +157,18 @@
 
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 
+/* dimensione del testo scelta nel Profilo → Aspetto (85%-130%): tutto ciò che usa rem si adatta */
+html { font-size: calc(100% * var(--text-scale, 1)); }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--step-0);
-  line-height: 1.45;
+  /* spaziatura del testo scelta nel Profilo (0-1): fino ai valori WCAG 1.4.12 (lettere 0,12em, parole 0,16em, interlinea 1,8) */
+  line-height: calc(1.45 + var(--text-spacing, 0) * 0.35);
+  letter-spacing: calc(var(--text-spacing, 0) * 0.12em);
+  word-spacing: calc(var(--text-spacing, 0) * 0.16em);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -501,3 +506,44 @@ details.fold > summary .chev { margin-left: auto; flex: none; color: var(--muted
 details.fold[open] > summary .chev { transform: rotate(-90deg); }
 details.fold[open] > summary { margin-bottom: 10px; }
 details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
+
+/* =====================================================================
+   Animazioni: finestre dal basso, contenuti che entrano con una leggera dissolvenza.
+   Si anima solo ciò che compare davvero (gli elementi già presenti non si rianimano).
+   Tutto si spegne con «riduci movimento» del telefono.
+   ===================================================================== */
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes enter-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes enter-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open] { animation: pop-in 200ms var(--ease-out); }
+  dialog.sheet[open] { animation: sheet-up 320ms cubic-bezier(0.2, 0.9, 0.25, 1); }
+  dialog[open]::backdrop { animation: backdrop-in 240ms ease-out; }
+
+  .panel, .list > li, .list-item, .board > li, .people > li, ul.cat > li, ol.rank > li, .mini, .chips > li {
+    animation: enter-up 280ms var(--ease-out) both;
+  }
+  table.fit tbody tr { animation: enter-fade 260ms ease-out both; }
+  /* a cascata: ogni elemento appena dopo il precedente (fino all'ottavo) */
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(2), table.fit tbody tr:nth-child(2) { animation-delay: 30ms; }
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(3), table.fit tbody tr:nth-child(3) { animation-delay: 60ms; }
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(4), table.fit tbody tr:nth-child(4) { animation-delay: 90ms; }
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(5), table.fit tbody tr:nth-child(5) { animation-delay: 120ms; }
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(6), table.fit tbody tr:nth-child(6) { animation-delay: 150ms; }
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(7), table.fit tbody tr:nth-child(7) { animation-delay: 180ms; }
+  :is(.list, .board, .people, .cat, .rank) > li:nth-child(n + 8), table.fit tbody tr:nth-child(n + 8) { animation-delay: 210ms; }
+}
+
+/* X rossa per chiudere le finestre (come quella del ritiro): area da toccare 44 px */
+.x-close {
+  position: absolute; top: 8px; right: 8px; z-index: 3; width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: grid; place-items: center;
+}
+.x-close > span {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: #fff;
+  box-shadow: 0 0 0 3px var(--surface), 0 3px 8px rgb(0 0 0 / 25%);
+}
+.x-close:focus-visible > span { outline: 3px solid var(--focus); outline-offset: 2px; }

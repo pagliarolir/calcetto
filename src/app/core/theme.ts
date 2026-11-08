@@ -10,6 +10,7 @@ const KEY = 'gdl-theme';
 const KEY_CUSTOM = 'gdl-custom';            // le scelte (base, principale, secondario)
 const KEY_VARS = 'gdl-custom-vars';         // i colori calcolati, che index.html applica prima dell'avvio
 const DEFAULT_CUSTOM: CustomTheme = { base: 'light', primary: '#1D4ED8', accent: 'auto' };
+const KEY_TEXT = 'gdl-text';               // dimensione (85-130) e spaziatura (0-100) del testo
 
 /**
  * Tema dell'app: lo sceglie ognuno nel Profilo → Aspetto e resta su questo dispositivo.
@@ -26,8 +27,21 @@ export class Theme {
   /** colori calcolati del tema personalizzato e i contrasti ottenuti */
   readonly derived = computed(() => deriveTheme(this.custom()));
   private applied: string[] = [];
+  /** testo: dimensione in percentuale (85-130) e spaziatura (0 = normale, 100 = valori WCAG 1.4.12) */
+  readonly textScale = signal(100);
+  readonly textSpacing = signal(0);
 
   constructor() {
+    try {
+      const t = JSON.parse(localStorage.getItem(KEY_TEXT) ?? 'null') as { scale?: number; spacing?: number } | null;
+      if (t?.scale) this.textScale.set(Math.min(130, Math.max(85, t.scale)));
+      if (t?.spacing) this.textSpacing.set(Math.min(100, Math.max(0, t.spacing)));
+    } catch { /* valori predefiniti */ }
+    effect(() => {
+      const root = document.documentElement;
+      root.style.setProperty('--text-scale', String(this.textScale() / 100));
+      root.style.setProperty('--text-spacing', String(this.textSpacing() / 100));
+    });
     this.dark?.addEventListener?.('change', (e) => this.systemDark.set(e.matches));
     effect(() => {
       const t = this.resolved();
@@ -56,6 +70,12 @@ export class Theme {
     this.choice.set(c);
     this.save(KEY, c);
     if (c === 'custom') this.saveCustom();
+  }
+
+  setText(scale: number, spacing: number): void {
+    this.textScale.set(Math.min(130, Math.max(85, Math.round(scale))));
+    this.textSpacing.set(Math.min(100, Math.max(0, Math.round(spacing))));
+    this.save(KEY_TEXT, JSON.stringify({ scale: this.textScale(), spacing: this.textSpacing() }));
   }
 
   setCustom(patch: Partial<CustomTheme>): void {
