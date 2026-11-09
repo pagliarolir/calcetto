@@ -1,12 +1,21 @@
-# Avvisi e proposte di aggiornamento per le librerie (settimanali). Angular arriva in un'unica proposta.
+# Proposte di aggiornamento settimanali, solo piccole e collaudate:
+# - niente salti di versione principali (TypeScript 7, Angular 22…): quelli si fanno a mano;
+# - una versione si propone solo 14 giorni dopo l'uscita (se fosse compromessa, di solito si scopre prima).
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 14
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       angular: { patterns: ['@angular/*'] }
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
+    cooldown:
+      default-days: 14
