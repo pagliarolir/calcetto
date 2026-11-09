@@ -13,7 +13,7 @@ jobs:
       PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
     steps:
       - uses: actions/checkout@v7
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           # versione fissa: un nuovo rilascio di Supabase non cambia più il comportamento da un giorno all'altro
           version: 3.0.0
