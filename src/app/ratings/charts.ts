@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { bandColor, GK_COLOR, Hex, RatingCard } from '../core/ratings';
+import { centerCss, GK_COLOR, Hex, RatingCard, Zone, zoneCss } from '../core/ratings';
 
 /** Cerchio con il ruolo e il valore (l'anello si riempie in proporzione). */
 @Component({
@@ -75,45 +75,60 @@ export class HexChart {
   }
 }
 
-/** Campo a fasce: attacco, esterni e centrocampo centrale, difesa; pallino del portiere in porta. */
+let pitchSeq = 0;
+
+/**
+ * Mappa dei ruoli: punta in alto, esterni offensivi e difensivi ai lati, difensore centrale in basso,
+ * il centro è la sfumatura delle zone intorno. Le zone si fondono l'una nell'altra (sfocatura leggera),
+ * i colori vanno dal verde al rosso e sono più accesi quanto più il giocatore è forte; pallino del portiere in porta.
+ */
 @Component({
   selector: 'app-pitch-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="pitch" role="img" [attr.aria-label]="aria()">
-      <div class="band att" [style.background]="col('att')"><span>ATT</span></div>
-      <div class="mid">
-        <div class="band est" [style.background]="col('est')"></div>
-        <div class="band cen" [style.background]="cenBg()"><span>CEN</span></div>
-        <div class="band est" [style.background]="col('est')"></div>
-      </div>
-      <div class="band dif" [style.background]="col('dif')"><span>DIF</span></div>
-      <div class="goal">@if (card().gk; as g) { <i class="gk" [style.background]="gk[g]"></i> }</div>
-    </div>
+    <svg viewBox="0 0 84 116" width="84" height="116" role="img" [attr.aria-label]="aria()">
+      <defs>
+        <clipPath [attr.id]="clip"><rect width="84" height="116" rx="10" /></clipPath>
+        <filter [attr.id]="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6" /></filter>
+      </defs>
+      <g [attr.clip-path]="'url(#' + clip + ')'">
+        <rect width="84" height="116" fill="#14432c" />
+        @if (card().has) {
+          <g [attr.filter]="'url(#' + blur + ')'">
+            <rect x="-10" y="-10" width="104" height="40" [attr.fill]="z('pu')" />
+            <rect x="-10" y="30" width="30" height="27" [attr.fill]="z('eo')" /><rect x="64" y="30" width="30" height="27" [attr.fill]="z('eo')" />
+            <rect x="-10" y="57" width="30" height="27" [attr.fill]="z('ed')" /><rect x="64" y="57" width="30" height="27" [attr.fill]="z('ed')" />
+            <rect x="20" y="30" width="44" height="54" [attr.fill]="center()" />
+            <rect x="-10" y="84" width="104" height="42" [attr.fill]="z('dc')" />
+          </g>
+        }
+        <g fill="none" stroke="rgb(255 255 255 / 60%)" stroke-width="1.2">
+          <rect x="4" y="4" width="76" height="108" rx="3" /><line x1="4" y1="58" x2="80" y2="58" /><circle cx="42" cy="58" r="9" />
+          <rect x="24" y="4" width="36" height="13" /><rect x="24" y="99" width="36" height="13" />
+        </g>
+        <g class="lb"><text x="42" y="24">PU</text><text x="11" y="47">EO</text><text x="73" y="47">EO</text>
+          <text x="11" y="74">ED</text><text x="73" y="74">ED</text><text x="42" y="92">DC</text></g>
+        @if (card().gk; as g) { <circle cx="42" cy="108" r="3.6" [attr.fill]="gk[g]" stroke="#fff" stroke-width="1.4" /> }
+      </g>
+    </svg>
   `,
   styles: `
     :host { display: inline-grid; }
-    .pitch { width: 84px; height: 116px; display: grid; grid-template-rows: 1fr 1.15fr 1fr 14px; gap: 3px; padding: 4px; border-radius: 10px;
-             background: var(--turf-deep, #14432c); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 25%); }
-    .band { border-radius: 4px; display: grid; place-items: center; opacity: 0.92; }
-    .band span { font: 800 9px var(--font-body); color: rgb(0 0 0 / 55%); letter-spacing: 0.05em; }
-    .mid { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 3px; }
-    .goal { display: grid; place-items: center; border-radius: 3px; background: rgb(255 255 255 / 12%); width: 44%; justify-self: center; }
-    .gk { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1.5px #fff; }
+    .lb text { font: 800 7px var(--font-body); fill: rgb(0 0 0 / 55%); text-anchor: middle; }
   `,
 })
 export class PitchChart {
   readonly card = input.required<RatingCard>();
   protected readonly gk = GK_COLOR;
-  protected col(b: 'dif' | 'est' | 'att'): string {
-    return bandColor(this.card(), b);
+  private readonly n = ++pitchSeq;
+  protected readonly clip = `pc-clip-${this.n}`;
+  protected readonly blur = `pc-blur-${this.n}`;
+  protected z(zone: Zone): string {
+    return zoneCss(this.card(), zone);
   }
-  /** centrocampo centrale: sfumatura dei colori delle altre tre fasce */
-  protected cenBg(): string {
-    return `linear-gradient(180deg, ${this.col('att')}, ${this.col('est')}, ${this.col('dif')})`;
-  }
+  protected readonly center = computed(() => centerCss(this.card()));
   protected readonly aria = computed(() => {
     const c = this.card();
-    return c.has ? `Campo: ruolo migliore ${c.best}` : 'Campo: valori non ancora inseriti';
+    return c.has ? `Mappa dei ruoli: ruolo migliore ${c.best?.replace('_', ' ')}` : 'Mappa dei ruoli: valori non ancora inseriti';
   });
 }

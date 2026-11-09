@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { WeightsEditor } from '../ratings/weights-editor';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Branding, IconMode } from '../core/branding';
@@ -15,7 +16,7 @@ import { scrollAppTo } from '../core/scroller';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, Icon, Avatar, RouterLink],
+  imports: [FormsModule, Icon, Avatar, RouterLink, WeightsEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -344,6 +345,15 @@ import { scrollAppTo } from '../core/scroller';
             <button class="btn primary" type="submit">Salva le regole</button>
           </div>
         </form>
+        </details>
+      }
+
+      @if (session.isLeader()) {
+        <!-- coefficienti dei 4 ruoli (valori dei giocatori) -->
+        <details class="panel fold">
+          <summary><h3>Coefficienti dei ruoli</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
+          <p class="small muted">Quanto conta ogni caratteristica nel valore di ogni ruolo. Ogni colonna deve fare 100%.</p>
+          <app-weights-editor />
         </details>
       }
     </main>
