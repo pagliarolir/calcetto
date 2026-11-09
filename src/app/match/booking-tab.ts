@@ -343,6 +343,7 @@ interface SlotView {
     .info-pop ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
     /* le schede restano a portata di dito mentre si scorre l'elenco */
     .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); }
+    .list-panel { padding-top: 14px; }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
@@ -568,13 +569,17 @@ export class BookingTab {
     const sc = host.closest('.scroll-area') as HTMLElement | null;
     const y = sc?.scrollTop ?? 0;
     const panel = host.querySelector('.list-panel') as HTMLElement | null;
-    if (panel) panel.style.minHeight = `${Math.max(panel.offsetHeight, parseFloat(panel.style.minHeight) || 0)}px`;
+    if (panel) panel.style.minHeight = `${panel.offsetHeight}px`;
     this.listTab.set(id);
     const keep = () => { if (sc) sc.scrollTop = y; };
     void this.listRouter.navigate([], {
       relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge',
       queryParams: { elenco: id === 'team' ? null : BookingTab.LIST_PARAM[id] },
-    }).then(() => { requestAnimationFrame(keep); setTimeout(keep, 60); });
+    }).then(() => {
+      requestAnimationFrame(keep);
+      // l'altezza di prima serve solo durante il cambio: poi si toglie (niente vuoto sotto l'ultimo giocatore)
+      setTimeout(() => { keep(); if (panel) panel.style.minHeight = ''; }, 60);
+    });
   }
 
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
