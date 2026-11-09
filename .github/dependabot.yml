@@ -1,0 +1,12 @@
+# Avvisi e proposte di aggiornamento per le librerie (settimanali). Angular arriva in un'unica proposta.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      angular: { patterns: ['@angular/*'] }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }

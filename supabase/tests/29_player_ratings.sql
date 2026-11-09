@@ -6,7 +6,7 @@ create temp table ids as select first_name n, id from profiles; grant select on 
 create function as_user(p text) returns void language sql as $$ select set_config('request.jwt.claim.sub', (select id::text from ids where n = p), false) $$;
 create function pid(p text) returns uuid language sql as $$ select id from ids where n = p $$;
 grant execute on function as_user(text), pid(text) to authenticated;
-load 'safeupdate';   -- come le richieste dell'app su Supabase
+do $$ begin execute 'load ''safeupdate'''; exception when others then raise notice 'safeupdate non disponibile: test senza il controllo di Supabase'; end $$;   -- come le richieste dell'app su Supabase (se la libreria c'è)
 update profiles set field_role = 'difensore' where id = pid('P2');
 
 \echo '--- 1) il Leader inserisce i valori di P2: tutto 80, finalizzazione 100, marcatura 40, pallino verde'
