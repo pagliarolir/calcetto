@@ -577,13 +577,20 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
    Schede e Selettore: i due componenti unici (punto 7 dell'analisi UX)
    ===================================================================== */
 /* Schede: spostarsi tra sezioni. Sottolineate, con contatore; il fuoco da tastiera è una sottolineatura con sfondo */
-.ui-tabs { display: flex; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
-.ui-tabs::-webkit-scrollbar { display: none; }
+/* sempre tutte nello schermo: niente scorrimento laterale (era fastidioso trascinarle) */
+.ui-tabs { display: flex; border-bottom: 1px solid var(--line); overflow: hidden; touch-action: pan-y; }
 .ui-tabs > button {
-  flex: 1 0 auto; min-height: 44px; padding: 0 12px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; background: none;
+  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 6px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; background: none;
   color: var(--muted); font: 600 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   cursor: pointer; white-space: nowrap; transition: color 160ms, border-color 160ms, background 160ms;
 }
+/* il nome si accorcia con i puntini solo se proprio non c'è spazio; il contatore resta sempre intero */
+.ui-tabs > button > :not(.ui-count) { overflow: hidden; text-overflow: ellipsis; }
+.ui-tabs > button .ui-count { flex: none; }
+/* quattro schede su un telefono stretto: il contatore va sotto il nome, così i nomi restano interi */
+@media (max-width: 380px) { .ui-tabs.four > button { flex-direction: column; gap: 3px; min-height: 54px; padding: 4px 2px; } }
+/* schede e selettore non si «sollevano» né si selezionano con la pressione prolungata (iPhone) */
+.ui-tabs > button, .ui-seg > button { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; }
 .ui-tabs > button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
 .ui-tabs > button:focus-visible { outline: none; border-bottom-color: var(--focus); background: var(--turf-soft); border-radius: 8px 8px 0 0; }
 .ui-tabs > button:disabled { opacity: 0.45; cursor: not-allowed; }

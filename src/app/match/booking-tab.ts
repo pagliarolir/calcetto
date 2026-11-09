@@ -88,10 +88,10 @@ interface SlotView {
         </section>
 
         <!-- Elenchi: una scheda alla volta, ognuna con quante persone ci sono -->
-        <div class="ui-tabs lists" role="tablist" aria-label="Elenchi dei giocatori">
+        <div class="ui-tabs lists" [class.four]="listTabs().length > 3" role="tablist" aria-label="Elenchi dei giocatori">
           @for (l of listTabs(); track l.id) {
             <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="setListTab(l.id)">
-              {{ l.label }} <span class="ui-count num">{{ l.count }}</span>
+              <span class="tl">{{ l.label }}</span> <span class="ui-count num">{{ l.count }}</span>
             </button>
           }
         </div>
