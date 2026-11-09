@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { PlayerPage } from './player';
 import { PALETTE } from '../core/color';
 import { Theme, ThemeChoice } from '../core/theme';
-import { PlayerCard } from '../ratings/player-card';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
@@ -29,7 +29,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, Avatar, Icon, PlayerCard],
+  imports: [FormsModule, RouterLink, Avatar, Icon, PlayerPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
@@ -186,11 +186,8 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
           }
           @case ('stats') {
             <!-- i valori del giocatore (inseriti dal Leader): cerchio, esagono e campo -->
-            <section class="section stack">
-              <header><h2>Le tue stats</h2></header>
-              <app-player-card [userId]="session.uid()!" />
-              <a class="btn block" [routerLink]="['/giocatore', session.uid()]">Vedi la tua scheda completa</a>
-            </section>
+            <!-- lo stesso blocco della pagina di un giocatore: valori, sticker conquistati, numeri, partite -->
+            <app-player [id]="session.uid()!" [embedded]="true" />
           }
           @case ('aspetto') {
             <section class="section stack">

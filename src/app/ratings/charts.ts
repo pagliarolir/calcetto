@@ -93,7 +93,7 @@ export class HexChart {
   `,
   styles: `
     :host { display: inline-grid; }
-    .pitch { width: 96px; height: 132px; display: grid; grid-template-rows: 1fr 1.15fr 1fr 14px; gap: 3px; padding: 4px; border-radius: 10px;
+    .pitch { width: 84px; height: 116px; display: grid; grid-template-rows: 1fr 1.15fr 1fr 14px; gap: 3px; padding: 4px; border-radius: 10px;
              background: var(--turf-deep, #14432c); box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 25%); }
     .band { border-radius: 4px; display: grid; place-items: center; opacity: 0.92; }
     .band span { font: 800 9px var(--font-body); color: rgb(0 0 0 / 55%); letter-spacing: 0.05em; }

@@ -23,9 +23,10 @@ import { StickerStrip } from '../ui/sticker-strip';
   imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page stack-l">
-      @if (member(); as m) {
-        <header class="stack">
+    @if (member(); as m) {
+      @if (!embedded()) {
+        <!-- parte alta ferma: foto, nome, sticker e informazioni -->
+        <header class="page-head phead stack">
           <button type="button" class="back" (click)="back()"><app-icon name="back" [size]="18" /> Indietro</button>
           <div class="id">
             <app-avatar [userId]="m.id" [size]="88" />
@@ -40,29 +41,31 @@ import { StickerStrip } from '../ui/sticker-strip';
             @if (!m.active) { <span class="tag danger">non più nel gruppo</span> }
           </div>
           @if (bio()) { <p class="muted">{{ bio() }}</p> }
-          @if (since(); as d) { <p class="note">Statistiche dal {{ when(d) }}: le partite precedenti non contano.</p> }
+          @if (session.isLeader()) {
+            <!-- strumenti del Leader: menu «⋯» in alto a destra -->
+            <div class="lead-menu">
+              <button type="button" class="more" aria-label="Azioni del Leader" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><app-icon name="more" [size]="20" /></button>
+              @if (menuOpen()) {
+                <div class="menu panel" role="menu">
+                  <button type="button" role="menuitem" (click)="menuOpen.set(false); profEd.open(id())"><app-icon name="user" [size]="18" /> Modifica profilo e foto</button>
+                  <button type="button" role="menuitem" (click)="menuOpen.set(false); openRatings()"><app-icon name="stats" [size]="18" /> Valori del giocatore</button>
+                </div>
+              }
+            </div>
+            <dialog #ratingsDlg class="sheet" (click)="$event.target === ratingsDlg && ratingsDlg.close()" aria-label="Valori del giocatore">
+              <button type="button" class="x-close" (click)="ratingsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
+              <h3>Valori di {{ session.name(id()) }}</h3>
+              @if (ratingsOn()) { <app-ratings-editor [userId]="id()" /> }
+            </dialog>
+            <app-profile-admin #profEd />
+          }
         </header>
+      }
+      <!-- il resto scorre: è lo stesso blocco della scheda Stats del Profilo -->
+      <main class="scroll-area" [class.embedded]="embedded()"><div class="page stack-l">
+        @if (since(); as d) { <p class="note">Statistiche dal {{ when(d) }}: le partite precedenti non contano.</p> }
         <!-- valori del giocatore: tutti vedono la scheda, il Leader inserisce i valori e modifica profilo e foto -->
         <app-player-card [userId]="id()" />
-        @if (session.isLeader()) {
-          <!-- strumenti del Leader: menu «⋯» in alto a destra -->
-          <div class="lead-menu">
-            <button type="button" class="more" aria-label="Azioni del Leader" [attr.aria-expanded]="menuOpen()" (click)="menuOpen.set(!menuOpen())"><app-icon name="more" [size]="20" /></button>
-            @if (menuOpen()) {
-              <div class="menu panel" role="menu">
-                <button type="button" role="menuitem" (click)="menuOpen.set(false); profEd.open(id())"><app-icon name="user" [size]="18" /> Modifica profilo e foto</button>
-                <button type="button" role="menuitem" (click)="menuOpen.set(false); openRatings()"><app-icon name="stats" [size]="18" /> Valori del giocatore</button>
-              </div>
-            }
-          </div>
-          <dialog #ratingsDlg class="sheet" (click)="$event.target === ratingsDlg && ratingsDlg.close()" aria-label="Valori del giocatore">
-            <button type="button" class="x-close" (click)="ratingsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
-            <h3>Valori di {{ session.name(id()) }}</h3>
-            @if (ratingsOn()) { <app-ratings-editor [userId]="id()" /> }
-          </dialog>
-          <app-profile-admin #profEd />
-        }
-      }
 
       @if (!loaded()) {
         <app-skeleton kind="player" />
@@ -117,12 +120,17 @@ import { StickerStrip } from '../ui/sticker-strip';
         </section>
       }
       }
-    </main>
+      </div></main>
+    }
   `,
   styles: `
     /* il menu ⋯ sta nell'angolo della pagina del giocatore (non dell'app: lì c'è la X del riquadro degli sticker) */
-    main.page { position: relative; }
-    .lead-menu { position: absolute; top: 6px; right: 6px; z-index: 5; }
+    /* parte alta ferma, il resto scorre (nel Profilo c'è solo il resto, sotto l'intestazione del Profilo) */
+    :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+    .phead { position: relative; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+    .scroll-area.embedded { overflow: visible; }
+    .phead .id app-avatar { flex: none; }
+    .lead-menu { position: absolute; top: 8px; right: 8px; z-index: 5; }
     .more { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; }
     .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .menu button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
@@ -154,6 +162,8 @@ export class PlayerPage {
   }
 
   readonly id = input.required<string>();
+  /** nel Profilo (scheda Stats): solo la parte sotto l'intestazione */
+  readonly embedded = input(false);
   protected readonly session = inject(Session);
   protected readonly menuOpen = signal(false);
   protected readonly ratingsOn = signal(false);

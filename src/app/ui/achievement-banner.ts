@@ -2,9 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, OnDestroy
 import { RouterLink } from '@angular/router';
 import { Achievements } from '../core/achievements';
 import { Session } from '../core/session';
+import { Supabase } from '../core/supabase';
 import { Icon } from './icon';
 
 const SEEN_KEY = 'gdl-sticker-visti';
+const LP_SEEN_KEY = 'gdl-punti-leader-visti';
 
 /** Per 24 ore dallo sblocco, a tutti: «Nome ha vinto il premio Sticker», con l'immagine. Si può chiudere. */
 @Component({
@@ -23,6 +25,16 @@ const SEEN_KEY = 'gdl-sticker-visti';
         </div>
       }
     }
+    <!-- Punti Leader: stesso riquadro, stesse 24 ore, stessa X -->
+    @for (lp of lpShown(); track lp.id) {
+      <div class="win" role="status">
+        <span class="pic"><i aria-hidden="true">{{ lp.points > 0 ? '+' : '' }}{{ lp.points }}</i></span>
+        <a class="grow txt" routerLink="/classifica" [queryParams]="{ scheda: 'punti' }">
+          <strong>{{ session.name(lp.user_id) }}</strong> {{ lp.points > 0 ? 'ha ricevuto' : 'ha perso' }} {{ lp.points > 0 ? lp.points : -lp.points }} {{ (lp.points === 1 || lp.points === -1) ? 'Punto' : 'Punti' }} Leader: «{{ lp.reason }}»
+        </a>
+        <button class="x" (click)="dismissLp(lp.id)" aria-label="Chiudi l'avviso"><app-icon name="x" [size]="16" /></button>
+      </div>
+    }
   `,
   styles: `
     /* sovrapposto in cima all'app: non sposta la pagina */
@@ -38,13 +50,18 @@ const SEEN_KEY = 'gdl-sticker-visti';
            background: linear-gradient(120deg, #fff6cf, #ffe58a); color: #3b2f00; box-shadow: 0 4px 14px rgb(0 0 0 / 12%), inset 0 0 0 1px rgb(0 0 0 / 6%); }
     .pic { width: 44px; height: 44px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; background: #fff; box-shadow: 0 0 0 2px #e0b400; }
     .pic img { width: 100%; height: 100%; object-fit: contain; }
-    .pic i { font-style: normal; font-size: 1.3rem; color: #b38600; }
+    .pic i { font-style: normal; font-size: 1.3rem; color: #b38600; font-weight: 800; }
     .txt { color: inherit; text-decoration: none; font-size: var(--step--1); line-height: 1.3; min-width: 0; }
     .x { appearance: none; border: 0; background: rgb(0 0 0 / 6%); color: inherit; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex: none; }
   `,
 })
 export class AchievementBanner implements OnDestroy {
   protected readonly ach = inject(Achievements);
+  private readonly sb = inject(Supabase).client;
+  /** Punti Leader delle ultime 24 ore (come gli sticker) */
+  private readonly lpRecent = signal<{ id: number; user_id: string; points: number; reason: string }[]>([]);
+  private readonly lpSeen = signal<Set<number>>(this.readLpSeen());
+  protected readonly lpShown = computed(() => this.lpRecent().filter((x) => !this.lpSeen().has(x.id)).slice(0, 3));
   protected readonly session = inject(Session);
   private readonly seen = signal<Set<string>>(this.readSeen());
   private readonly timer = setInterval(() => void this.refresh(), 5 * 60 * 1000);
@@ -83,6 +100,17 @@ export class AchievementBanner implements OnDestroy {
   private async refresh(): Promise<void> {
     if (!this.session.uid()) return;
     await this.ach.load().catch(() => undefined);
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const r = await this.sb.from('leader_points').select('id, user_id, points, reason').gte('created_at', since).order('created_at', { ascending: false }).limit(10);
+    if (!r.error) this.lpRecent.set((r.data ?? []) as { id: number; user_id: string; points: number; reason: string }[]);
+  }
+  protected dismissLp(id: number): void {
+    const next = new Set(this.lpSeen()).add(id);
+    this.lpSeen.set(next);
+    try { localStorage.setItem(LP_SEEN_KEY, JSON.stringify([...next].slice(-500))); } catch { /* resta chiuso finché la pagina è aperta */ }
+  }
+  private readLpSeen(): Set<number> {
+    try { return new Set(JSON.parse(localStorage.getItem(LP_SEEN_KEY) ?? '[]')); } catch { return new Set(); }
   }
 
   protected dismiss(g: { achievement_id: string; users: string[] }): void {
