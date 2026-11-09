@@ -9,20 +9,22 @@ function must<T>(res: { data: T | null; error: unknown }): T {
 export interface Hex { attacco: number; tiro: number; difesa: number; velocita: number; tecnica: number; forza: number }
 export type Gk = 'green' | 'yellow' | 'red' | null;
 /** fasce del campo: difesa (Centrale), esterni (Esterno), centrocampo centrale (media), attacco (Punta) */
-export type Band = 'dif' | 'est' | 'cen' | 'att';
-/** tipo di posto nella formazione */
-export type SlotKind = Band | 'gk';
+/** zone del campo, una per ruolo; il centro è la media delle quattro */
+export type Zone = 'dc' | 'ed' | 'eo' | 'pu';
+export type Band = Zone | 'cen';
+/** tipo di posto nella formazione: 'est' = laterale che fa entrambe le fasi (media tra esterno difensivo e offensivo) */
+export type SlotKind = Band | 'est' | 'gk';
 
 /** La scheda che vedono tutti: solo valori calcolati (le 13 caratteristiche le vede solo il Leader). */
 export interface RatingCard {
   user_id: string; has: boolean; role: string | null; gk: Gk;
   best?: string; role_value?: number; overall?: number;
-  dif?: number; est?: number; cen?: number; att?: number; hex?: Hex;
+  dc?: number; ed?: number; eo?: number; pu?: number; cen?: number; hex?: Hex;
 }
 export interface RawRatings { [attr: string]: number | string | null }
 
-export const ROLE_SHORT: Record<string, string> = { difensore: 'DIF', centrocampista: 'CEN', attaccante: 'ATT' };
-export const ROLE_BAND: Record<string, Band> = { difensore: 'dif', centrocampista: 'est', attaccante: 'att' };
+export const ROLE_SHORT: Record<string, string> = { difensore_centrale: 'DC', esterno_difensivo: 'ED', esterno_offensivo: 'EO', punta: 'PU' };
+export const ROLE_ZONE: Record<string, Zone> = { difensore_centrale: 'dc', esterno_difensivo: 'ed', esterno_offensivo: 'eo', punta: 'pu' };
 export const ATTRS: { key: string; label: string }[] = [
   { key: 'shot_accuracy', label: 'Precisione tiro' }, { key: 'shot_power', label: 'Potenza tiro' }, { key: 'finishing', label: 'Finalizzazione' },
   { key: 'dribbling', label: 'Dribbling' }, { key: 'speed', label: 'Velocità' }, { key: 'agility', label: 'Agilità' },
@@ -32,28 +34,42 @@ export const ATTRS: { key: string; label: string }[] = [
 ];
 
 const GREEN = 'hsl(150 58% 40%)';
-/** giallo se vicino al ruolo migliore (fino a 3 punti sotto), poi sfuma verso il rosso (pieno da 15 punti sotto) */
-export function gapColor(gap: number): string {
-  const t = Math.max(0, Math.min(1, (gap - 3) / 12));
-  const hue = 48 - 44 * t;
-  return `hsl(${hue.toFixed(0)} 88% ${(52 - 4 * t).toFixed(0)}%)`;
-}
-
-/** colore di una fascia: verde il ruolo del giocatore (o il migliore, se non ne ha), altrimenti giallo -> rosso */
-export function bandColor(c: RatingCard, band: Exclude<Band, 'cen'>): string {
-  if (!c.has) return 'var(--surface-2)';
-  const mine = ROLE_BAND[c.role ?? c.best ?? ''] ?? null;
-  if (band === mine) return GREEN;
-  const best = Math.max(c.dif ?? 0, c.est ?? 0, c.att ?? 0);
-  return gapColor(best - (c[band] ?? 0));
-}
-
 export const GK_COLOR: Record<string, string> = { green: GREEN, yellow: 'hsl(48 88% 52%)', red: 'hsl(4 76% 50%)' };
+
+/**
+ * Colore di una zona del campo: dal verde (il ruolo del giocatore, o il migliore se non ne ha) al rosso
+ * in modo continuo, secondo la distanza dal ruolo migliore; più il valore è alto, più il colore è acceso.
+ */
+export function zoneHsl(c: RatingCard, z: Zone): [number, number, number] {
+  const v = c[z] ?? 0;
+  const best = Math.max(c.dc ?? 0, c.ed ?? 0, c.eo ?? 0, c.pu ?? 0);
+  const mine = ROLE_ZONE[c.role ?? c.best ?? ''];
+  const t = z === mine ? 0 : Math.max(0, Math.min(1, (best - v) / 18));
+  const k = Math.max(0, Math.min(1, (v - 35) / 55));          // forza del giocatore in quella zona
+  return [140 * (1 - t), 25 + 60 * k, 52 - 6 * k];
+}
+export function hslToRgb([h, s, l]: [number, number, number]): [number, number, number] {
+  s /= 100; l /= 100;
+  const f = (n: number) => { const k = (n + h / 30) % 12; return l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+  return [f(0), f(8), f(4)].map((x) => Math.round(x * 255)) as [number, number, number];
+}
+export function zoneCss(c: RatingCard, z: Zone): string {
+  const [r, g, b] = hslToRgb(zoneHsl(c, z));
+  return `rgb(${r} ${g} ${b})`;
+}
+/** centro: la sfumatura delle quattro zone intorno */
+export function centerCss(c: RatingCard): string {
+  const all = (['dc', 'ed', 'eo', 'pu'] as Zone[]).map((z) => hslToRgb(zoneHsl(c, z)));
+  const m = [0, 1, 2].map((i) => Math.round(all.reduce((s, x) => s + x[i], 0) / 4));
+  return `rgb(${m[0]} ${m[1]} ${m[2]})`;
+}
 
 /** valore di un giocatore in un tipo di posto (portiere = valore generale con il bonus del portiere) */
 export function valueAt(c: RatingCard | undefined, kind: SlotKind): number | null {
   if (!c?.has) return null;
-  return (kind === 'gk' ? c.overall : c[kind]) ?? null;
+  if (kind === 'gk') return c.overall ?? null;
+  if (kind === 'est') return c.ed !== undefined && c.eo !== undefined ? Math.round((c.ed + c.eo) / 2) : null;
+  return c[kind] ?? null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -69,6 +85,11 @@ export class Ratings {
     const next = new Map(this.cards());
     for (const r of rows) next.set(r.user_id, r);
     this.cards.set(next);
+  }
+
+  /** dopo un cambio dei coefficienti le schede si ricalcolano */
+  clear(): void {
+    this.cards.set(new Map());
   }
 
   card(id: string): RatingCard | undefined {

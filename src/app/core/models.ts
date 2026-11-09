@@ -2,7 +2,7 @@
 export type NotifyCategory = 'chat' | 'booking_open' | 'team_full' | 'withdrawal' | 'lineup_official' | 'lineup_change' | 'match_changes' | 'result' | 'votes' | 'achievements';
 export type BookingMode = 'order' | 'free';
 export type Role = 'leader' | 'premier1' | 'premier2' | 'user';
-export type FieldRole = 'difensore' | 'centrocampista' | 'attaccante';
+export type FieldRole = 'difensore_centrale' | 'esterno_difensivo' | 'esterno_offensivo' | 'punta';
 export type Choice = 'present' | 'absent' | 'reserve';
 export type List = 'team' | 'reserve' | 'out' | 'pending';
 export type Team = 'white' | 'black';
@@ -295,9 +295,10 @@ export const ROLE_LABEL: Record<Role, string> = {
 };
 
 export const FIELD_ROLE_LABEL: Record<FieldRole, string> = {
-  difensore: 'Difensore',
-  centrocampista: 'Centrocampista',
-  attaccante: 'Attaccante',
+  difensore_centrale: 'Difensore centrale',
+  esterno_difensivo: 'Esterno difensivo',
+  esterno_offensivo: 'Esterno offensivo',
+  punta: 'Punta',
 };
 
 /** Posizioni del calcio a 5 sul campo disegnato. */
