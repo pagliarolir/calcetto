@@ -40,14 +40,17 @@ export const GK_COLOR: Record<string, string> = { green: GREEN, yellow: 'hsl(48 
  * Colore di una zona del campo (regola mista): parte dal valore assoluto in quella zona
  * (80 o più verde, 65 giallo, 50 o meno rosso, in modo continuo) e le zone lontane dal ruolo
  * migliore scendono ancora: si toglie il 60% della distanza dal ruolo migliore. La zona del ruolo
- * del giocatore (o del migliore, se non ne ha) non ha penalità.
+ * del giocatore (o del migliore, se non ne ha) non ha penalità ed è spinta verso il verde (40% della
+ * distanza dal verde pieno): risalta, senza diventare verde pieno se il giocatore è debole.
  */
 export function zoneHsl(c: RatingCard, z: Zone): [number, number, number] {
   const v = c[z] ?? 0;
   const best = Math.max(c.dc ?? 0, c.ed ?? 0, c.eo ?? 0, c.pu ?? 0);
   const mine = ROLE_ZONE[c.role ?? c.best ?? ''];
   const eff = z === mine ? v : v - 0.6 * (best - v);
-  return [140 * Math.max(0, Math.min(1, (eff - 50) / 30)), 72, 48];
+  const hue = 140 * Math.max(0, Math.min(1, (eff - 50) / 30));
+  // ruolo preferito un po' più verde: percorre il 40% della strada che gli manca per il verde pieno
+  return [z === mine ? hue + 0.4 * (140 - hue) : hue, 72, 48];
 }
 export function hslToRgb([h, s, l]: [number, number, number]): [number, number, number] {
   s /= 100; l /= 100;
