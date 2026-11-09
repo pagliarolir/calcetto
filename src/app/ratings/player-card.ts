@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Icon } from '../ui/icon';
 import { Session } from '../core/session';
-import { FIELD_ROLE_LABEL, FieldRole } from '../core/models';
+import { FieldRole } from '../core/models';
 import { Ratings, ROLE_SHORT } from '../core/ratings';
 import { HexChart, PitchChart, RatingRing } from './charts';
 
 /** La scheda dei valori che vedono tutti: cerchio con il valore nel ruolo, esagono e campo. */
+/** nomi corti sotto il cerchio: quelli interi farebbero sbordare la mappa del campo */
+const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difensore', esterno_difensivo: 'Esterno dif.', esterno_offensivo: 'Esterno off.', punta: 'Punta' };
+
 @Component({
   selector: 'app-player-card',
   imports: [RatingRing, HexChart, PitchChart, Icon],
@@ -59,7 +62,7 @@ export class PlayerCard {
   protected readonly roleLabel = computed(() => {
     const c = this.card();
     const r = (c?.role ?? c?.best) as FieldRole | undefined;
-    return r ? FIELD_ROLE_LABEL[r] : '';
+    return r ? CARD_ROLE_LABEL[r] : '';
   });
   constructor() {
     effect(() => { void this.ratings.load([this.userId()]).catch(() => undefined); });
