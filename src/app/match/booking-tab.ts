@@ -29,10 +29,21 @@ interface SlotView {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
-      <div class="stack-l">
+      <div class="stack">
         <!-- La mia risposta -->
         <section class="section" aria-labelledby="me-h">
-          <header><h2 id="me-h">{{ myHeadline() }}</h2></header>
+          <header class="me-head">
+            <h2 id="me-h">{{ myHeadline() }}</h2>
+            @if (infoLines().length) {
+              <button type="button" class="info-i" aria-label="Come funzionano le prenotazioni" [attr.aria-expanded]="infoOpen()" (click)="infoOpen.set(!infoOpen())">
+                <app-icon name="info" [size]="20" />
+              </button>
+              @if (infoOpen()) {
+                <div class="pop-shield" aria-hidden="true" (click)="infoOpen.set(false)"></div>
+                <div class="info-pop panel" role="note"><ul>@for (l of infoLines(); track $index) { <li>{{ l }}</li> }</ul></div>
+              }
+            }
+          </header>
           @if (m.status === 'cancelled') {
             <p class="muted">Questa partita è stata annullata.</p>
           } @else if (store.t()?.started) {
@@ -47,7 +58,7 @@ interface SlotView {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
             <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}: puoi ancora metterti tra le riserve.</p>
             <div class="choice" role="group" aria-label="La tua presenza">
-              <button [disabled]="busy()" (click)="book('present')">Ci sono<small>come riserva</small></button>
+              <button [disabled]="busy()" (click)="book('present')">Ci sono</button>
               <button class="absent" [disabled]="busy()" (click)="book('absent')">Non ci sono</button>
             </div>
           } @else if (!canBook()) {
@@ -55,22 +66,21 @@ interface SlotView {
           } @else {
             <div class="choice" role="group" aria-label="La tua presenza">
               <button [attr.aria-pressed]="store.mine()?.choice === 'present'" [disabled]="busy()" (click)="book('present')">
-                Ci sono<small>{{ presentHint() }}</small>
+                Ci sono
               </button>
               @if (!store.free()) {
                 <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy() || amLeaderTitular()"
                         (click)="book('reserve')">
-                  Riserva<small>se serve</small>
+                  Riserva
                 </button>
               }
               <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" [disabled]="busy()" (click)="book('absent')">
-                Non ci sono<small>&nbsp;</small>
+                Non ci sono
               </button>
             </div>
             @if (store.t()?.within24h && store.mine()?.list === 'team') {
               <p class="small muted">Mancano meno di 24 ore: se rinunci ora, Leader e Premier ricevono un avviso.</p>
             }
-            <p class="small muted">Le prenotazioni si chiudono {{ when(m.bookings_close_at) }}.@if (store.free()) { Poi il Leader sceglie titolari e riserve e ti avvisa.}</p>
           }
           @if (m.status === 'scheduled' && !store.t()?.started) {
             @if (store.mine()?.list === 'reserve' && store.t()?.within24h) {
@@ -100,7 +110,6 @@ interface SlotView {
           @switch (listTab()) {
             @case ('team') {
               @if (store.free()) {
-                @if (!m.lists_confirmed_at) { <p class="small muted">Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni.</p> }
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
                     <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
@@ -123,7 +132,6 @@ interface SlotView {
               }
             }
             @case ('pending') {
-              <p class="small muted">Hanno detto che ci sono: il Leader sceglierà chi gioca.</p>
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
                   <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
@@ -132,7 +140,6 @@ interface SlotView {
             }
             @case ('reserve') {
               @if (store.reserves().length) {
-                <p class="small muted">{{ store.free() ? 'Senza ordine: se si libera un posto decide il Leader.' : 'Entrano in questo ordine quando si libera un posto.' }}</p>
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
@@ -327,6 +334,15 @@ interface SlotView {
     }
   `,
   styles: `
+    .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
+    .me-head h2 { flex: 1; }
+    .info-i { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+    .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
+    .pop-shield { position: fixed; inset: 0; z-index: 5; }
+    .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 14px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
+    .info-pop ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+    /* le schede restano a portata di dito mentre si scorre l'elenco */
+    .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
@@ -547,12 +563,37 @@ export class BookingTab {
   );
 
   protected setListTab(id: 'team' | 'pending' | 'reserve' | 'out'): void {
+    // la pagina resta dov'è: si ricorda lo scorrimento e l'elenco tiene almeno lo spazio di prima
+    const host = this.hostEl.nativeElement as HTMLElement;
+    const sc = host.closest('.scroll-area') as HTMLElement | null;
+    const y = sc?.scrollTop ?? 0;
+    const panel = host.querySelector('.list-panel') as HTMLElement | null;
+    if (panel) panel.style.minHeight = `${Math.max(panel.offsetHeight, parseFloat(panel.style.minHeight) || 0)}px`;
     this.listTab.set(id);
+    const keep = () => { if (sc) sc.scrollTop = y; };
     void this.listRouter.navigate([], {
       relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge',
       queryParams: { elenco: id === 'team' ? null : BookingTab.LIST_PARAM[id] },
-    });
+    }).then(() => { requestAnimationFrame(keep); setTimeout(keep, 60); });
   }
+
+  /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
+  protected readonly infoOpen = signal(false);
+  private readonly hostEl = inject(ElementRef);
+  protected readonly infoLines = computed(() => {
+    const m = this.store.match();
+    if (!m || m.status !== 'scheduled' || this.store.t()?.started) return [];
+    const out: string[] = [];
+    if (this.canBook() && !this.store.t()?.bookingClosed) out.push(`Le prenotazioni si chiudono ${this.when(m.bookings_close_at)}.`);
+    if (this.store.free()) {
+      if (!m.lists_confirmed_at) out.push('Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni, e ti avvisa.');
+      out.push('Disponibili: hanno detto che ci sono, il Leader sceglierà chi gioca.');
+      out.push('Riserve: senza ordine, se si libera un posto decide il Leader.');
+    } else {
+      out.push('Riserve: entrano in ordine quando si libera un posto.');
+    }
+    return out;
+  });
   protected readonly listTabs = computed(() => {
     const out: { id: 'team' | 'pending' | 'reserve' | 'out'; label: string; count: string }[] = [
       { id: 'team', label: 'Titolari', count: `${this.store.team().length}/${this.store.size()}` },
