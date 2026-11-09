@@ -1,0 +1,29 @@
+# Controlli automatici dell'app a ogni pull request (e su main): compilazione, vulnerabilità note
+# nelle librerie dell'app pubblicata, contrasti del tema personalizzato.
+name: Controlli app
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Compilazione
+        run: npx ng build
+      - name: Vulnerabilità note (librerie dell'app)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Contrasti del tema personalizzato
+        run: node scripts/check-colors.mjs

@@ -1,6 +1,9 @@
 # Verifica le regole del database (slot, leadership, risultato, voti, statistiche) su Postgres.
 name: Test database
 
+permissions:
+  contents: read
+
 on:
   push:
     paths: ['supabase/**']
