@@ -38,7 +38,7 @@ jobs:
           NG_CLI_ANALYTICS: 'false'
       - name: Navigazione diretta agli indirizzi interni (fallback SPA)
         run: cp dist/calcetto/browser/index.html dist/calcetto/browser/404.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist/calcetto/browser
 
