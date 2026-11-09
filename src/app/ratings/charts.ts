@@ -80,7 +80,7 @@ let pitchSeq = 0;
 /**
  * Mappa dei ruoli: punta in alto, esterni offensivi e difensivi ai lati, difensore centrale in basso,
  * il centro è la sfumatura delle zone intorno. Le zone si fondono l'una nell'altra (sfocatura leggera),
- * i colori vanno dal verde al rosso e sono più accesi quanto più il giocatore è forte; pallino del portiere in porta.
+ * colori con la regola mista (valore assoluto + penalità lontano dal ruolo migliore, vedi zoneHsl); pallino del portiere in porta.
  */
 @Component({
   selector: 'app-pitch-chart',
