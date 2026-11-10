@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { Ratings } from '../core/ratings';
 import { RouterLink } from '@angular/router';
 import { Session } from '../core/session';
-import { inject } from '@angular/core';
 import { Avatar } from './avatar';
 
 /**
@@ -35,7 +35,11 @@ import { Avatar } from './avatar';
         <span class="name muted">{{ emptyLabel() }}</span>
       }
       @if (note(); as n) { <span class="sub" [class.turf]="noteTone() === 'turf'">{{ n }}</span> }
+      @else if (role(); as r) { <span class="sub">{{ r }}</span> }
     </span>
+    @if (overall(); as o) {
+      <span class="ovr" [style.--h]="hue()" [attr.aria-label]="'valutazione ' + o" [title]="'Valutazione ' + o">{{ o }}</span>
+    }
   `,
   styles: `
     :host {
@@ -68,6 +72,9 @@ import { Avatar } from './avatar';
     .txt { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
     .name { font-weight: 700; color: inherit; text-decoration: none; font-size: var(--step-0); }
     .sub { font-size: 0.75rem; color: var(--muted); }
+    /* valutazione generale: dal verde (80 o più) all'arancione (50 o meno), sfondo tenue e testo scuro della stessa tinta */
+    .ovr { margin-left: auto; flex: none; min-width: 34px; height: 26px; padding: 0 6px; border-radius: 13px; display: grid; place-items: center;
+           font: 800 0.85rem/1 var(--font-display); background: hsl(var(--h) 70% 88%); color: hsl(var(--h) 75% 24%); box-shadow: inset 0 0 0 1.5px hsl(var(--h) 60% 62%); }
     .sub.turf { color: var(--turf); font-weight: 600; }
   `,
 })
@@ -81,4 +88,22 @@ export class Figurina {
   readonly note = input<string | null>(null);
   readonly noteTone = input<'muted' | 'turf'>('muted');
   readonly emptyLabel = input('Posto libero');
+
+  private readonly ratings = inject(Ratings);
+  /** ruolo semplificato sotto il nome (se la pagina non passa una scritta) */
+  protected readonly role = computed(() => {
+    const id = this.userId();
+    const r = id ? this.session.members().find((m) => m.id === id)?.field_role : null;
+    return r ? ({ difensore_centrale: 'Difensore', esterno_difensivo: 'Esterno', esterno_offensivo: 'Esterno', punta: 'Punta' } as Record<string, string>)[r] ?? null : null;
+  });
+  protected readonly overall = computed(() => {
+    const id = this.userId();
+    const c = id ? this.ratings.cards().get(id) : undefined;
+    return c?.has ? c.overall ?? null : null;
+  });
+  protected readonly hue = computed(() => 30 + 110 * Math.max(0, Math.min(1, ((this.overall() ?? 50) - 50) / 30)));
+
+  constructor() {
+    effect(() => { const id = this.userId(); if (id && this.variant() !== 'empty') this.ratings.request(id); });
+  }
 }

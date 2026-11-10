@@ -91,6 +91,22 @@ export class Ratings {
     this.cards.set(next);
   }
 
+  private pending = new Set<string>();
+  private flushing = false;
+  /** chiede la scheda di un giocatore: le richieste dello stesso istante partono insieme, in una sola chiamata */
+  request(id: string): void {
+    if (this.cards().has(id)) return;
+    this.pending.add(id);
+    if (this.flushing) return;
+    this.flushing = true;
+    queueMicrotask(() => {
+      const ids = [...this.pending];
+      this.pending.clear();
+      this.flushing = false;
+      void this.load(ids).catch(() => undefined);
+    });
+  }
+
   /** dopo un cambio dei coefficienti le schede si ricalcolano */
   clear(): void {
     this.cards.set(new Map());

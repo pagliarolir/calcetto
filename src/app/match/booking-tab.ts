@@ -109,7 +109,7 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.is_leader ? 'Leader' : 'titolare'" [noteTone]="'turf'" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
+                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
@@ -118,7 +118,7 @@ interface SlotView {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id">
                       @if (s.row; as r) {
                         <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
-                                      [note]="r.is_leader ? 'Leader' : r.placed_by ? 'messo dal Leader' : null" />
+                                      />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
@@ -148,8 +148,8 @@ interface SlotView {
                     @for (r of store.reserves(); track r.user_id + ':' + r.slot) {
                       <li [class.enter-drop]="dropFor() === r.user_id">
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
-                                      [note]="r.reserve_reply === 'confirmed' ? 'disponibile' : r.choice === 'present' ? 'in coda' : 'se serve'"
-                                      [noteTone]="r.reserve_reply === 'confirmed' ? 'turf' : 'muted'" />
+                                     
+                                      />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }
                       </li>
                     }
@@ -160,7 +160,7 @@ interface SlotView {
             @case ('out') {
               <ul class="people board">
                 @for (r of byName(store.absents()); track r.user_id) {
-                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [note]="r.late_withdrawal ? 'forfait tardivo' : 'assente'" /></li>
+                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun assente." /></li> }
               </ul>
               @if (silent().length) {

@@ -15,7 +15,7 @@ import { HexChart, PitchChart, RatingRing } from './charts';
       @if (c.has) {
         <div class="card">
           <div class="ring">
-            <app-rating-ring [label]="roleShort()" [value]="c.role_value" [size]="86" />
+            <app-rating-ring [label]="roleShort()" [value]="c.role_value" [size]="140" />
             <span class="small muted rl">{{ roleLabel() }}
               @if (!c.role) {
                 <button type="button" class="ri" aria-label="Perché questo ruolo" [attr.aria-expanded]="tip()" (click)="tip.set(!tip())"><app-icon name="info" [size]="14" /></button>
@@ -48,8 +48,6 @@ import { HexChart, PitchChart, RatingRing } from './charts';
             background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .ring { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
     .rl { text-align: center; }
-    /* centro del cerchio (86 px) alla stessa altezza del centro dell'esagono (168 px) */
-    .ring > app-rating-ring { margin-top: 41px; }
     /* medie in fondo, alte quanto il campo e allineate a lui (inizio e fine) */
     .avg { list-style: none; margin: auto 0 0; padding: 0; width: 100%; height: 116px; display: flex; flex-direction: column; justify-content: space-between; }
     .avg li { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 26px; padding: 0 6px; border-radius: 8px; font-size: var(--step--1); }
