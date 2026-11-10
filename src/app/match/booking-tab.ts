@@ -43,6 +43,7 @@ interface SlotView {
                 <div class="info-pop panel" role="note"><ul>@for (l of infoLines(); track $index) { <li>{{ l }}</li> }</ul></div>
               }
             }
+            @if (statusPill(); as sp) { <span class="spill" [class]="'spill ' + sp.cls" role="status">{{ sp.label }}</span> }
           </header>
           @if (m.status === 'cancelled') {
             <p class="muted">Questa partita è stata annullata.</p>
@@ -50,19 +51,15 @@ interface SlotView {
             <p class="muted">La partita è iniziata: le prenotazioni sono chiuse.</p>
           } @else if (store.t()?.bookingClosed && !amLeaderTitular() && store.mine()) {
             @if (store.mine()!.list === 'out') {
-              <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}. Per cambiare, scrivi al Leader.</p>
             } @else {
-              <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}.</p>
             }
           } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
-            <p class="note">Le prenotazioni si sono chiuse {{ when(m.bookings_close_at) }}: puoi ancora metterti tra le riserve.</p>
             <div class="choice" role="group" aria-label="La tua presenza">
               <button [disabled]="busy()" (click)="book('present')">Ci sono</button>
               <button class="absent" [disabled]="busy()" (click)="book('absent')">Non ci sono</button>
             </div>
           } @else if (!canBook()) {
-            <p class="note">Le prenotazioni aprono {{ when(m.bookings_open_at) }}.</p>
           } @else {
             <div class="choice" role="group" aria-label="La tua presenza">
               <button [attr.aria-pressed]="store.mine()?.choice === 'present'" [disabled]="busy()" (click)="book('present')">
@@ -335,7 +332,15 @@ interface SlotView {
   `,
   styles: `
     .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
-    .me-head h2 { flex: 1; }
+    .me-head h2 { flex: 0 1 auto; min-width: 0; }
+    .spill { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px;
+             font: 700 0.75rem/1 var(--font-body); white-space: nowrap; }
+    .spill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .spill.open { background: var(--turf-soft); color: var(--turf); }
+    .spill.soon { background: color-mix(in srgb, var(--armband) 28%, var(--surface)); color: var(--ink); }
+    .spill.soon::before { background: var(--armband); }
+    .spill.closed { background: var(--surface-2); color: var(--muted); }
+    .spill.live { background: var(--danger-soft); color: var(--danger); }
     .info-i { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
     .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
     .pop-shield { position: fixed; inset: 0; z-index: 5; }
@@ -582,14 +587,27 @@ export class BookingTab {
     });
   }
 
+  /** stato delle prenotazioni in una pillola accanto al titolo (colore + testo, senza orari) */
+  protected readonly statusPill = computed(() => {
+    const m = this.store.match(), t = this.store.t();
+    if (!m || m.status !== 'scheduled' || !t) return null;
+    if (t.started) return { label: 'In corso', cls: 'live' };
+    if (t.bookingOpen) return { label: 'Aperte', cls: 'open' };
+    if (t.bookingClosed) return { label: 'Chiuse', cls: 'closed' };
+    return { label: 'Aprono presto', cls: 'soon' };
+  });
+
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
   protected readonly infoOpen = signal(false);
   private readonly hostEl = inject(ElementRef);
   protected readonly infoLines = computed(() => {
     const m = this.store.match();
     if (!m || m.status !== 'scheduled' || this.store.t()?.started) return [];
+    const t = this.store.t();
     const out: string[] = [];
-    if (this.canBook() && !this.store.t()?.bookingClosed) out.push(`Le prenotazioni si chiudono ${this.when(m.bookings_close_at)}.`);
+    if (t?.bookingOpen) out.push(`Le prenotazioni si chiudono ${this.when(m.bookings_close_at)}.`);
+    else if (t?.bookingClosed) out.push(`Le prenotazioni si sono chiuse ${this.when(m.bookings_close_at)}. Se non avevi risposto puoi ancora metterti tra le riserve; per altri cambi scrivi al Leader.`);
+    else out.push(`Le prenotazioni aprono ${this.when(m.bookings_open_at)}.`);
     if (this.store.free()) {
       if (!m.lists_confirmed_at) out.push('Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni, e ti avvisa.');
       out.push('Disponibili: hanno detto che ci sono, il Leader sceglierà chi gioca.');

@@ -267,7 +267,7 @@ const RECORDS: Record[] = [
             <details class="panel fold" (toggle)="cmpOpen($event)">
               <summary><h3>Confronto</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               @if (cmpSeries().length) {
-                <div class="cmp-chart"><app-hex-chart [series]="cmpSeries()" [size]="290" /></div>
+                <div class="cmp-chart"><app-hex-chart [series]="cmpSeries()" [size]="230" /></div>
               }
               <ul class="cmp-list">
                 @for (x of cmpRows(); track x.id) {
@@ -423,7 +423,7 @@ const RECORDS: Record[] = [
     .cmp-list .grow { display: flex; flex-direction: column; gap: 2px; }
     .cmp-list .dot { width: 14px; height: 14px; border-radius: 4px; flex: none; }
     .cmp-list .rm { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
-    .cmp-add { display: flex; align-items: center; gap: 8px; color: var(--turf); } .cmp-add select { flex: 1; }
+    .cmp-add { display: flex; align-items: center; gap: 8px; color: var(--turf); margin-top: 12px; } .cmp-add select { flex: 1; }
     /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
     /* schede equidistanti, sopra e sotto */
