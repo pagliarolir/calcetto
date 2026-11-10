@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { Ratings } from '../core/ratings';
+import { overallOf, Ratings } from '../core/ratings';
 import { RouterLink } from '@angular/router';
 import { Session } from '../core/session';
 import { Avatar } from './avatar';
@@ -35,20 +35,14 @@ import { Avatar } from './avatar';
         <span class="name muted">{{ emptyLabel() }}</span>
       }
       @if (note(); as n) { <span class="sub" [class.turf]="noteTone() === 'turf'">{{ n }}</span> }
-      @else if (role() || form()) {
-        <!-- ruolo e stato di forma (freccia come PES) -->
-        <span class="sub nrow">{{ role() }}
-          @if (form(); as f) {
-            @if (f.state === 'equal') { <span class="form idle" role="img" [attr.aria-label]="f.label" [title]="f.label">=</span> }
-            @else {
-              <svg class="form" viewBox="0 0 24 24" role="img" [attr.aria-label]="f.label" [style.color]="f.color" [style.transform]="'rotate(' + f.rot + 'deg)'">
-                <title>{{ f.label }}</title><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            }
-          }
-        </span>
-      }
     </span>
+    @if (form(); as f) {
+      <span class="frm" [class.eq]="f.state === 'equal'" [style.background]="f.color || null" role="img" [attr.aria-label]="f.label" [title]="f.label">
+        @if (f.state === 'equal') { = } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true" [style.transform]="'rotate(' + f.rot + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        }
+      </span>
+    }
     @if (overall(); as o) {
       <span class="ovr" [style.--h]="hue()" [attr.aria-label]="'valutazione ' + o" [title]="'Valutazione ' + o">{{ o }}</span>
     }
@@ -85,8 +79,12 @@ import { Avatar } from './avatar';
     .name { font-weight: 700; color: inherit; text-decoration: none; font-size: var(--step-0); }
     .sub { font-size: 0.75rem; color: var(--muted); }
     /* valutazione generale: cerchio pieno dal rosso (50 o meno) al verde intenso (85 o più), testo bianco */
-    .ovr { margin-left: auto; flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
-           font: 800 0.92rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
+    .frm { margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+    .frm svg { width: 15px; height: 15px; }
+    .frm.eq { background: var(--surface-2); color: var(--muted); font: 800 0.95rem/1 var(--font-body); }
+    .frm + .ovr { margin-left: 4px; }
+    .ovr { margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+           font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
     .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
     /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
@@ -115,8 +113,7 @@ export class Figurina {
   });
   protected readonly overall = computed(() => {
     const id = this.userId();
-    const c = id ? this.ratings.cards().get(id) : undefined;
-    return c?.has ? c.overall ?? null : null;
+    return id ? overallOf(this.ratings.cards().get(id)) : null;
   });
   protected readonly hue = computed(() => 130 * Math.max(0, Math.min(1, ((this.overall() ?? 50) - 50) / 35)));
   /** stato di forma: freccia ruotata (da ↑ a ↓) e colore dal verde al rosso */
