@@ -1,14 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Icon } from '../ui/icon';
 import { Session } from '../core/session';
-import { FieldRole } from '../core/models';
+import { FIELD_ROLE_LABEL, FieldRole } from '../core/models';
 import { Ratings, ROLE_SHORT } from '../core/ratings';
 import { HexChart, PitchChart, RatingRing } from './charts';
 
 /** La scheda dei valori che vedono tutti: cerchio con il valore nel ruolo, esagono e campo. */
-/** nomi corti sotto il cerchio: quelli interi farebbero sbordare la mappa del campo */
-const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difensore', esterno_difensivo: 'Esterno dif.', esterno_offensivo: 'Esterno off.', punta: 'Punta' };
-
 @Component({
   selector: 'app-player-card',
   imports: [RatingRing, HexChart, PitchChart, Icon],
@@ -28,9 +25,17 @@ const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difens
               <div class="pop-shield" aria-hidden="true" (click)="tip.set(false)"></div>
               <div class="tip panel" role="note">Ruolo non indicato nel profilo: è il ruolo migliore secondo i valori.</div>
             }
+            <!-- medie per ruolo -->
+            <ul class="avg">
+              @for (r of roles(); track r.key) {
+                <li [class.mine]="r.mine"><span class="rn">{{ r.label }}</span><strong class="num">{{ r.value }}</strong></li>
+              }
+            </ul>
           </div>
-          <app-hex-chart [series]="[{ hex: c.hex!, color: 'var(--turf)', name: 'caratteristiche' }]" [size]="134" />
-          <app-pitch-chart [card]="c" />
+          <div class="charts">
+            <app-hex-chart [series]="[{ hex: c.hex!, color: 'var(--turf)', name: 'caratteristiche' }]" [size]="168" />
+            <app-pitch-chart [card]="c" />
+          </div>
         </div>
       } @else {
         @if (session.isLeader()) { <p class="small muted">Valori non ancora inseriti: aprili dal menu ⋯.</p> }
@@ -38,10 +43,17 @@ const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difens
     }
   `,
   styles: `
-    /* cerchio, esagono e campo sempre su una riga */
-    .card { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; padding: 8px 6px; border-radius: 16px;
+    /* due colonne: a sinistra cerchio, ruolo e medie per ruolo; a destra esagono e campo */
+    .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 8px; padding: 12px 10px; border-radius: 16px;
             background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
-    .ring { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: none; position: relative; }
+    .ring { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
+    .rl { text-align: center; }
+    .avg { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 2px; }
+    .avg li { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 4px 6px; border-radius: 8px; font-size: var(--step--1); }
+    .avg li .rn { color: var(--muted); min-width: 0; }
+    .avg li strong { font-size: 1.05rem; }
+    .avg li.mine { background: var(--turf-soft); } .avg li.mine .rn { color: var(--ink); font-weight: 600; }
+    .charts { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
     .rl { display: inline-flex; align-items: center; gap: 2px; }
     .ri { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; }
     .ri[aria-expanded='true'] { color: var(--turf); }
@@ -53,6 +65,14 @@ export class PlayerCard {
   private readonly ratings = inject(Ratings);
   protected readonly session = inject(Session);
   protected readonly tip = signal(false);
+  /** medie per ruolo, evidenziato il ruolo del giocatore (o il migliore) */
+  protected readonly roles = computed(() => {
+    const c = this.card();
+    if (!c?.has) return [];
+    const mine = c.role ?? c.best;
+    return ([['punta', 'pu'], ['esterno_offensivo', 'eo'], ['esterno_difensivo', 'ed'], ['difensore_centrale', 'dc']] as const)
+      .map(([k, z]) => ({ key: k, label: FIELD_ROLE_LABEL[k as FieldRole], value: c[z] ?? '–', mine: k === mine }));
+  });
   readonly userId = input.required<string>();
   protected readonly card = computed(() => this.ratings.cards().get(this.userId()));
   protected readonly roleShort = computed(() => {
@@ -62,7 +82,7 @@ export class PlayerCard {
   protected readonly roleLabel = computed(() => {
     const c = this.card();
     const r = (c?.role ?? c?.best) as FieldRole | undefined;
-    return r ? CARD_ROLE_LABEL[r] : '';
+    return r ? FIELD_ROLE_LABEL[r] : '';
   });
   constructor() {
     effect(() => { void this.ratings.load([this.userId()]).catch(() => undefined); });
