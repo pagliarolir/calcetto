@@ -45,7 +45,7 @@ const AXES: { key: keyof Hex; label: string }[] = [
       @for (lv of [1, 0.66, 0.33]; track lv) { <polygon [attr.points]="ring(lv)" class="grid" /> }
       @for (a of axes; track a.key; let i = $index) {
         <line x1="0" y1="0" [attr.x2]="pt(i, 1)[0]" [attr.y2]="pt(i, 1)[1]" class="grid" />
-        <text [attr.x]="pt(i, 1.24)[0]" [attr.y]="pt(i, 1.24)[1] + 3" text-anchor="middle" class="ax">{{ a.label }}</text>
+        <text [attr.x]="pt(i, 1.38)[0]" [attr.y]="pt(i, 1.38)[1] + 3" text-anchor="middle" class="ax">{{ a.label }}</text>
       }
       @for (s of series(); track s.name) {
         <polygon [attr.points]="poly(s.hex)" [attr.fill]="s.color" fill-opacity="0.28" [attr.stroke]="s.color" stroke-width="1.6" stroke-linejoin="round" />
