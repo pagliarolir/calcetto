@@ -127,6 +127,8 @@ import { StickerStrip } from '../ui/sticker-strip';
     /* il menu ⋯ sta nell'angolo della pagina del giocatore (non dell'app: lì c'è la X del riquadro degli sticker) */
     /* parte alta ferma, il resto scorre (nel Profilo c'è solo il resto, sotto l'intestazione del Profilo) */
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+    /* meno margine ai lati: più spazio ai grafici */
+    main.scroll-area > .page { padding-left: 10px; padding-right: 10px; }
     .phead { position: relative; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
     .scroll-area.embedded { overflow: visible; }
     .phead .id app-avatar { flex: none; }

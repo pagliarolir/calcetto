@@ -55,7 +55,7 @@ const AXES: { key: keyof Hex; label: string }[] = [
   styles: `
     :host { display: inline-grid; }
     .grid { fill: none; stroke: var(--line); stroke-width: 0.6; }
-    .ax { font: 600 7px var(--font-body); fill: var(--muted); }
+    .ax { font: 600 9px var(--font-body); fill: var(--muted); }
   `,
 })
 export class HexChart {
@@ -65,7 +65,7 @@ export class HexChart {
   protected readonly names = computed(() => this.series().map((s) => s.name).join(' e '));
   protected pt(i: number, r: number): [number, number] {
     const a = -Math.PI / 2 + (i * Math.PI) / 3;
-    return [Math.cos(a) * 46 * r, Math.sin(a) * 46 * r];
+    return [Math.cos(a) * 42 * r, Math.sin(a) * 42 * r];
   }
   protected ring(r: number): string {
     return AXES.map((_, i) => this.pt(i, r).map((n) => n.toFixed(1)).join(',')).join(' ');

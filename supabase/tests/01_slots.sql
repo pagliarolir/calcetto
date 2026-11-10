@@ -45,9 +45,11 @@ select as_user('P1'), book(mid(), 'present');
 \echo '--- Leader rientra (atteso: P1=1, P12 scende prima riserva)'
 select * from board where list <> 'out';
 
--- Riserva non può essere scelta dal Leader
+-- Il Leader può mettersi in riserva (dalla migrazione 42), poi torna presente
+select as_user('P1'), book(mid(), 'reserve') is not null as leader_in_riserva;
+select (select list from bookings where match_id = mid() and user_id = (select id from ids where n = 'P1')) as lista_del_leader;
+select as_user('P1'), book(mid(), 'present') is not null as leader_di_nuovo_presente;
 \set ON_ERROR_STOP 0
-select as_user('P1'), book(mid(), 'reserve');
 -- Un utente normale non può prenotare per altri
 select as_user('P4'), leader_book(mid(), (select id from ids where n='P14'), 'present');
 \set ON_ERROR_STOP 1

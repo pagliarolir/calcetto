@@ -263,26 +263,27 @@ const RECORDS: Record[] = [
 
           }
           @case ('squadre') {
-            <!-- confronto tra due giocatori: esagoni sovrapposti -->
+            <!-- confronto tra più giocatori: esagoni sovrapposti, colore e medie per ruolo -->
             <details class="panel fold" (toggle)="cmpOpen($event)">
               <summary><h3>Confronto</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-              <div class="cmp-sel">
-                <select class="input" [ngModel]="cmpA()" (ngModelChange)="cmpA.set($event)" aria-label="Primo giocatore">
-                  <option value="">Scegli…</option>
-                  @for (m of cmpMembers(); track m.id) { <option [value]="m.id">{{ session.name(m.id) }}</option> }
-                </select>
-                <span class="small muted">contro</span>
-                <select class="input" [ngModel]="cmpB()" (ngModelChange)="cmpB.set($event)" aria-label="Secondo giocatore">
-                  <option value="">Scegli…</option>
-                  @for (m of cmpMembers(); track m.id) { <option [value]="m.id">{{ session.name(m.id) }}</option> }
-                </select>
-              </div>
               @if (cmpSeries().length) {
-                <div class="cmp-chart"><app-hex-chart [series]="cmpSeries()" [size]="240" /></div>
-                <div class="cmp-legend">
-                  @for (x of cmpSeries(); track x.name) { <span><i [style.background]="x.color"></i>{{ x.name }}</span> }
-                </div>
-              } @else { <p class="small muted">Scegli due giocatori con i valori inseriti.</p> }
+                <div class="cmp-chart"><app-hex-chart [series]="cmpSeries()" [size]="290" /></div>
+              }
+              <ul class="cmp-list">
+                @for (x of cmpRows(); track x.id) {
+                  <li><i class="dot" [style.background]="x.color"></i>
+                    <span class="grow"><strong>{{ x.name }}</strong><span class="small muted num">DC {{ x.dc }} · ED {{ x.ed }} · EO {{ x.eo }} · PU {{ x.pu }}</span></span>
+                    <button type="button" class="rm" [attr.aria-label]="'Togli ' + x.name" (click)="cmpRemove(x.id)"><app-icon name="x" [size]="16" /></button></li>
+                }
+              </ul>
+              @if (cmpIds().length < 5) {
+                <label class="cmp-add"><app-icon name="plus" [size]="18" />
+                  <select class="input" (change)="cmpAdd($any($event.target).value); $any($event.target).value = ''" aria-label="Aggiungi un giocatore al confronto">
+                    <option value="">Aggiungi un giocatore…</option>
+                    @for (m of cmpMembers(); track m.id) { @if (!cmpIds().includes(m.id)) { <option [value]="m.id">{{ session.name(m.id) }}</option> } }
+                  </select>
+                </label>
+              }
             </details>
 
             <!-- ======================================================= Squadre e coppie -->
@@ -416,10 +417,13 @@ const RECORDS: Record[] = [
     .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold .pairs { margin-top: 10px; }
-    .cmp-sel { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
     .cmp-chart { display: grid; place-items: center; }
-    .cmp-legend { display: flex; justify-content: center; gap: 16px; font-size: var(--step--1); }
-    .cmp-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .cmp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .cmp-list li { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+    .cmp-list .grow { display: flex; flex-direction: column; gap: 2px; }
+    .cmp-list .dot { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+    .cmp-list .rm { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+    .cmp-add { display: flex; align-items: center; gap: 8px; color: var(--turf); } .cmp-add select { flex: 1; }
     /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
     /* schede equidistanti, sopra e sotto */
@@ -604,19 +608,19 @@ export class StatsPage {
 
 
 
-  // ------------------------------------------------ Confronto (esagoni di due giocatori)
+  // ------------------------------------------------ Confronto (esagoni di più giocatori, fino a 5)
   private readonly ratings = inject(Ratings);
-  protected readonly cmpA = signal('');
-  protected readonly cmpB = signal('');
+  private static readonly CMP_COLORS = ['var(--turf)', 'hsl(28 90% 52%)', 'hsl(212 80% 55%)', 'hsl(285 55% 58%)', 'hsl(48 90% 42%)'];
+  protected readonly cmpIds = signal<string[]>([]);
   protected readonly cmpMembers = computed(() => [...this.session.members()].filter((m) => this.ratings.cards().get(m.id)?.has)
     .sort((a, b) => this.session.name(a.id).localeCompare(this.session.name(b.id))));
-  protected readonly cmpSeries = computed(() => {
-    const out: HexSeries[] = [];
-    const a = this.ratings.cards().get(this.cmpA()), b = this.ratings.cards().get(this.cmpB());
-    if (a?.has && a.hex) out.push({ hex: a.hex, color: 'var(--turf)', name: this.session.name(a.user_id) });
-    if (b?.has && b.hex && this.cmpB() !== this.cmpA()) out.push({ hex: b.hex, color: 'hsl(28 90% 52%)', name: this.session.name(b.user_id) });
-    return out;
-  });
+  protected readonly cmpRows = computed(() => this.cmpIds().map((id, i) => {
+    const c = this.ratings.cards().get(id);
+    return { id, name: this.session.name(id), color: StatsPage.CMP_COLORS[i % 5], dc: c?.dc ?? '–', ed: c?.ed ?? '–', eo: c?.eo ?? '–', pu: c?.pu ?? '–', hex: c?.hex };
+  }));
+  protected readonly cmpSeries = computed<HexSeries[]>(() => this.cmpRows().filter((r) => r.hex).map((r) => ({ hex: r.hex!, color: r.color, name: r.name })));
+  protected cmpAdd(id: string): void { if (id && !this.cmpIds().includes(id)) this.cmpIds.update((l) => [...l, id].slice(0, 5)); }
+  protected cmpRemove(id: string): void { this.cmpIds.update((l) => l.filter((x) => x !== id)); }
   protected cmpOpen(e: Event): void {
     if ((e.target as HTMLDetailsElement).open) void this.ratings.load(this.session.members().map((m) => m.id)).catch(() => undefined);
   }
