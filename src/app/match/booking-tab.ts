@@ -51,7 +51,7 @@ interface SlotView {
                 <div class="pop-shield" aria-hidden="true" (click)="sortOpen.set(false)"></div>
                 <div class="sort-menu panel" role="menu">
                   @for (o of sortOptions(); track o.id) {
-                    <button type="button" role="menuitemradio" [attr.aria-checked]="effSort() === o.id" (click)="sortMode.set(o.id); sortOpen.set(false)">
+                    <button type="button" role="menuitemradio" [attr.aria-checked]="effSort() === o.id" (click)="setSort(o.id)">
                       <span class="grow">{{ o.label }}</span>@if (effSort() === o.id) { <app-icon name="check" [size]="16" /> }
                     </button>
                   }
@@ -124,13 +124,13 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
                 <ol class="board">
                   @for (s of sortedSlots(); track s.slot) {
-                    <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id">
+                    <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
                       @if (s.row; as r) {
                         <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       />
@@ -146,7 +146,7 @@ interface SlotView {
             @case ('pending') {
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
+                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun disponibile." /></li> }
               </ul>
             }
@@ -155,13 +155,13 @@ interface SlotView {
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                     }
                   </ul>
                 } @else {
                   <ol class="board">
                     @for (r of byName(store.reserves()); track r.user_id + ':' + r.slot) {
-                      <li [class.enter-drop]="dropFor() === r.user_id">
+                      <li [class.enter-drop]="dropFor() === r.user_id" [style.view-transition-name]="vt(r.user_id)">
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
                                      
                                       />
@@ -175,7 +175,7 @@ interface SlotView {
             @case ('out') {
               <ul class="people board">
                 @for (r of byName(store.absents()); track r.user_id) {
-                  <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
+                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun assente." /></li> }
               </ul>
               @if (silent().length) {
@@ -377,7 +377,7 @@ interface SlotView {
     /* X rossa per ritirarsi, nell'angolo della propria figurina */
     /* pallino del ritiro piccolo; l'area di tocco resta comoda grazie al margine invisibile */
     .wd::after { content: ''; position: absolute; inset: -9px; }
-    .wd { position: absolute; top: -4px; right: -4px; z-index: 2; width: 18px; height: 18px; border-radius: 50%; border: 0; cursor: pointer;
+    .wd { position: absolute; top: -4px; right: -4px; z-index: 2; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 0; cursor: pointer;
           display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
     dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
     dialog.ask::backdrop { background: rgb(10 20 14 / 45%); }
@@ -587,6 +587,15 @@ export class BookingTab {
     else if (this.store.teamOf().size) out.push({ id: 'team', label: 'Squadra (bianchi a sinistra, neri a destra)' });
     return out;
   });
+  /** nome di transizione di una figurina (per farla scivolare quando cambia l'ordine) */
+  protected vt(id: string): string { return 'f-' + id; }
+  /** cambia ordine con una transizione: le figurine scivolano nella nuova posizione */
+  protected setSort(id: 'alpha' | 'ovr' | 'form' | 'insert' | 'team'): void {
+    this.sortOpen.set(false);
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(() => this.sortMode.set(id));
+    else this.sortMode.set(id);
+  }
   protected readonly effSort = computed(() => (this.sortOptions().some((o) => o.id === this.sortMode()) ? this.sortMode() : 'alpha'));
   /** ordina una lista secondo il modo scelto (predefinito: alfabetico) */
   protected byName<T extends { user_id: string }>(rows: T[]): T[] {
