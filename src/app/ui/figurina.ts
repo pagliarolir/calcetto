@@ -81,7 +81,7 @@ import { Avatar } from './avatar';
     /* valutazione generale: cerchio pieno dal rosso (50 o meno) al verde intenso (85 o più), testo bianco */
     .frm { margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
     .frm svg { width: 15px; height: 15px; }
-    .frm.eq { background: var(--surface-2); color: var(--muted); font: 800 0.95rem/1 var(--font-body); }
+    .frm.eq { background: var(--surface-2); color: var(--muted); font: 800 1rem/1 var(--font-body); padding-bottom: 1px; }
     .frm + .ovr { margin-left: 4px; }
     .ovr { margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
            font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
