@@ -333,15 +333,16 @@ interface SlotView {
   styles: `
     .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
     .me-head h2 { flex: 0 1 auto; min-width: 0; }
-    .spill { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px;
-             font: 700 0.75rem/1 var(--font-body); white-space: nowrap; }
+    .spill { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px;
+             font: 700 0.72rem/1 var(--font-body); white-space: nowrap; }
     .spill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
     .spill.open { background: var(--turf-soft); color: var(--turf); }
     .spill.soon { background: color-mix(in srgb, var(--armband) 28%, var(--surface)); color: var(--ink); }
     .spill.soon::before { background: var(--armband); }
     .spill.closed { background: var(--surface-2); color: var(--muted); }
     .spill.live { background: var(--danger-soft); color: var(--danger); }
-    .info-i { width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+    /* «i» vicina al titolo: cerchio piccolo, area di tocco comunque comoda */
+    .info-i { width: 32px; height: 32px; margin-left: -4px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
     .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
     .pop-shield { position: fixed; inset: 0; z-index: 5; }
     .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 14px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
@@ -591,10 +592,10 @@ export class BookingTab {
   protected readonly statusPill = computed(() => {
     const m = this.store.match(), t = this.store.t();
     if (!m || m.status !== 'scheduled' || !t) return null;
-    if (t.started) return { label: 'In corso', cls: 'live' };
-    if (t.bookingOpen) return { label: 'Aperte', cls: 'open' };
-    if (t.bookingClosed) return { label: 'Chiuse', cls: 'closed' };
-    return { label: 'Aprono presto', cls: 'soon' };
+    if (t.started) return { label: 'Partita in corso', cls: 'live' };
+    if (t.bookingOpen) return { label: 'Prenotazioni aperte', cls: 'open' };
+    if (t.bookingClosed) return { label: 'Prenotazioni chiuse', cls: 'closed' };
+    return { label: 'Prenotazioni in arrivo', cls: 'soon' };
   });
 
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
@@ -606,7 +607,7 @@ export class BookingTab {
     const t = this.store.t();
     const out: string[] = [];
     if (t?.bookingOpen) out.push(`Le prenotazioni si chiudono ${this.when(m.bookings_close_at)}.`);
-    else if (t?.bookingClosed) out.push(`Le prenotazioni si sono chiuse ${this.when(m.bookings_close_at)}. Se non avevi risposto puoi ancora metterti tra le riserve; per altri cambi scrivi al Leader.`);
+    else if (t?.bookingClosed) out.push(`Le prenotazioni si sono chiuse ${this.when(m.bookings_close_at)}. Se non avevi risposto puoi ancora metterti tra le riserve.`);
     else out.push(`Le prenotazioni aprono ${this.when(m.bookings_open_at)}.`);
     if (this.store.free()) {
       if (!m.lists_confirmed_at) out.push('Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni, e ti avvisa.');
