@@ -44,12 +44,13 @@ import { HexChart, PitchChart, RatingRing } from './charts';
   `,
   styles: `
     /* due colonne: a sinistra cerchio, ruolo e medie per ruolo; a destra esagono e campo */
-    .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 8px; padding: 12px 10px; border-radius: 16px;
+    .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; gap: 8px; padding: 12px 10px; border-radius: 16px;
             background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .ring { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
     .rl { text-align: center; }
-    .avg { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 2px; }
-    .avg li { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding: 4px 6px; border-radius: 8px; font-size: var(--step--1); }
+    /* medie in fondo, alte quanto il campo e allineate a lui (inizio e fine) */
+    .avg { list-style: none; margin: auto 0 0; padding: 0; width: 100%; height: 116px; display: flex; flex-direction: column; justify-content: space-between; }
+    .avg li { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 26px; padding: 0 6px; border-radius: 8px; font-size: var(--step--1); }
     .avg li .rn { color: var(--muted); min-width: 0; }
     .avg li strong { font-size: 1.05rem; }
     .avg li.mine { background: var(--turf-soft); } .avg li.mine .rn { color: var(--ink); font-weight: 600; }
