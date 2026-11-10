@@ -106,10 +106,11 @@ export class Figurina {
   readonly emptyLabel = input('Posto libero');
 
   private readonly ratings = inject(Ratings);
-  /** ruolo semplificato sotto il nome (se la pagina non passa una scritta) */
+  /** ruolo semplificato sotto il nome (se la pagina non passa una scritta); se non è nel profilo, quello dedotto dai valori */
   protected readonly role = computed(() => {
     const id = this.userId();
-    const r = id ? this.session.members().find((m) => m.id === id)?.field_role : null;
+    // ruolo del profilo; se non è indicato, quello dedotto dai valori (il ruolo in cui rende meglio)
+    const r = id ? this.session.members().find((m) => m.id === id)?.field_role ?? this.ratings.cards().get(id)?.best ?? null : null;
     return r ? ({ difensore_centrale: 'Difensore', esterno_difensivo: 'Esterno', esterno_offensivo: 'Esterno', punta: 'Punta' } as Record<string, string>)[r] ?? null : null;
   });
   protected readonly overall = computed(() => {
