@@ -124,7 +124,7 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }</li>
+                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
@@ -134,7 +134,7 @@ interface SlotView {
                       @if (s.row; as r) {
                         <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       />
-                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }
+                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
                       }
@@ -155,7 +155,7 @@ interface SlotView {
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }</li>
+                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                     }
                   </ul>
                 } @else {
@@ -165,7 +165,7 @@ interface SlotView {
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
                                      
                                       />
-                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }
+                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       </li>
                     }
                   </ol>
@@ -375,8 +375,10 @@ interface SlotView {
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
     /* X rossa per ritirarsi, nell'angolo della propria figurina */
-    .wd { position: absolute; top: -5px; right: -5px; z-index: 2; width: 22px; height: 22px; border-radius: 50%; border: 0; cursor: pointer;
-          display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 3px var(--bg), 0 3px 8px rgb(0 0 0 / 25%); }
+    /* pallino del ritiro piccolo; l'area di tocco resta comoda grazie al margine invisibile */
+    .wd::after { content: ''; position: absolute; inset: -9px; }
+    .wd { position: absolute; top: -4px; right: -4px; z-index: 2; width: 18px; height: 18px; border-radius: 50%; border: 0; cursor: pointer;
+          display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
     dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
     dialog.ask::backdrop { background: rgb(10 20 14 / 45%); }
     .ask-q { margin: 0 0 16px; text-align: center; font: 700 var(--step-1)/1.25 var(--font-body); }
