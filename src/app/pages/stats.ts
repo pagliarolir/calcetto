@@ -582,7 +582,8 @@ export class StatsPage {
   protected readonly sorted = computed(() => {
     const k = this.sortKey();
     const dir = this.sortAsc() ? 1 : -1;
-    return [...this.rows().filter((r) => r.played > 0 || r.attendances > 0)].sort((a, b) => {
+    // tutti i membri del gruppo, anche chi non ha ancora giocato (in fondo, a zero)
+    return [...this.rows()].sort((a, b) => {
       const av = a[k] as number | null;
       const bv = b[k] as number | null;
       if (av === bv) return b.points - a.points;
@@ -804,7 +805,13 @@ export class StatsPage {
         this.api.stats(r.from, r.to),
         this.api.teamKitStats(r.from, r.to), this.api.playerKitStats(r.from, r.to), this.api.pairStats(r.from, r.to),
       ]);
-      this.rows.set(rows);
+      // la classifica mostra tutti i membri del gruppo: chi non ha partite nel periodo compare a zero
+      const seen = new Set(rows.map((x) => x.user_id));
+      const zero = (id: string) => ({ user_id: id, played: 0, wins: 0, draws: 0, losses: 0, points: 0, points_per_game: null, win_pct: null, goals: 0,
+        goals_per_game: null, assists: 0, own_goals: 0, team_goals_for: null, team_goals_against: null, team_goal_diff: null, avg_vote: null,
+        best_avg_vote: null, worst_avg_vote: null, mvp_count: 0, current_form: null, cur_win_streak: 0, best_win_streak: 0, cur_unbeaten: 0,
+        best_unbeaten: 0, cur_loss_streak: 0, worst_loss_streak: 0, cur_winless: 0, worst_winless: 0 }) as unknown as StatsRow;
+      this.rows.set([...rows, ...this.session.members().filter((m) => !seen.has(m.id)).map((m) => zero(m.id))]);
       this.kitRows.set(kits);
       this.playerKits.set(pkits);
       this.pairs.set(pairs);

@@ -39,7 +39,7 @@ import { Avatar } from './avatar';
         <!-- ruolo e stato di forma (freccia come PES) -->
         <span class="sub nrow">{{ role() }}
           @if (form(); as f) {
-            @if (f.state === 'idle') { <span class="form idle" role="img" [attr.aria-label]="f.label" [title]="f.label">?</span> }
+            @if (f.state === 'equal') { <span class="form idle" role="img" [attr.aria-label]="f.label" [title]="f.label">=</span> }
             @else {
               <svg class="form" viewBox="0 0 24 24" role="img" [attr.aria-label]="f.label" [style.color]="f.color" [style.transform]="'rotate(' + f.rot + 'deg)'">
                 <title>{{ f.label }}</title><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
@@ -88,7 +88,7 @@ import { Avatar } from './avatar';
     .ovr { margin-left: auto; flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
            font: 800 0.92rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
     .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
-    /* stato di forma (come PES): freccia da ↑ a ↓; «?» se non gioca da un po' */
+    /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
     .form.idle { display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 0.72rem/1 var(--font-body); }
     .sub.turf { color: var(--turf); font-weight: 600; }
@@ -106,10 +106,11 @@ export class Figurina {
   readonly emptyLabel = input('Posto libero');
 
   private readonly ratings = inject(Ratings);
-  /** ruolo semplificato sotto il nome (se la pagina non passa una scritta) */
+  /** ruolo semplificato sotto il nome (se la pagina non passa una scritta); se non è nel profilo, quello dedotto dai valori */
   protected readonly role = computed(() => {
     const id = this.userId();
-    const r = id ? this.session.members().find((m) => m.id === id)?.field_role : null;
+    // ruolo del profilo; se non è indicato, quello dedotto dai valori (il ruolo in cui rende meglio)
+    const r = id ? this.session.members().find((m) => m.id === id)?.field_role ?? this.ratings.cards().get(id)?.best ?? null : null;
     return r ? ({ difensore_centrale: 'Difensore', esterno_difensivo: 'Esterno', esterno_offensivo: 'Esterno', punta: 'Punta' } as Record<string, string>)[r] ?? null : null;
   });
   protected readonly overall = computed(() => {
@@ -124,14 +125,13 @@ export class Figurina {
     const f = id ? this.ratings.cards().get(id)?.form : undefined;
     if (!f) return null;
     const M: Record<string, { rot: number; color: string; label: string }> = {
-      up: { rot: -90, color: 'hsl(130 65% 36%)', label: 'Forma: in gran forma' },
-      upright: { rot: -45, color: 'hsl(95 60% 38%)', label: 'Forma: in crescita' },
-      flat: { rot: 0, color: 'hsl(45 90% 40%)', label: 'Forma: nella norma' },
-      downright: { rot: 45, color: 'hsl(25 85% 45%)', label: 'Forma: in calo' },
-      down: { rot: 90, color: 'hsl(0 70% 45%)', label: 'Forma: in crisi' },
-      idle: { rot: 0, color: '', label: 'Forma: non gioca da un po\'' },
+      up: { rot: -90, color: 'hsl(130 65% 36%)', label: 'Forma: due vittorie di fila' },
+      upright: { rot: -45, color: 'hsl(95 60% 38%)', label: 'Forma: ha vinto l\'ultima' },
+      equal: { rot: 0, color: '', label: 'Forma: ultima pareggiata o non giocata' },
+      downright: { rot: 45, color: 'hsl(25 85% 45%)', label: 'Forma: ha perso l\'ultima' },
+      down: { rot: 90, color: 'hsl(0 70% 45%)', label: 'Forma: due sconfitte di fila' },
     };
-    return { state: f, ...M[f] };
+    return M[f] ? { state: f, ...M[f] } : null;
   });
 
   constructor() {
