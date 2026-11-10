@@ -69,7 +69,7 @@ interface SlotView {
                 Ci sono
               </button>
               @if (!store.free()) {
-                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy() || amLeaderTitular()"
+                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy()"
                         (click)="book('reserve')">
                   Riserva
                 </button>
@@ -212,7 +212,7 @@ interface SlotView {
               </select>
               <div class="row-wrap">
                 <button class="btn small primary" [disabled]="!placeUser || busy()" (click)="place('present')">In squadra</button>
-                <button class="btn small" [disabled]="!placeUser || busy() || isTitular(placeUser)" (click)="place('reserve')">Riserva</button>
+                <button class="btn small" [disabled]="!placeUser || busy()" (click)="place('reserve')">Riserva</button>
                 <button class="btn small" [disabled]="!placeUser || busy()" (click)="place('absent')">Assente</button>
                 <button class="btn small danger" [disabled]="!placeUser || busy() || !canReset(placeUser)" (click)="resetAnswer()">Azzera risposta</button>
               </div>

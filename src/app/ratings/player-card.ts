@@ -18,7 +18,7 @@ const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difens
       @if (c.has) {
         <div class="card">
           <div class="ring">
-            <app-rating-ring [label]="roleShort()" [value]="c.role_value" [size]="84" />
+            <app-rating-ring [label]="roleShort()" [value]="c.role_value" [size]="86" />
             <span class="small muted rl">{{ roleLabel() }}
               @if (!c.role) {
                 <button type="button" class="ri" aria-label="Perché questo ruolo" [attr.aria-expanded]="tip()" (click)="tip.set(!tip())"><app-icon name="info" [size]="14" /></button>
@@ -29,7 +29,7 @@ const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difens
               <div class="tip panel" role="note">Ruolo non indicato nel profilo: è il ruolo migliore secondo i valori.</div>
             }
           </div>
-          <app-hex-chart [series]="[{ hex: c.hex!, color: 'var(--turf)', name: 'caratteristiche' }]" [size]="120" />
+          <app-hex-chart [series]="[{ hex: c.hex!, color: 'var(--turf)', name: 'caratteristiche' }]" [size]="134" />
           <app-pitch-chart [card]="c" />
         </div>
       } @else {
@@ -39,7 +39,7 @@ const CARD_ROLE_LABEL: Record<FieldRole, string> = { difensore_centrale: 'Difens
   `,
   styles: `
     /* cerchio, esagono e campo sempre su una riga */
-    .card { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 6px; padding: 10px; border-radius: 16px;
+    .card { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 4px; padding: 8px 6px; border-radius: 16px;
             background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .ring { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: none; position: relative; }
     .rl { display: inline-flex; align-items: center; gap: 2px; }
