@@ -1,5 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FORM_RANK, overallOf, Ratings } from '../core/ratings';
 import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
@@ -369,8 +369,10 @@ interface SlotView {
     .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 14px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .info-pop ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
     /* le schede restano a portata di dito mentre si scorre l'elenco */
-    .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); }
-    .list-panel { padding-top: 14px; }
+    /* meno spazio tra la propria risposta e le schede */
+    .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-top: -8px; }
+    /* scorre solo l'elenco dei giocatori: l'altezza è quella che resta sotto le schede (fitList) */
+    .list-panel { padding-top: 14px; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 8px; }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
@@ -478,6 +480,14 @@ export class BookingTab {
   });
 
   constructor() {
+    afterNextRender(() => {
+      const host = this.hostEl.nativeElement as HTMLElement;
+      this.fitObs = new ResizeObserver(() => this.fitList());
+      this.fitObs.observe(host);
+      const sc = host.closest('.scroll-area'); if (sc) this.fitObs.observe(sc);
+      this.fitList();
+    });
+    inject(DestroyRef).onDestroy(() => this.fitObs?.disconnect());
     // si riallinea solo quando cambia partita, non a ogni aggiornamento in tempo reale
     const matchKey = computed(() => {
       const m = this.store.match();
@@ -668,6 +678,21 @@ export class BookingTab {
     if (t.bookingClosed) return { label: 'Prenotazioni chiuse', cls: 'closed' };
     return { label: 'Prenotazioni in arrivo', cls: 'soon' };
   });
+
+  // ------------------------------------------------ solo l'elenco dei giocatori scorre
+  private fitObs?: ResizeObserver;
+  /** l'elenco occupa lo spazio che resta sotto le schede (almeno 240 px: su schermi bassissimi scorre anche la pagina) */
+  protected fitList(): void {
+    const host = this.hostEl.nativeElement as HTMLElement;
+    const sc = host.closest('.scroll-area') as HTMLElement | null;
+    const panel = host.querySelector('.list-panel') as HTMLElement | null;
+    if (!sc || !panel) return;
+    const top = panel.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+    // si toglie anche il margine inferiore della pagina, così la pagina non scorre
+    const page = panel.closest('.page') as HTMLElement | null;
+    const pad = page ? parseFloat(getComputedStyle(page).paddingBottom) || 0 : 0;
+    panel.style.maxHeight = `${Math.max(240, Math.floor(sc.clientHeight - top - pad - 2))}px`;
+  }
 
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
   protected readonly infoOpen = signal(false);

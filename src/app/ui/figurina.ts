@@ -86,7 +86,7 @@ import { Avatar } from './avatar';
     .frm { grid-column: 2; grid-row: 2; width: 20px; height: 22px; display: grid; place-items: center; }
     .frm svg { width: 20px; height: 20px; }
     .frm.eq { color: var(--muted); font: 800 1.15rem/1 var(--font-body); }
-    .ovr { grid-column: 3; grid-row: 2; justify-self: start; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    .ovr { grid-column: 4; grid-row: 2; justify-self: end; align-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
            font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
     .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
     /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
