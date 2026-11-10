@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { Ratings } from '../core/ratings';
 import { RouterLink } from '@angular/router';
 import { Session } from '../core/session';
-import { inject } from '@angular/core';
 import { Avatar } from './avatar';
 
 /**
@@ -21,7 +21,7 @@ import { Avatar } from './avatar';
   template: `
     <span class="pic">
       @if (userId(); as id) {
-        <app-avatar [userId]="id" [size]="48" />
+        <app-avatar [userId]="id" [size]="40" />
       } @else {
         <span class="hole" aria-hidden="true"></span>
       }
@@ -35,19 +35,35 @@ import { Avatar } from './avatar';
         <span class="name muted">{{ emptyLabel() }}</span>
       }
       @if (note(); as n) { <span class="sub" [class.turf]="noteTone() === 'turf'">{{ n }}</span> }
+      @else if (role() || form()) {
+        <!-- ruolo e stato di forma (freccia come PES) -->
+        <span class="sub nrow">{{ role() }}
+          @if (form(); as f) {
+            @if (f.state === 'idle') { <span class="form idle" role="img" [attr.aria-label]="f.label" [title]="f.label">?</span> }
+            @else {
+              <svg class="form" viewBox="0 0 24 24" role="img" [attr.aria-label]="f.label" [style.color]="f.color" [style.transform]="'rotate(' + f.rot + 'deg)'">
+                <title>{{ f.label }}</title><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            }
+          }
+        </span>
+      }
     </span>
+    @if (overall(); as o) {
+      <span class="ovr" [style.--h]="hue()" [attr.aria-label]="'valutazione ' + o" [title]="'Valutazione ' + o">{{ o }}</span>
+    }
   `,
   styles: `
     :host {
-      display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 64px;
-      padding: 8px 12px 8px 8px; border-radius: 16px;
+      display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 60px;
+      padding: 8px 8px 8px 6px; border-radius: 16px;
       background: var(--surface); border: 1px solid var(--line);
     }
     :host(.me) { border-color: var(--turf); box-shadow: inset 0 0 0 1px var(--turf); background: linear-gradient(var(--turf-soft), var(--turf-soft)) padding-box; }
     :host(.empty) { background: transparent; border-style: dashed; }
-    .pic { position: relative; flex: none; width: 48px; height: 48px; }
+    .pic { position: relative; flex: none; width: 40px; height: 40px; }
     .pic app-avatar { box-shadow: 0 0 0 2px var(--surface); }
-    .hole { display: block; width: 48px; height: 48px; border-radius: 50%; border: 2px dashed var(--line); }
+    .hole { display: block; width: 40px; height: 40px; border-radius: 50%; border: 2px dashed var(--line); }
     /* il numero del posto, agganciato alla foto come quello sulla maglia */
     .num {
       position: absolute; right: -6px; bottom: -4px; min-width: 22px; height: 22px; padding: 0 5px;
@@ -68,6 +84,13 @@ import { Avatar } from './avatar';
     .txt { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
     .name { font-weight: 700; color: inherit; text-decoration: none; font-size: var(--step-0); }
     .sub { font-size: 0.75rem; color: var(--muted); }
+    /* valutazione generale: cerchio pieno dal rosso (50 o meno) al verde intenso (85 o più), testo bianco */
+    .ovr { margin-left: auto; flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+           font: 800 0.92rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
+    .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
+    /* stato di forma (come PES): freccia da ↑ a ↓; «?» se non gioca da un po' */
+    .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
+    .form.idle { display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 0.72rem/1 var(--font-body); }
     .sub.turf { color: var(--turf); font-weight: 600; }
   `,
 })
@@ -81,4 +104,37 @@ export class Figurina {
   readonly note = input<string | null>(null);
   readonly noteTone = input<'muted' | 'turf'>('muted');
   readonly emptyLabel = input('Posto libero');
+
+  private readonly ratings = inject(Ratings);
+  /** ruolo semplificato sotto il nome (se la pagina non passa una scritta) */
+  protected readonly role = computed(() => {
+    const id = this.userId();
+    const r = id ? this.session.members().find((m) => m.id === id)?.field_role : null;
+    return r ? ({ difensore_centrale: 'Difensore', esterno_difensivo: 'Esterno', esterno_offensivo: 'Esterno', punta: 'Punta' } as Record<string, string>)[r] ?? null : null;
+  });
+  protected readonly overall = computed(() => {
+    const id = this.userId();
+    const c = id ? this.ratings.cards().get(id) : undefined;
+    return c?.has ? c.overall ?? null : null;
+  });
+  protected readonly hue = computed(() => 130 * Math.max(0, Math.min(1, ((this.overall() ?? 50) - 50) / 35)));
+  /** stato di forma: freccia ruotata (da ↑ a ↓) e colore dal verde al rosso */
+  protected readonly form = computed(() => {
+    const id = this.userId();
+    const f = id ? this.ratings.cards().get(id)?.form : undefined;
+    if (!f) return null;
+    const M: Record<string, { rot: number; color: string; label: string }> = {
+      up: { rot: -90, color: 'hsl(130 65% 36%)', label: 'Forma: in gran forma' },
+      upright: { rot: -45, color: 'hsl(95 60% 38%)', label: 'Forma: in crescita' },
+      flat: { rot: 0, color: 'hsl(45 90% 40%)', label: 'Forma: nella norma' },
+      downright: { rot: 45, color: 'hsl(25 85% 45%)', label: 'Forma: in calo' },
+      down: { rot: 90, color: 'hsl(0 70% 45%)', label: 'Forma: in crisi' },
+      idle: { rot: 0, color: '', label: 'Forma: non gioca da un po\'' },
+    };
+    return { state: f, ...M[f] };
+  });
+
+  constructor() {
+    effect(() => { const id = this.userId(); if (id && this.variant() !== 'empty') this.ratings.request(id); });
+  }
 }

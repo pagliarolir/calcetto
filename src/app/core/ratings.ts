@@ -18,6 +18,8 @@ export type SlotKind = Band | 'est' | 'gk';
 /** La scheda che vedono tutti: solo valori calcolati (le 13 caratteristiche le vede solo il Leader). */
 export interface RatingCard {
   user_id: string; has: boolean; role: string | null; gk: Gk;
+  /** stato di forma (dalle pagelle): up, upright, flat, downright, down, idle (non gioca da un po') */
+  form?: 'up' | 'upright' | 'flat' | 'downright' | 'down' | 'idle';
   best?: string; role_value?: number; overall?: number;
   dc?: number; ed?: number; eo?: number; pu?: number; cen?: number; hex?: Hex;
 }
@@ -89,6 +91,22 @@ export class Ratings {
     const next = new Map(this.cards());
     for (const r of rows) next.set(r.user_id, r);
     this.cards.set(next);
+  }
+
+  private pending = new Set<string>();
+  private flushing = false;
+  /** chiede la scheda di un giocatore: le richieste dello stesso istante partono insieme, in una sola chiamata */
+  request(id: string): void {
+    if (this.cards().has(id)) return;
+    this.pending.add(id);
+    if (this.flushing) return;
+    this.flushing = true;
+    queueMicrotask(() => {
+      const ids = [...this.pending];
+      this.pending.clear();
+      this.flushing = false;
+      void this.load(ids).catch(() => undefined);
+    });
   }
 
   /** dopo un cambio dei coefficienti le schede si ricalcolano */
