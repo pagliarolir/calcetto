@@ -372,7 +372,7 @@ interface SlotView {
     /* meno spazio tra la propria risposta e le schede */
     .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-top: -8px; }
     /* scorre solo l'elenco dei giocatori: l'altezza è quella che resta sotto le schede (fitList) */
-    .list-panel { padding-top: 14px; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 8px; }
+    .list-panel { padding: 14px 6px 8px 0; margin-right: -6px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }

@@ -80,13 +80,14 @@ import { Avatar } from './avatar';
     .sub { font-size: 0.75rem; color: var(--muted); }
     /* valutazione generale: cerchio pieno dal rosso (50 o meno) al verde intenso (85 o più), testo bianco */
     /* layout: foto a sinistra; a destra il nome sopra, sotto la freccia di forma e la valutazione */
-    :host { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 6px; row-gap: 3px; align-items: center; }
+    /* tre colonne: foto | nome e, sotto, freccia di forma | valutazione (colonna a parte, pallino in basso) */
+    :host { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 6px; row-gap: 3px; align-items: center; }
     .pic { grid-row: 1 / 3; margin-right: 8px; }
-    .txt { grid-column: 2 / 5; grid-row: 1; min-width: 0; }
-    .frm { grid-column: 2; grid-row: 2; width: 20px; height: 22px; display: grid; place-items: center; }
+    .txt { grid-column: 2; grid-row: 1; min-width: 0; }
+    .frm { grid-column: 2; grid-row: 2; justify-self: start; width: 20px; height: 22px; display: grid; place-items: center; }
     .frm svg { width: 20px; height: 20px; }
     .frm.eq { color: var(--muted); font: 800 1.15rem/1 var(--font-body); }
-    .ovr { grid-column: 4; grid-row: 2; justify-self: end; align-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    .ovr { grid-column: 3; grid-row: 1 / 3; align-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
            font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
     .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
     /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
