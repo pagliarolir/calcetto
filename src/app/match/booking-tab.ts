@@ -1,5 +1,6 @@
 import { ActivatedRoute, Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { FORM_RANK, overallOf, Ratings } from '../core/ratings';
 import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +44,20 @@ interface SlotView {
                 <div class="info-pop panel" role="note"><ul>@for (l of infoLines(); track $index) { <li>{{ l }}</li> }</ul></div>
               }
             }
+            <!-- ordinamento delle liste -->
+            <span class="sortw">
+              <button type="button" class="sort-b" aria-label="Ordina i giocatori" [attr.aria-expanded]="sortOpen()" (click)="sortOpen.set(!sortOpen())"><app-icon name="sort" [size]="18" /></button>
+              @if (sortOpen()) {
+                <div class="pop-shield" aria-hidden="true" (click)="sortOpen.set(false)"></div>
+                <div class="sort-menu panel" role="menu">
+                  @for (o of sortOptions(); track o.id) {
+                    <button type="button" role="menuitemradio" [attr.aria-checked]="effSort() === o.id" (click)="sortMode.set(o.id); sortOpen.set(false)">
+                      <span class="grow">{{ o.label }}</span>@if (effSort() === o.id) { <app-icon name="check" [size]="16" /> }
+                    </button>
+                  }
+                </div>
+              }
+            </span>
             @if (statusPill(); as sp) { <span class="spill" [class]="'spill ' + sp.cls" role="status">{{ sp.label }}</span> }
           </header>
           @if (m.status === 'cancelled') {
@@ -109,17 +124,17 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
+                    <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
                 <ol class="board">
-                  @for (s of slots(); track s.slot) {
+                  @for (s of sortedSlots(); track s.slot) {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id">
                       @if (s.row; as r) {
                         <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       />
-                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }
+                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
                       }
@@ -140,17 +155,17 @@ interface SlotView {
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }</li>
+                      <li><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }</li>
                     }
                   </ul>
                 } @else {
                   <ol class="board">
-                    @for (r of store.reserves(); track r.user_id + ':' + r.slot) {
+                    @for (r of byName(store.reserves()); track r.user_id + ':' + r.slot) {
                       <li [class.enter-drop]="dropFor() === r.user_id">
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
                                      
                                       />
-                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="14" /></button> }
+                        @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="13" /></button> }
                       </li>
                     }
                   </ol>
@@ -333,7 +348,13 @@ interface SlotView {
   styles: `
     .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
     .me-head h2 { flex: 0 1 auto; min-width: 0; }
-    .spill { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px;
+    .sortw { margin-left: auto; position: relative; flex: none; }
+    .sort-b { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+    .sort-b[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
+    .sort-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; min-width: 240px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
+    .sort-menu button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step--1)/1.2 var(--font-body); text-align: left; cursor: pointer; }
+    .sort-menu button[aria-checked='true'] { color: var(--turf); }
+    .spill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px;
              font: 700 0.72rem/1 var(--font-body); white-space: nowrap; }
     .spill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
     .spill.open { background: var(--turf-soft); color: var(--turf); }
@@ -342,7 +363,7 @@ interface SlotView {
     .spill.closed { background: var(--surface-2); color: var(--muted); }
     .spill.live { background: var(--danger-soft); color: var(--danger); }
     /* «i» vicina al titolo: cerchio piccolo, area di tocco comunque comoda */
-    .info-i { width: 32px; height: 32px; margin-left: -4px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
+    .info-i { width: 32px; height: 32px; margin-left: 0; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
     .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
     .pop-shield { position: fixed; inset: 0; z-index: 5; }
     .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 14px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
@@ -354,7 +375,7 @@ interface SlotView {
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
     /* X rossa per ritirarsi, nell'angolo della propria figurina */
-    .wd { position: absolute; top: -6px; right: -6px; z-index: 2; width: 28px; height: 28px; border-radius: 50%; border: 0; cursor: pointer;
+    .wd { position: absolute; top: -5px; right: -5px; z-index: 2; width: 22px; height: 22px; border-radius: 50%; border: 0; cursor: pointer;
           display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 3px var(--bg), 0 3px 8px rgb(0 0 0 / 25%); }
     dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
     dialog.ask::backdrop { background: rgb(10 20 14 / 45%); }
@@ -551,10 +572,49 @@ export class BookingTab {
   }
 
   /** giocatori in ordine alfabetico, con il Leader per primo (modalità "sceglie il Leader": nessun ordine) */
-  protected byName(rows: BoardRow[]): BoardRow[] {
-    return [...rows].sort((a, b) => Number(b.is_leader) - Number(a.is_leader)
-      || this.session.name(a.user_id).localeCompare(this.session.name(b.user_id), 'it'));
+  // ------------------------------------------------ ordinamento delle liste
+  private readonly ratings = inject(Ratings);
+  protected readonly sortMode = signal<'alpha' | 'ovr' | 'form' | 'insert' | 'team'>('alpha');
+  protected readonly sortOpen = signal(false);
+  /** modi disponibili per la lista che si sta guardando */
+  protected readonly sortOptions = computed(() => {
+    const out: { id: 'alpha' | 'ovr' | 'form' | 'insert' | 'team'; label: string }[] = [
+      { id: 'alpha', label: 'Alfabetico' }, { id: 'ovr', label: 'Valutazione' }, { id: 'form', label: 'Stato di forma' },
+    ];
+    if (this.listTab() !== 'team') out.push({ id: 'insert', label: 'Ordine di inserimento' });
+    else if (this.store.teamOf().size) out.push({ id: 'team', label: 'Squadra (bianchi a sinistra, neri a destra)' });
+    return out;
+  });
+  protected readonly effSort = computed(() => (this.sortOptions().some((o) => o.id === this.sortMode()) ? this.sortMode() : 'alpha'));
+  /** ordina una lista secondo il modo scelto (predefinito: alfabetico) */
+  protected byName<T extends { user_id: string }>(rows: T[]): T[] {
+    const name = (x: T) => this.session.name(x.user_id);
+    const alpha = (a: T, b: T) => name(a).localeCompare(name(b), 'it');
+    const card = (x: T) => this.ratings.cards().get(x.user_id);
+    const mode = this.effSort();
+    if (mode === 'ovr') return [...rows].sort((a, b) => (overallOf(card(b)) ?? -1) - (overallOf(card(a)) ?? -1) || alpha(a, b));
+    if (mode === 'form') return [...rows].sort((a, b) => (FORM_RANK[card(b)?.form ?? ''] ?? -1) - (FORM_RANK[card(a)?.form ?? ''] ?? -1) || alpha(a, b));
+    if (mode === 'insert') {
+      const at = (x: T) => { const r = x as unknown as { sort_key?: string | number; updated_at?: string }; return String(r.sort_key ?? r.updated_at ?? ''); };
+      return [...rows].sort((a, b) => at(a).localeCompare(at(b)) || alpha(a, b));
+    }
+    if (mode === 'team') {
+      // bianchi e neri alternati: nella griglia a due colonne i bianchi stanno a sinistra, i neri a destra
+      const t = this.store.teamOf();
+      const w = rows.filter((x) => t.get(x.user_id) === 'white').sort(alpha), k = rows.filter((x) => t.get(x.user_id) === 'black').sort(alpha);
+      const rest = rows.filter((x) => !t.has(x.user_id)).sort(alpha);
+      const out: T[] = [];
+      for (let i = 0; i < Math.max(w.length, k.length); i++) { if (w[i]) out.push(w[i]); if (k[i]) out.push(k[i]); }
+      return [...out, ...rest];
+    }
+    return [...rows].sort(alpha);
   }
+  /** titolari con i posti numerati: si ordinano gli occupati, i posti liberi restano in fondo */
+  protected readonly sortedSlots = computed(() => {
+    const full = this.slots().filter((s) => s.row), empty = this.slots().filter((s) => !s.row);
+    const order = this.byName(full.map((s) => ({ user_id: s.row!.user_id, s })));
+    return [...order.map((x) => x.s), ...empty];
+  });
 
   /** scheda degli elenchi aperta: titolari, disponibili, riserve, assenti */
   // la sotto-scheda è nell'indirizzo (?elenco=assenti): tornando indietro da una scheda giocatore si riapre la stessa

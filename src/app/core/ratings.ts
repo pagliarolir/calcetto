@@ -70,6 +70,16 @@ export function centerCss(c: RatingCard): string {
   return `rgb(${m[0]} ${m[1]} ${m[2]})`;
 }
 
+/** bonus della forma sulla valutazione e ordine delle forme (dalla migliore) */
+export const FORM_BONUS: Record<string, number> = { up: 2, upright: 1, equal: 0, downright: -1, down: -2 };
+export const FORM_RANK: Record<string, number> = { up: 4, upright: 3, equal: 2, downright: 1, down: 0 };
+/** valutazione mostrata: il valore più alto tra i ruoli (o quello impostato dal Leader), più il bonus della forma */
+export function overallOf(c: RatingCard | undefined): number | null {
+  if (!c?.has) return null;
+  const best = Math.max(c.role_value ?? 0, c.dc ?? 0, c.ed ?? 0, c.eo ?? 0, c.pu ?? 0);
+  return Math.max(0, Math.min(100, best + (FORM_BONUS[c.form ?? 'equal'] ?? 0)));
+}
+
 /** valore di un giocatore in un tipo di posto (portiere = valore generale con il bonus del portiere) */
 export function valueAt(c: RatingCard | undefined, kind: SlotKind): number | null {
   if (!c?.has) return null;
