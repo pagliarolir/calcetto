@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { Ratings, SlotKind, suggestTeams, valueAt } from '../core/ratings';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -11,6 +11,7 @@ import { Toasts } from '../core/toast';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
+import { Icon } from '../ui/icon';
 
 interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string; kind: SlotKind }
 interface Place { team: Team; slot: number | null }
@@ -18,7 +19,7 @@ interface Place { team: Team; slot: number | null }
 
 @Component({
   selector: 'app-lineup-tab',
-  imports: [FormsModule, Avatar],
+  imports: [FormsModule, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -41,23 +42,48 @@ interface Place { team: Team; slot: number | null }
         }
 
         @if (visible()) {
-          <div class="pitch" [class.tall]="perTeam() >= 7" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
+          <dialog #pickDlg class="sheet" (click)="$event.target === pickDlg && pickDlg.close()" aria-label="Scegli un giocatore">
+            @if (pickFor(); as pf) {
+              <button type="button" class="x-close" (click)="pickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
+              <h3>{{ teamLabel()[pf.team] }} · {{ pf.label }}</h3>
+              <p class="small muted">Disponibili, dal più adatto a questo posto.</p>
+              <ul class="pick">
+                @for (c of pickList(); track c.id) {
+                  <li><button type="button" (click)="pickPlayer(c.id); pickDlg.close()">
+                    <app-avatar [userId]="c.id" [size]="36" /><span class="grow">{{ session.name(c.id) }}</span>
+                    @if (c.v !== null) { <span class="ovb static" [style.--h]="hue(c.v)">{{ c.v }}</span> }
+                  </button></li>
+                } @empty { <li class="small muted">Nessun giocatore disponibile.</li> }
+              </ul>
+            }
+          </dialog>
+          <div class="pitch" #pitch [class.tall]="perTeam() >= 7" [class.small]="smallPitch()" [style.height.px]="pitchH()" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
             <div class="lines" aria-hidden="true"></div>
             @for (s of spots(); track s.team + s.slot) {
               @let who = occupant(s);
               <button class="spot" [class.black]="s.team === 'black'" [class.filled]="!!who"
                       [class.sel]="!!who && who === selected()"
-                      [style.left.%]="s.x" [style.top.%]="s.y" [disabled]="!editing()"
+                      [style.left.%]="s.x" [style.top.%]="s.y" [disabled]="!editing() && !who"
                       [attr.aria-label]="teamLabel()[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
                       (click)="tapSpot(s)">
                 @if (who) {
-                  <app-avatar class="pitch-photo" [userId]="who" [size]="46" [team]="s.team" />
+                  <span class="ph"><app-avatar class="pitch-photo" [userId]="who" [size]="smallPitch() ? 38 : 46" [team]="s.team" />
+                    @if (posValue(who, s); as v) { <span class="ovb" [style.--h]="hue(v)" [attr.aria-label]="'valore in questo posto ' + v">{{ v }}</span> }</span>
                 } @else {
                   <span class="disc">{{ editing() ? '+' : '' }}</span>
                 }
                 <span class="name">{{ who ? session.name(who) : s.short }}</span>
-                @if (who) { <span class="val" [attr.aria-label]="'valore in questo posto ' + (posValue(who, s) ?? 'non disponibile')">{{ posValue(who, s) ?? '–' }}</span> }
               </button>
+            }
+            <!-- scheda del giocatore toccato: righe a cascata; un tocco fuori la chiude al contrario -->
+            @if (info(); as inf) {
+              <div class="shield" aria-hidden="true" (click)="closeInfo()"></div>
+              <div class="pinfo panel" role="dialog" [attr.aria-label]="'Informazioni su ' + session.name(inf.id)" [class.closing]="infoClosing()"
+                   [style.left.%]="inf.left" [style.top]="inf.top" [style.bottom]="inf.bottom">
+                @for (r of infoRows(); track r.label; let i = $index) {
+                  <div class="pr" [style.--i]="i" [style.--n]="infoRows().length" [class.head]="i === 0"><span>{{ r.label }}</span><strong class="num">{{ r.value }}</strong></div>
+                }
+              </div>
             }
             <!-- valore delle due squadre, ai lati del campo -->
             @for (t of teams; track t) {
@@ -148,6 +174,32 @@ interface Place { team: Team; slot: number | null }
           padding: 4px 7px; border-radius: 10px; background: rgb(255 255 255 / 88%); color: #14201a; font: 600 0.62rem/1.1 var(--font-body); z-index: 2; pointer-events: none; }
     .tv b { font: 800 1.05rem/1 var(--font-display); }
     .tv.black { top: 75%; background: rgb(20 32 26 / 88%); color: #fff; }
+    /* badge del valore sulla foto, dal rosso al verde */
+    .ph { position: relative; display: block; }
+    .ovb { position: absolute; right: -6px; top: -4px; min-width: 22px; height: 22px; padding: 0 3px; border-radius: 11px; display: grid; place-items: center;
+           font: 800 0.7rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 36%); box-shadow: 0 0 0 2px #fff; }
+    .ovb.static { position: static; box-shadow: none; }
+    .spot .name { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.72rem; }
+    .pitch.small .spot { width: 64px; } .pitch.small .spot .name { max-width: 62px; font-size: 0.66rem; }
+    .pitch.small .disc { width: 38px; height: 38px; }
+    /* scheda del giocatore: fondo pieno e ombra per staccarsi dal campo; righe a cascata */
+    .shield { position: absolute; inset: 0; z-index: 4; }
+    .pinfo { position: absolute; z-index: 5; transform: translateX(-50%); width: 190px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px;
+             background: var(--surface); color: var(--ink); box-shadow: 0 12px 30px rgb(0 0 0 / 40%), 0 0 0 1px var(--line); }
+    .pr { display: flex; justify-content: space-between; gap: 8px; font-size: var(--step--1); padding: 2px 0;
+          animation: pr-in 220ms var(--ease-out) both; animation-delay: calc(var(--i) * 55ms); }
+    .pr.head { font-weight: 800; border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 2px; }
+    .pinfo.closing .pr { animation: pr-out 160ms ease-in both; animation-delay: calc((var(--n) - 1 - var(--i)) * 55ms); }
+    @keyframes pr-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    @keyframes pr-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px); } }
+    @media (prefers-reduced-motion: reduce) { .pr, .pinfo.closing .pr { animation: none; } }
+    .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    .pick button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 6px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1.2 var(--font-body); cursor: pointer; text-align: left; }
+    .pick button:hover { background: var(--surface-2); }
+    dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 80dvh; overflow-y: auto; border: 0; color: var(--ink);
+                   background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+    dialog.sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    dialog.sheet h3 { margin: 4px 48px 4px 0; }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
       background: repeating-linear-gradient(180deg, #24774c 0 10%, #1f6b45 10% 20%);
@@ -206,6 +258,70 @@ export class LineupTab {
 
   protected readonly draft = signal(new Map<string, Place>());
   protected readonly selected = signal<string | null>(null);
+
+  // ------------------------------------------------ campo adattato allo spazio fino alla barra in basso
+  private readonly pitchEl = viewChild<ElementRef<HTMLElement>>('pitch');
+  protected readonly pitchH = signal<number | null>(null);
+  protected readonly smallPitch = computed(() => (this.pitchH() ?? 999) < 560);
+  private fitPitch(): void {
+    const el = this.pitchEl()?.nativeElement; const sc = el?.closest('.scroll-area') as HTMLElement | null;
+    if (!el || !sc) return;
+    const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+    const w = el.clientWidth;
+    // tra un minimo (telefoni bassi) e un massimo (niente campo troppo allungato)
+    // minimo 460 px: su schermi bassissimi meglio far scorrere appena la pagina che sovrapporre i giocatori
+    this.pitchH.set(Math.round(Math.max(460, Math.min(w * 1.9, sc.clientHeight - top - 12))));
+  }
+  private readonly hostRef = inject(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  protected hue(v: number): number { return 130 * Math.max(0, Math.min(1, (v - 50) / 35)); }
+
+  // ------------------------------------------------ scheda del giocatore (a cascata)
+  protected readonly info = signal<{ id: string; left: number; top: string | null; bottom: string | null } | null>(null);
+  protected readonly infoClosing = signal(false);
+  private readonly avgVotes = signal<Map<string, number | null>>(new Map());
+  protected readonly infoRows = computed(() => {
+    const inf = this.info(); if (!inf) return [];
+    const c = this.ratings.cards().get(inf.id);
+    const v = this.avgVotes().get(inf.id);
+    return [
+      { label: this.session.name(inf.id), value: '' },
+      { label: 'Punta', value: c?.pu ?? '–' }, { label: 'Esterno offensivo', value: c?.eo ?? '–' },
+      { label: 'Esterno difensivo', value: c?.ed ?? '–' }, { label: 'Difensore centrale', value: c?.dc ?? '–' },
+      { label: 'Media voto', value: v != null ? String(Math.round(v * 100) / 100).replace('.', ',') : '–' },
+    ];
+  });
+  protected openInfo(id: string, s: Spot): void {
+    if (!this.avgVotes().size) void this.api.stats(null, null).then((rows) => this.avgVotes.set(new Map(rows.map((r) => [r.user_id, r.avg_vote])))).catch(() => undefined);
+    const left = Math.max(26, Math.min(74, s.x));
+    // metà alta: sotto il giocatore; metà bassa: sopra (copre meno gli altri)
+    this.infoClosing.set(false);
+    this.info.set(s.y < 50 ? { id, left, top: `calc(${s.y}% + 34px)`, bottom: null } : { id, left, top: null, bottom: `calc(${100 - s.y}% + 34px)` });
+  }
+  protected closeInfo(): void {
+    if (this.infoClosing()) return;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.infoClosing.set(true);
+    setTimeout(() => { this.info.set(null); this.infoClosing.set(false); }, reduce ? 0 : 60 * this.infoRows().length + 180);
+  }
+
+  // ------------------------------------------------ posto vuoto: scelta tra i disponibili, dal più adatto
+  private readonly pickDlg = viewChild<ElementRef<HTMLDialogElement>>('pickDlg');
+  protected readonly pickFor = signal<Spot | null>(null);
+  protected readonly pickList = computed(() => {
+    const s = this.pickFor(); if (!s) return [];
+    return this.bench().map((b) => ({ id: typeof b === 'string' ? b : (b as { user_id: string }).user_id, v: null as number | null }))
+      .map((x) => ({ ...x, v: valueAt(this.ratings.cards().get(x.id), s.kind) }))
+      .sort((a, b) => (b.v ?? -1) - (a.v ?? -1) || this.session.name(a.id).localeCompare(this.session.name(b.id), 'it'));
+  });
+  protected openPick(s: Spot): void {
+    this.pickFor.set(s);
+    queueMicrotask(() => this.pickDlg()?.nativeElement.showModal());
+  }
+  protected pickPlayer(id: string): void {
+    const s = this.pickFor(); if (!s) return;
+    const d = new Map(this.draft()); d.set(id, { team: s.team, slot: s.slot }); this.draft.set(d); this.pickFor.set(null);
+  }
   protected readonly busy = signal(false);
 
   protected readonly editing = computed(() => {
@@ -238,6 +354,13 @@ export class LineupTab {
   });
 
   constructor() {
+    afterNextRender(() => {
+      const ro = new ResizeObserver(() => this.fitPitch());
+      ro.observe(this.hostRef.nativeElement as HTMLElement);
+      const sc = (this.hostRef.nativeElement as HTMLElement).closest('.scroll-area'); if (sc) ro.observe(sc);
+      this.fitPitch();
+      this.destroyRef.onDestroy(() => ro.disconnect());
+    });
     // valori dei titolari e di chi è in formazione
     effect(() => {
       const ids = [...new Set([...this.store.team().map((b) => b.user_id), ...this.store.lineup().map((l) => l.user_id)])];
@@ -274,8 +397,11 @@ export class LineupTab {
   protected tapSpot(s: Spot): void {
     const sel = this.selected();
     const who = this.occupant(s);
+    // fuori dalla modifica: il tocco apre la scheda del giocatore
+    if (!this.editing()) { if (who) this.openInfo(who, s); return; }
     if (!sel) {
       if (who) this.selected.set(who);
+      else this.openPick(s);   // posto vuoto: scelta tra i disponibili
       return;
     }
     const d = new Map(this.draft());
