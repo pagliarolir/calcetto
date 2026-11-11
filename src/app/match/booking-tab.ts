@@ -118,7 +118,7 @@ interface SlotView {
           }
         </div>
 
-        <section class="section list-panel" role="tabpanel" [attr.aria-label]="listLabel()">
+        <section class="section list-panel" data-no-pull role="tabpanel" [attr.aria-label]="listLabel()">
           @switch (listTab()) {
             @case ('team') {
               @if (store.free()) {
@@ -183,7 +183,7 @@ interface SlotView {
                   <h3>Non hanno risposto <span class="count num">{{ silent().length }}</span></h3>
                   <ul class="people board">
                     @for (id of silent(); track id) {
-                      <li><app-figurina variant="free" [userId]="id" [mine]="id === session.uid()" note="nessuna risposta" /></li>
+                      <li><app-figurina variant="free" [userId]="id" [mine]="id === session.uid()" /></li>
                     }
                   </ul>
                 </div>
@@ -487,7 +487,7 @@ export class BookingTab {
       const sc = host.closest('.scroll-area'); if (sc) this.fitObs.observe(sc);
       this.fitList();
     });
-    inject(DestroyRef).onDestroy(() => this.fitObs?.disconnect());
+    inject(DestroyRef).onDestroy(() => { this.fitObs?.disconnect(); if (this.pagePad) this.pagePad.style.paddingBottom = ''; });
     // si riallinea solo quando cambia partita, non a ogni aggiornamento in tempo reale
     const matchKey = computed(() => {
       const m = this.store.match();
@@ -681,6 +681,7 @@ export class BookingTab {
 
   // ------------------------------------------------ solo l'elenco dei giocatori scorre
   private fitObs?: ResizeObserver;
+  private pagePad?: HTMLElement;
   /** l'elenco occupa lo spazio che resta sotto le schede (almeno 240 px: su schermi bassissimi scorre anche la pagina) */
   protected fitList(): void {
     const host = this.hostEl.nativeElement as HTMLElement;
@@ -689,9 +690,10 @@ export class BookingTab {
     if (!sc || !panel) return;
     const top = panel.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
     // si toglie anche il margine inferiore della pagina, così la pagina non scorre
+    // l'elenco arriva fino alla barra in basso: il margine inferiore della pagina si riduce (e si ripristina uscendo)
     const page = panel.closest('.page') as HTMLElement | null;
-    const pad = page ? parseFloat(getComputedStyle(page).paddingBottom) || 0 : 0;
-    panel.style.maxHeight = `${Math.max(240, Math.floor(sc.clientHeight - top - pad - 2))}px`;
+    if (page && page.style.paddingBottom !== '4px') { this.pagePad = page; page.style.paddingBottom = '4px'; }
+    panel.style.maxHeight = `${Math.max(240, Math.floor(sc.clientHeight - top - 6))}px`;
   }
 
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
