@@ -54,7 +54,7 @@ interface Place { team: Team; slot: number | null }
               </ul>
             }
           </dialog>
-          <div class="pitch" #pitch [class.rays-on]="!!info() && !infoClosing()" [class.tall]="perTeam() >= 7" [class.small]="smallPitch()" [style.height.px]="pitchH()" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
+          <div class="pitch" #pitch [style.--ph.px]="photo()" [style.--k]="scale()" [class.rays-on]="!!info() && !infoClosing()" [class.tall]="perTeam() >= 7" [class.small]="smallPitch()" [style.height.px]="pitchH()" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
             <div class="lines" aria-hidden="true"></div>
             @for (s of spots(); track s.team + s.slot) {
               @let who = occupant(s);
@@ -64,7 +64,7 @@ interface Place { team: Team; slot: number | null }
                       [attr.aria-label]="teamLabel()[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
                       (click)="tapSpot(s)">
                 @if (who) {
-                  <span class="ph"><app-avatar class="pitch-photo" [userId]="who" [size]="smallPitch() ? 38 : 46" [team]="s.team" />
+                  <span class="ph"><app-avatar class="pitch-photo" [userId]="who" [size]="photo()" [team]="s.team" />
                     @if (s.kind === 'gk' && gkOf(who); as g) { <span class="gkd" [class]="'gkd ' + g" [attr.aria-label]="'portiere: pallino ' + g"></span> }
                     @if (posValue(who, s); as v) { <span class="ovb" [style.--h]="hue(v)" [attr.aria-label]="'valore in questo posto ' + v">{{ v }}</span> }</span>
                 } @else {
@@ -76,6 +76,7 @@ interface Place { team: Team; slot: number | null }
             <!-- statistiche a raggiera: linee che partono dal giocatore, valori in fondo; un tocco fuori le richiude -->
             @if (info(); as inf) {
               <div class="shade" [class.closing]="infoClosing()" aria-hidden="true" (click)="shadeTap($event)"></div>
+              @for (k of [inf.seq]; track k) {
               <svg class="rays" [class.closing]="infoClosing()" [attr.viewBox]="'0 0 ' + inf.w + ' ' + inf.h" aria-hidden="true">
                 <path class="arc" [attr.d]="inf.arc" [style.--len]="inf.arcLen" />
                 @for (r of inf.rays; track r.label) {
@@ -88,6 +89,7 @@ interface Place { team: Team; slot: number | null }
                   <span class="rl" [style.left.px]="r.x" [style.top.px]="r.y" [style.--i]="r.i" [style.--n]="inf.rays.length"><small>{{ r.label }}</small><b class="num">{{ r.value }}</b></span>
                 }
               </div>
+              }
             }
             <!-- valore delle due squadre, ai lati del campo -->
             @for (t of teams; track t) {
@@ -190,7 +192,12 @@ interface Place { team: Team; slot: number | null }
     .ovb.static { position: static; box-shadow: none; }
     /* nomi interi, mai troncati: la scritta può essere più larga del posto, resta centrata */
     .spot .name { white-space: nowrap; font-size: 0.72rem; max-width: none; overflow: visible; }
-    .pitch.small .spot { width: 64px; } .pitch.small .spot .name { font-size: 0.66rem; }
+    /* campo in scala: anche nomi e pallini seguono la grandezza della foto */
+    .pitch.small .spot { width: calc(76px * var(--k)); } .pitch.small .spot .name { font-size: max(0.56rem, calc(0.72rem * var(--k))); }
+    .pitch.small .ovb { min-width: calc(22px * var(--k)); height: calc(22px * var(--k)); border-radius: 99px; font-size: max(0.55rem, calc(0.7rem * var(--k)));
+                        right: calc(-13px * var(--k)); top: calc(-9px * var(--k)); }
+    .pitch.small .gkd { width: calc(14px * var(--k)); height: calc(14px * var(--k)); right: calc(-7px * var(--k)); bottom: calc(-4px * var(--k)); }
+    .pitch.small .disc { width: var(--ph); height: var(--ph); }
     .pitch.small .disc { width: 38px; height: 38px; }
     /* raggiera: campo un po' scurito, linee bianche con ombra scura, valori su etichette piene (contrasto alto in ogni tema) */
     .spot.focus { z-index: 5; }
@@ -303,9 +310,9 @@ export class LineupTab {
         // distanze massime: le posizioni della metà campo si stirano tra 7% (porta) e 44% (verso il centro)
         // spazi in pixel veri: dalla linea di fondo serve posto per foto + pallino che sporge;
         // verso la metà campo serve posto per foto + nome, più uno stacco tra le due punte
-        const H = this.pitchH() ?? 560, r = this.smallPitch() ? 19 : 23;
-        const top = ((r + 24) / H) * 100;              // centro foto del portiere (pallino che sporge + margine)
-        const mid = 50 - ((r + 30) / H) * 100;         // centro foto della punta: nome sotto + 14 px di stacco dalla punta avversaria
+        const H = this.pitchH() ?? 560, k = this.scale(), r = 23 * k;
+        const top = ((r + Math.max(24 * k, 24)) / H) * 100;   // centro foto del portiere: pallino sopra (bianchi) o nome sotto (neri) + margine
+        const mid = 50 - ((r + 30 * k) / H) * 100;     // centro foto della punta: nome sotto + stacco dalla punta avversaria
         const ys = all.map((p) => p.y), lo = Math.min(...ys), hi = Math.max(...ys);
         const yy = hi > lo ? top + ((y - lo) / (hi - lo)) * (mid - top) : y;
         return { team, slot, label, short, kind, x, y: team === 'white' ? yy : 100 - yy };
@@ -319,18 +326,27 @@ export class LineupTab {
   // ------------------------------------------------ campo adattato allo spazio fino alla barra in basso
   private readonly pitchEl = viewChild<ElementRef<HTMLElement>>('pitch');
   protected readonly pitchH = signal<number | null>(null);
-  protected readonly smallPitch = computed(() => (this.pitchH() ?? 999) < 560);
+  /** scala di foto, nomi e pallini (1 = grandezza piena) */
+  protected readonly scale = signal(1);
+  protected readonly smallPitch = computed(() => this.scale() < 0.85);
+  protected readonly photo = computed(() => Math.round(46 * this.scale()));
   private fitPitch(): void {
     const el = this.pitchEl()?.nativeElement; const sc = el?.closest('.scroll-area') as HTMLElement | null;
     if (!el || !sc) return;
     const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
     const w = el.clientWidth;
     // tra un minimo (telefoni bassi) e un massimo (niente campo troppo allungato)
-    // altezza minima dalle file della formazione: ogni fila ha lo spazio di foto + nome + pallino (≈ 62 px),
-    // più i margini sulla linea di fondo e a metà campo; su schermi bassi scorre appena la pagina, mai sovrapposizioni
+    // il campo sta sempre nello schermo: se lo spazio non basta, foto, nomi e pallini si rimpiccioliscono (scala k)
     const rows = new Set(formation(this.perTeam()).map((p) => p.y)).size;
-    const minH = Math.round(2 * (19 + 24 + 19 + 30 + (rows - 1) * 62));
-    this.pitchH.set(Math.round(Math.max(minH, Math.min(w * 2.1, sc.clientHeight - top - 12))));
+    const need = 2 * (23 + 24 + 23 + 30 + (rows - 1) * 70);           // altezza che serve a grandezza piena
+    // si toglie anche il margine inferiore della pagina, così la pagina non scorre
+    const page = el.closest('.page') as HTMLElement | null;
+    const pad = page ? parseFloat(getComputedStyle(page).paddingBottom) || 0 : 0;
+    const H = Math.round(Math.max(300, Math.min(w * 2.1, sc.clientHeight - top - pad - 4)));
+    // sotto il 60% foto e nomi diventerebbero illeggibili: lì il campo resta un po' più alto e la pagina scorre appena
+    const k = Math.max(0.6, Math.min(1, H / need));
+    this.scale.set(k);
+    this.pitchH.set(Math.max(H, Math.round(need * k)));
   }
   private readonly hostRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -339,7 +355,7 @@ export class LineupTab {
   protected hue(v: number): number { return 130 * Math.max(0, Math.min(1, (v - 50) / 35)); }
 
   // ------------------------------------------------ scheda del giocatore (a cascata)
-  protected readonly info = signal<{ id: string; w: number; h: number; cx: number; cy: number; arc: string; arcLen: number;
+  protected readonly info = signal<{ seq: number; id: string; w: number; h: number; cx: number; cy: number; arc: string; arcLen: number;
     rays: { label: string; value: string; x: number; y: number; x1: number; y1: number; len: number; i: number }[] } | null>(null);
   protected readonly infoClosing = signal(false);
   private readonly avgVotes = signal<Map<string, number | null>>(new Map());
@@ -347,10 +363,12 @@ export class LineupTab {
   protected openInfo(id: string, s: Spot): void {
     if (!this.avgVotes().size) void this.api.stats(null, null).then((rows) => { this.avgVotes.set(new Map(rows.map((r) => [r.user_id, r.avg_vote]))); this.refreshInfo(); }).catch(() => undefined);
     this.infoSpot = { id, s };
+    this.infoSeq++;                                     // nuova raggiera: le animazioni ripartono da capo
     this.infoClosing.set(false);
     this.refreshInfo();
   }
   private infoSpot: { id: string; s: Spot } | null = null;
+  private infoSeq = 0;
   /** raggiera rivolta verso il centro del campo: si vede sempre, anche per chi è sul bordo */
   private refreshInfo(): void {
     const el = this.pitchEl()?.nativeElement; const sp = this.infoSpot;
@@ -369,7 +387,7 @@ export class LineupTab {
     ];
     const toMid = sp.s.team === 'white' ? Math.PI / 2 : -Math.PI / 2;   // verso la metà campo
     const a0 = sp.s.kind === 'gk' || sp.s.kind === 'dc' ? toMid
-      : sp.s.kind === 'pu' ? -toMid                                       // la punta apre verso il suo difensore
+      : sp.s.kind === 'pu' ? toMid                                        // la punta apre in avanti, verso la porta avversaria
       : Math.atan2(h / 2 - cy, w / 2 - cx);
     // raggiera verticale (portiere, difensore, punta): ventaglio più stretto e schiacciato, largo di lato, poco profondo
     const vertical = sp.s.kind === 'gk' || sp.s.kind === 'dc' || sp.s.kind === 'pu';
@@ -390,7 +408,7 @@ export class LineupTab {
       return { ...it, x: Math.round(x), y: Math.round(y), x1: Math.round(x1), y1: Math.round(y1), len: Math.round(d * k), i, xe: x1 + (x - x1) * k, ye: y1 + (y - y1) * k };
     }).map((r) => ({ ...r, xr: Math.round(r.xe), yr: Math.round(r.ye) }));
     const order = [...rays].sort((a, b) => b.y - a.y).map((r) => r.i);   // 0 = il più basso
-    this.info.set({ id: sp.id, w, h, cx: Math.round(cx), cy: Math.round(cy), arc, arcLen: Math.round(Math.PI * rA),
+    this.info.set({ seq: this.infoSeq, id: sp.id, w, h, cx: Math.round(cx), cy: Math.round(cy), arc, arcLen: Math.round(Math.PI * rA),
       rays: rays.map((r) => ({ ...r, i: order.indexOf(r.i), x2: r.xr, y2: r.yr })) as never });
   }
   /** tocco sul velo: se sotto c'è un altro giocatore, si chiude e si riapre su di lui (niente doppio tocco) */
@@ -398,7 +416,8 @@ export class LineupTab {
     const hit = document.elementsFromPoint(e.clientX, e.clientY).find((el) => (el as HTMLElement).dataset?.['key'] && (el as HTMLElement).dataset?.['uid']) as HTMLElement | undefined;
     const next = hit ? this.spots().find((x) => x.team + ':' + x.slot === hit.dataset['key']) : undefined;
     const id = hit?.dataset['uid'];
-    this.closeInfo(next && id && id !== this.info()?.id ? () => this.openInfo(id, next) : undefined);
+    if (next && id && id !== this.info()?.id) { this.openInfo(id, next); return; }   // nuovo giocatore: niente uscita, velo che resta
+    this.closeInfo();
   }
   protected closeInfo(then?: () => void): void {
     if (this.infoClosing()) return;
