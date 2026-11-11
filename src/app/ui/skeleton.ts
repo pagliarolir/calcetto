@@ -11,11 +11,11 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   template: `
     @switch (kind()) {
       @case ('match') {
-        <div class="sk line w60 h24"></div>
+        <!-- come la scheda Lista: titolo con «i» e pillola, tre pulsanti, schede, griglia di card -->
+        <div class="hrow"><div class="sk line w45 h24"></div><div class="sk circ"></div><div class="sk spill"></div></div>
         <div class="row3"><div class="sk h56"></div><div class="sk h56"></div><div class="sk h56"></div></div>
-        <div class="sk line w80"></div>
-        <div class="sk h48"></div>
-        <div class="grid2">@for (i of n(8); track i) { <div class="sk h56"></div> }</div>
+        <div class="tabs3"><div class="sk line t"></div><div class="sk line t"></div><div class="sk line t"></div></div>
+        <div class="grid2">@for (i of n(10); track i) { <div class="sk h60"></div> }</div>
       }
       @case ('table') {
         <div class="tbl">
@@ -34,6 +34,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     }
   `,
   styles: `
+    .hrow { display: flex; align-items: center; gap: 8px; }
+    .hrow .w45 { width: 45%; } .circ { width: 24px; height: 24px; border-radius: 50%; flex: none; }
+    .spill { margin-left: auto; width: 128px; height: 28px; border-radius: 14px; flex: none; }
+    .tabs3 { display: flex; justify-content: space-around; align-items: center; height: 44px; border-bottom: 1px solid var(--line); }
+    .tabs3 .t { width: 22%; }
+    .h60 { height: 60px; border-radius: 16px; }
     :host { display: flex; flex-direction: column; gap: 12px; }
     .sk { border-radius: 12px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 40%, var(--surface-2) 55%);
           background-size: 300% 100%; animation: sk 1.3s ease-in-out infinite; }

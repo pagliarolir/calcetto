@@ -29,10 +29,6 @@ import { MatchStore } from './match-store';
       <header class="hero">
           <!-- intestazione a biglietto: calendario, data, orario e luogo; sotto le squadre -->
           <div class="hero-in v-b">
-            <div class="topbar">
-              <a class="link" routerLink="/partite"><app-icon name="back" [size]="18" /> Partite</a>
-              <span class="status">{{ status() }}</span>
-            </div>
             <div class="ticket">
               @if (branding.headerUrl(); as logo) {
                 <span class="logo-box" #logoBox><img [src]="logo" alt="" /></span>
@@ -60,6 +56,7 @@ import { MatchStore } from './match-store';
                   </a>
                 }
               </div>
+              <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="22" /></a>
             </div>
             @if (!finished()) {
             <div class="strip" [class.played]="!!scoreboard()">
@@ -102,7 +99,7 @@ import { MatchStore } from './match-store';
       flex: none; z-index: 2;
     }
     @media (prefers-color-scheme: dark) { :host-context(html:not([data-theme])) .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
-    .hero-in { max-width: 640px; margin: 0 auto; padding: 0 16px 6px; display: flex; flex-direction: column; gap: 2px; }
+    .hero-in { max-width: 640px; margin: 0 auto; padding: 10px 16px 6px; display: flex; flex-direction: column; gap: 2px; }
     .sk-hero { display: flex; flex-direction: column; gap: 14px; padding-bottom: 12px; }
     .skw { display: block; height: 12px; border-radius: 6px; background: rgb(255 255 255 / 16%); }
     .sk-top { display: flex; justify-content: space-between; } .sk-top .w20 { width: 22%; } .sk-top .w30 { width: 34%; }
@@ -110,6 +107,10 @@ import { MatchStore } from './match-store';
     .sk-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; } .skw.w70 { width: 75%; } .skw.w50 { width: 50%; } .skw.w60 { width: 60%; } .skw.h22 { height: 22px; }
     .skw.strip { height: 40px; border-radius: 12px; }
     .sk-tabs { display: flex; gap: 22px; } .sk-tabs .w15 { width: 48px; }
+    /* icona calendario: porta all'elenco delle partite */
+    .cal-link { align-self: flex-start; flex: none; margin-left: auto; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+                color: inherit; background: rgb(255 255 255 / 14%); }
+    .cal-link app-icon { display: block; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
     .link { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: 0.85; font-size: var(--step--1); font-weight: 600; text-decoration: none; min-height: 36px; }
     .status { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
