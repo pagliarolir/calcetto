@@ -56,7 +56,7 @@ interface Place { team: Team; slot: number | null }
               </ul>
             }
           </dialog>
-          <div class="pitch" #pitch [class.tall]="perTeam() >= 7" [class.small]="smallPitch()" [style.height.px]="pitchH()" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
+          <div class="pitch" #pitch [class.rays-on]="!!info() && !infoClosing()" [class.tall]="perTeam() >= 7" [class.small]="smallPitch()" [style.height.px]="pitchH()" role="group" [attr.aria-label]="'Campo da calcio, ' + perTeam() + ' contro ' + perTeam()">
             <div class="lines" aria-hidden="true"></div>
             @for (s of spots(); track s.team + s.slot) {
               @let who = occupant(s);
@@ -190,8 +190,10 @@ interface Place { team: Team; slot: number | null }
     .pitch.small .disc { width: 38px; height: 38px; }
     /* raggiera: campo un po' scurito, linee bianche con ombra scura, valori su etichette piene (contrasto alto in ogni tema) */
     .spot.focus { z-index: 5; }
+    /* raggiera aperta: gli altri giocatori si spengono, così le scritte non finiscono mai su una foto chiara */
+    .spot { transition: opacity 200ms; } .pitch.rays-on .spot:not(.focus) { opacity: 0.18; }
     /* raggiera aperta: pallino e nome del giocatore toccato si nascondono (i raggi non li incrociano) */
-    .spot .ovb, .spot .name { transition: opacity 160ms; } .spot.focus .ovb, .spot.focus .name { opacity: 0; }
+    .spot .ovb, .spot .name, .spot .gkd { transition: opacity 160ms; } .spot.focus .ovb, .spot.focus .name, .spot.focus .gkd { opacity: 0; }
     .shade { position: absolute; inset: 0; z-index: 4; background: rgb(0 0 0 / 55%); animation: fade-in 180ms ease-out both; }
     .shade.closing { animation: fade-out 220ms ease-in both; animation-delay: calc(var(--n, 5) * 40ms); }
     .rays { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; overflow: visible; }
@@ -203,6 +205,8 @@ interface Place { team: Team; slot: number | null }
     .rlabels { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
     .rl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; line-height: 1.05;
           color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 85%), 0 0 1px rgb(0 0 0 / 90%);
+          /* alone scuro e morbido dietro il valore (niente riquadro): contrasto garantito qualunque cosa ci sia sotto */
+          background: radial-gradient(closest-side, rgb(0 0 0 / 62%), rgb(0 0 0 / 38%) 60%, transparent); padding: 8px 12px; border-radius: 50%;
           opacity: 0; animation: op-in 200ms ease-out forwards; animation-delay: calc(300ms + var(--i) * 70ms); }
     .rl small { font: 700 0.66rem/1.1 var(--font-body); color: #fff; } .rl b { font-size: 1.2rem; }
     .rlabels.closing .rl { opacity: 1; animation: op-out 130ms ease-in forwards; animation-delay: calc((var(--n) - 1 - var(--i)) * 45ms); }
