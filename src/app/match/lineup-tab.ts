@@ -34,7 +34,7 @@ interface Place { team: Team; slot: number | null }
         } @else {
           <header class="fhead">
             <h2>{{ statusTitle() }}</h2>
-            @if (myTeam(); as t) { <span class="tpill" [class.black]="t === 'black'" [attr.aria-label]="'Giochi con i ' + teamLabel()[t]">{{ teamLabel()[t] }}</span> }
+            @if (myTeam(); as t) { <span class="tpill" [class.black]="t === 'black'" >Giochi con i {{ teamLabel()[t] }}</span> }
           </header>
         }
 
@@ -170,7 +170,7 @@ interface Place { team: Team; slot: number | null }
     }
   `,
   styles: `
-    .fhead { display: flex; align-items: center; gap: 10px; } .fhead h2 { flex: 1; min-width: 0; }
+    .fhead { display: flex; align-items: center; gap: 10px; margin-bottom: calc(0.5rem - 24px); } .fhead h2 { flex: 1; min-width: 0; }
     .tpill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px; font: 700 0.8rem/1 var(--font-body);
              background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px #14201a; }
     .tpill::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
@@ -188,8 +188,9 @@ interface Place { team: Team; slot: number | null }
     .ovb { position: absolute; right: -13px; top: -9px; min-width: 22px; height: 22px; padding: 0 3px; border-radius: 11px; display: grid; place-items: center;
            font: 800 0.7rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 36%); box-shadow: 0 0 0 2px #fff; }
     .ovb.static { position: static; box-shadow: none; }
-    .spot .name { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.72rem; }
-    .pitch.small .spot { width: 64px; } .pitch.small .spot .name { max-width: 62px; font-size: 0.66rem; }
+    /* nomi interi, mai troncati: la scritta può essere più larga del posto, resta centrata */
+    .spot .name { white-space: nowrap; font-size: 0.72rem; max-width: none; overflow: visible; }
+    .pitch.small .spot { width: 64px; } .pitch.small .spot .name { font-size: 0.66rem; }
     .pitch.small .disc { width: 38px; height: 38px; }
     /* raggiera: campo un po' scurito, linee bianche con ombra scura, valori su etichette piene (contrasto alto in ogni tema) */
     .spot.focus { z-index: 5; }
@@ -300,9 +301,13 @@ export class LineupTab {
     this.teams.flatMap((team) =>
       formation(this.perTeam()).map(({ slot, label, short, x, y, kind }, _i, all) => {
         // distanze massime: le posizioni della metà campo si stirano tra 7% (porta) e 44% (verso il centro)
-        // distanze massime: le posizioni della metà campo si stirano tra 7% (porta) e 44% (verso il centro)
+        // spazi in pixel veri: dalla linea di fondo serve posto per foto + pallino che sporge;
+        // verso la metà campo serve posto per foto + nome, più uno stacco tra le due punte
+        const H = this.pitchH() ?? 560, r = this.smallPitch() ? 19 : 23;
+        const top = ((r + 24) / H) * 100;              // centro foto del portiere (pallino che sporge + margine)
+        const mid = 50 - ((r + 30) / H) * 100;         // centro foto della punta: nome sotto + 14 px di stacco dalla punta avversaria
         const ys = all.map((p) => p.y), lo = Math.min(...ys), hi = Math.max(...ys);
-        const yy = hi > lo ? 7 + ((y - lo) / (hi - lo)) * 37 : y;
+        const yy = hi > lo ? top + ((y - lo) / (hi - lo)) * (mid - top) : y;
         return { team, slot, label, short, kind, x, y: team === 'white' ? yy : 100 - yy };
       }),
     ),
@@ -321,8 +326,11 @@ export class LineupTab {
     const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
     const w = el.clientWidth;
     // tra un minimo (telefoni bassi) e un massimo (niente campo troppo allungato)
-    // minimo 460 px: su schermi bassissimi meglio far scorrere appena la pagina che sovrapporre i giocatori
-    this.pitchH.set(Math.round(Math.max(460, Math.min(w * 2.1, sc.clientHeight - top - 12))));
+    // altezza minima dalle file della formazione: ogni fila ha lo spazio di foto + nome + pallino (≈ 62 px),
+    // più i margini sulla linea di fondo e a metà campo; su schermi bassi scorre appena la pagina, mai sovrapposizioni
+    const rows = new Set(formation(this.perTeam()).map((p) => p.y)).size;
+    const minH = Math.round(2 * (19 + 24 + 19 + 30 + (rows - 1) * 62));
+    this.pitchH.set(Math.round(Math.max(minH, Math.min(w * 2.1, sc.clientHeight - top - 12))));
   }
   private readonly hostRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
