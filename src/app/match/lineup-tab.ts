@@ -32,12 +32,10 @@ interface Place { team: Team; slot: number | null }
             </div>
           </section>
         } @else {
-          <section class="stack">
+          <header class="fhead">
             <h2>{{ statusTitle() }}</h2>
-            @if (myTeam(); as t) {
-              <p class="mine" [class.black]="t === 'black'">Giochi con i {{ teamLabel()[t] }}</p>
-            }
-          </section>
+            @if (myTeam(); as t) { <span class="tpill" [class.black]="t === 'black'" [attr.aria-label]="'Giochi con i ' + teamLabel()[t]">{{ teamLabel()[t] }}</span> }
+          </header>
         }
 
         @if (visible()) {
@@ -61,7 +59,7 @@ interface Place { team: Team; slot: number | null }
             @for (s of spots(); track s.team + s.slot) {
               @let who = occupant(s);
               <button class="spot" [class.black]="s.team === 'black'" [class.filled]="!!who"
-                      [class.sel]="!!who && who === selected()" [class.focus]="!!who && info()?.id === who" [attr.data-uid]="who"
+                      [class.sel]="!!who && who === selected()" [class.focus]="!!who && info()?.id === who" [attr.data-uid]="who" [attr.data-key]="s.team + ':' + s.slot"
                       [style.left.%]="s.x" [style.top.%]="s.y" [disabled]="!editing() && !who"
                       [attr.aria-label]="teamLabel()[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
                       (click)="tapSpot(s)">
@@ -77,7 +75,7 @@ interface Place { team: Team; slot: number | null }
             }
             <!-- statistiche a raggiera: linee che partono dal giocatore, valori in fondo; un tocco fuori le richiude -->
             @if (info(); as inf) {
-              <div class="shade" [class.closing]="infoClosing()" aria-hidden="true" (click)="closeInfo()"></div>
+              <div class="shade" [class.closing]="infoClosing()" aria-hidden="true" (click)="shadeTap($event)"></div>
               <svg class="rays" [class.closing]="infoClosing()" [attr.viewBox]="'0 0 ' + inf.w + ' ' + inf.h" aria-hidden="true">
                 <path class="arc" [attr.d]="inf.arc" [style.--len]="inf.arcLen" />
                 @for (r of inf.rays; track r.label) {
@@ -172,6 +170,11 @@ interface Place { team: Team; slot: number | null }
     }
   `,
   styles: `
+    .fhead { display: flex; align-items: center; gap: 10px; } .fhead h2 { flex: 1; min-width: 0; }
+    .tpill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px; font: 700 0.8rem/1 var(--font-body);
+             background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px #14201a; }
+    .tpill::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+    .tpill.black { background: var(--kit-black); color: var(--kit-black-ink); box-shadow: none; }
     .mine { display: inline-flex; align-self: flex-start; padding: 10px 16px; border-radius: 999px; font: 700 var(--step-1)/1 var(--font-display);
       background: var(--team-a); color: var(--team-a-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
     .mine.black { background: var(--team-b); color: var(--team-b-ink); box-shadow: none; }
@@ -208,7 +211,7 @@ interface Place { team: Team; slot: number | null }
           /* alone scuro e morbido dietro il valore (niente riquadro): contrasto garantito qualunque cosa ci sia sotto */
           background: radial-gradient(closest-side, rgb(0 0 0 / 62%), rgb(0 0 0 / 38%) 60%, transparent); padding: 8px 12px; border-radius: 50%;
           opacity: 0; animation: op-in 200ms ease-out forwards; animation-delay: calc(300ms + var(--i) * 70ms); }
-    .rl small { font: 700 0.66rem/1.1 var(--font-body); color: #fff; } .rl b { font-size: 1.2rem; }
+    .rl small { font: 700 0.66rem/1.1 var(--font-body); color: #fff; } .rl b { font-size: 1.2rem; color: #ffe27a; }
     .rlabels.closing .rl { opacity: 1; animation: op-out 130ms ease-in forwards; animation-delay: calc((var(--n) - 1 - var(--i)) * 45ms); }
     @keyframes op-in { to { opacity: 1; } } @keyframes op-out { to { opacity: 0; } }
     @keyframes arc-back { from { stroke-dashoffset: 0; } to { stroke-dashoffset: var(--len); } }
@@ -270,6 +273,8 @@ interface Place { team: Team; slot: number | null }
     .spot.sel .disc { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband); }
     /* giocatore in campo: foto (o iniziali) con l'anello del colore della squadra */
     .pitch-photo { transition: transform 200ms var(--ease-spring); font-weight: 700; }
+    /* foto dei bianchi con il bordo nero, per staccarle dal campo e dalle scritte */
+    .spot:not(.black) .ph app-avatar { border-radius: 50%; box-shadow: 0 0 0 2px #14201a; }
     .pitch-photo.white { background: var(--team-a); color: var(--team-a-ink); box-shadow: 0 0 0 3px var(--team-a), 0 0 0 4px rgb(0 0 0 / 25%), 0 3px 8px rgb(0 0 0 / 35%); }
     .pitch-photo.black { background: var(--team-b); color: var(--team-b-ink); box-shadow: 0 0 0 3px var(--team-b), 0 0 0 4px rgb(0 0 0 / 25%), 0 3px 8px rgb(0 0 0 / 35%); }
     .spot.sel .pitch-photo { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband), 0 3px 8px rgb(0 0 0 / 35%); }
@@ -293,7 +298,13 @@ export class LineupTab {
   protected readonly perTeam = computed(() => this.store.match()?.players_per_team ?? 5);
   protected readonly spots = computed<Spot[]>(() =>
     this.teams.flatMap((team) =>
-      formation(this.perTeam()).map(({ slot, label, short, x, y, kind }) => ({ team, slot, label, short, kind, x, y: team === 'white' ? y : 100 - y })),
+      formation(this.perTeam()).map(({ slot, label, short, x, y, kind }, _i, all) => {
+        // distanze massime: le posizioni della metà campo si stirano tra 7% (porta) e 44% (verso il centro)
+        // distanze massime: le posizioni della metà campo si stirano tra 7% (porta) e 44% (verso il centro)
+        const ys = all.map((p) => p.y), lo = Math.min(...ys), hi = Math.max(...ys);
+        const yy = hi > lo ? 7 + ((y - lo) / (hi - lo)) * 37 : y;
+        return { team, slot, label, short, kind, x, y: team === 'white' ? yy : 100 - yy };
+      }),
     ),
   );
 
@@ -311,7 +322,7 @@ export class LineupTab {
     const w = el.clientWidth;
     // tra un minimo (telefoni bassi) e un massimo (niente campo troppo allungato)
     // minimo 460 px: su schermi bassissimi meglio far scorrere appena la pagina che sovrapporre i giocatori
-    this.pitchH.set(Math.round(Math.max(460, Math.min(w * 1.9, sc.clientHeight - top - 12))));
+    this.pitchH.set(Math.round(Math.max(460, Math.min(w * 2.1, sc.clientHeight - top - 12))));
   }
   private readonly hostRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -348,7 +359,14 @@ export class LineupTab {
       { label: 'Est. dif.', value: String(c?.ed ?? '–') }, { label: 'Difensore', value: String(c?.dc ?? '–') },
       { label: 'Voto', value: v != null ? String(Math.round(v * 100) / 100).replace('.', ',') : '–' },
     ];
-    const a0 = Math.atan2(h / 2 - cy, w / 2 - cx), spread = (200 * Math.PI) / 180, R = rPhoto + 44;
+    const toMid = sp.s.team === 'white' ? Math.PI / 2 : -Math.PI / 2;   // verso la metà campo
+    const a0 = sp.s.kind === 'gk' || sp.s.kind === 'dc' ? toMid
+      : sp.s.kind === 'pu' ? -toMid                                       // la punta apre verso il suo difensore
+      : Math.atan2(h / 2 - cy, w / 2 - cx);
+    // raggiera verticale (portiere, difensore, punta): ventaglio più stretto e schiacciato, largo di lato, poco profondo
+    const vertical = sp.s.kind === 'gk' || sp.s.kind === 'dc' || sp.s.kind === 'pu';
+    const spread = (200 * Math.PI) / 180, R = rPhoto + 44;
+    const Rx = R, Ry = R;   // raggi corti, ventaglio circolare
     // arco intorno alla metà della foto rivolta verso la raggiera (2 px di stacco), da lì partono i raggi
     const rA = rPhoto + 3;   // 2 px di stacco + metà del tratto
     const p0 = [cx + rA * Math.cos(a0 - Math.PI / 2), cy + rA * Math.sin(a0 - Math.PI / 2)], p1 = [cx + rA * Math.cos(a0 + Math.PI / 2), cy + rA * Math.sin(a0 + Math.PI / 2)];
@@ -357,7 +375,7 @@ export class LineupTab {
     const arc = `M ${q0[0].toFixed(1)} ${q0[1].toFixed(1)} A ${rA} ${rA} 0 0 ${sweep} ${q1[0].toFixed(1)} ${q1[1].toFixed(1)}`;
     const rays = items.map((it, i) => {
       const a = a0 + (i - (items.length - 1) / 2) * (spread / (items.length - 1));
-      const x = Math.max(30, Math.min(w - 30, cx + R * Math.cos(a))), y = Math.max(16, Math.min(h - 16, cy + R * Math.sin(a)));
+      const x = Math.max(30, Math.min(w - 30, cx + Rx * Math.cos(a))), y = Math.max(16, Math.min(h - 16, cy + Ry * Math.sin(a)));
       const x1 = cx + (rA + 6) * Math.cos(a), y1 = cy + (rA + 6) * Math.sin(a);   // staccato dall'arco
       // il raggio si ferma lontano dal numero
       const d = Math.hypot(x - x1, y - y1), k = Math.max(0, (d - 24) / d);
@@ -367,12 +385,19 @@ export class LineupTab {
     this.info.set({ id: sp.id, w, h, cx: Math.round(cx), cy: Math.round(cy), arc, arcLen: Math.round(Math.PI * rA),
       rays: rays.map((r) => ({ ...r, i: order.indexOf(r.i), x2: r.xr, y2: r.yr })) as never });
   }
-  protected closeInfo(): void {
+  /** tocco sul velo: se sotto c'è un altro giocatore, si chiude e si riapre su di lui (niente doppio tocco) */
+  protected shadeTap(e: MouseEvent): void {
+    const hit = document.elementsFromPoint(e.clientX, e.clientY).find((el) => (el as HTMLElement).dataset?.['key'] && (el as HTMLElement).dataset?.['uid']) as HTMLElement | undefined;
+    const next = hit ? this.spots().find((x) => x.team + ':' + x.slot === hit.dataset['key']) : undefined;
+    const id = hit?.dataset['uid'];
+    this.closeInfo(next && id && id !== this.info()?.id ? () => this.openInfo(id, next) : undefined);
+  }
+  protected closeInfo(then?: () => void): void {
     if (this.infoClosing()) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.infoClosing.set(true);
     // chiusura: raggi dal più alto al più basso, poi l'arco si ritira (più rapido dell'apertura)
-    setTimeout(() => { this.info.set(null); this.infoClosing.set(false); this.infoSpot = null; }, reduce ? 0 : 45 * this.infoRows().length + 130 + 170);
+    setTimeout(() => { this.info.set(null); this.infoClosing.set(false); this.infoSpot = null; then?.(); }, reduce ? 0 : 45 * this.infoRows().length + 130 + 170);
   }
 
   // ------------------------------------------------ posto vuoto: scelta tra i disponibili, dal più adatto
