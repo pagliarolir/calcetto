@@ -52,6 +52,8 @@ export class PullRefresh implements OnInit, OnDestroy {
   private tracking = false;
 
   private readonly onStart = (e: TouchEvent) => {
+    // dentro un elenco con scorrimento proprio (data-no-pull) il dito scorre e basta: niente aggiornamento
+    if ((e.target as Element | null)?.closest?.('[data-no-pull]')) { this.pulling = false; return; }
     if (e.touches.length !== 1 || this.refresher.busy() || document.querySelector('dialog[open]')) return;
     // lo scorrimento che conta è quello del contenitore centrale (se la pagina ne ha uno) o del riquadro
     this.scroller = (e.target as HTMLElement).closest?.('.scroll-area') as HTMLElement | null ?? this.target();
