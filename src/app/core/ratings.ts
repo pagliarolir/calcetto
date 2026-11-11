@@ -83,7 +83,8 @@ export function overallOf(c: RatingCard | undefined): number | null {
 /** valore di un giocatore in un tipo di posto (portiere = valore generale con il bonus del portiere) */
 export function valueAt(c: RatingCard | undefined, kind: SlotKind): number | null {
   if (!c?.has) return null;
-  if (kind === 'gk') return c.overall ?? null;
+  // portiere: il valore più alto tra i ruoli, +2 con il pallino verde, 0 giallo, −2 rosso
+  if (kind === 'gk') return Math.max(c.dc ?? 0, c.ed ?? 0, c.eo ?? 0, c.pu ?? 0) + (({ green: 2, yellow: 0, red: -2 } as Record<string, number>)[c.gk ?? ''] ?? 0);
   if (kind === 'est') return c.ed !== undefined && c.eo !== undefined ? Math.round((c.ed + c.eo) / 2) : null;
   return c[kind] ?? null;
 }

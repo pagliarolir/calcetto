@@ -30,7 +30,6 @@ interface Place { team: Team; slot: number | null }
               <h2>{{ statusTitle() }}</h2>
               <button class="btn small" [disabled]="busy()" (click)="suggest()">Consigliate</button>
             </div>
-            <p class="small muted">{{ selected() ? 'Ora tocca una posizione in campo.' : 'Tocca un giocatore, poi la sua posizione. Tocca chi è già in campo per spostarlo o scambiarlo.' }}</p>
           </section>
         } @else {
           <section class="stack">
@@ -62,12 +61,13 @@ interface Place { team: Team; slot: number | null }
             @for (s of spots(); track s.team + s.slot) {
               @let who = occupant(s);
               <button class="spot" [class.black]="s.team === 'black'" [class.filled]="!!who"
-                      [class.sel]="!!who && who === selected()"
+                      [class.sel]="!!who && who === selected()" [class.focus]="!!who && info()?.id === who" [attr.data-uid]="who"
                       [style.left.%]="s.x" [style.top.%]="s.y" [disabled]="!editing() && !who"
                       [attr.aria-label]="teamLabel()[s.team] + ', ' + s.label + ': ' + (who ? session.name(who) : 'vuoto')"
                       (click)="tapSpot(s)">
                 @if (who) {
                   <span class="ph"><app-avatar class="pitch-photo" [userId]="who" [size]="smallPitch() ? 38 : 46" [team]="s.team" />
+                    @if (s.kind === 'gk' && gkOf(who); as g) { <span class="gkd" [class]="'gkd ' + g" [attr.aria-label]="'portiere: pallino ' + g"></span> }
                     @if (posValue(who, s); as v) { <span class="ovb" [style.--h]="hue(v)" [attr.aria-label]="'valore in questo posto ' + v">{{ v }}</span> }</span>
                 } @else {
                   <span class="disc">{{ editing() ? '+' : '' }}</span>
@@ -75,13 +75,19 @@ interface Place { team: Team; slot: number | null }
                 <span class="name">{{ who ? session.name(who) : s.short }}</span>
               </button>
             }
-            <!-- scheda del giocatore toccato: righe a cascata; un tocco fuori la chiude al contrario -->
+            <!-- statistiche a raggiera: linee che partono dal giocatore, valori in fondo; un tocco fuori le richiude -->
             @if (info(); as inf) {
-              <div class="shield" aria-hidden="true" (click)="closeInfo()"></div>
-              <div class="pinfo panel" role="dialog" [attr.aria-label]="'Informazioni su ' + session.name(inf.id)" [class.closing]="infoClosing()"
-                   [style.left.%]="inf.left" [style.top]="inf.top" [style.bottom]="inf.bottom">
-                @for (r of infoRows(); track r.label; let i = $index) {
-                  <div class="pr" [style.--i]="i" [style.--n]="infoRows().length" [class.head]="i === 0"><span>{{ r.label }}</span><strong class="num">{{ r.value }}</strong></div>
+              <div class="shade" [class.closing]="infoClosing()" aria-hidden="true" (click)="closeInfo()"></div>
+              <svg class="rays" [class.closing]="infoClosing()" [attr.viewBox]="'0 0 ' + inf.w + ' ' + inf.h" aria-hidden="true">
+                <path class="arc" [attr.d]="inf.arc" [style.--len]="inf.arcLen" />
+                @for (r of inf.rays; track r.label) {
+                  <line class="under" [attr.x1]="r.x1" [attr.y1]="r.y1" [attr.x2]="$any(r).x2" [attr.y2]="$any(r).y2" [style.--i]="r.i" [style.--n]="inf.rays.length" [style.--len]="r.len" />
+                  <line class="ray" [attr.x1]="r.x1" [attr.y1]="r.y1" [attr.x2]="$any(r).x2" [attr.y2]="$any(r).y2" [style.--i]="r.i" [style.--n]="inf.rays.length" [style.--len]="r.len" />
+                }
+              </svg>
+              <div class="rlabels" [class.closing]="infoClosing()" role="dialog" [attr.aria-label]="'Statistiche di ' + session.name(inf.id)">
+                @for (r of inf.rays; track r.label) {
+                  <span class="rl" [style.left.px]="r.x" [style.top.px]="r.y" [style.--i]="r.i" [style.--n]="inf.rays.length"><small>{{ r.label }}</small><b class="num">{{ r.value }}</b></span>
                 }
               </div>
             }
@@ -96,9 +102,9 @@ interface Place { team: Team; slot: number | null }
           @if (editing()) {
             <section class="section">
               <header><h3>Da sistemare</h3><span class="small muted">{{ bench().length }}</span></header>
-              <div class="row-wrap">
+              <div class="bgrid">
                 @for (id of bench(); track id) {
-                  <button class="chip" [attr.aria-pressed]="selected() === id" (click)="select(id)">{{ session.name(id) }}</button>
+                  <button class="bchip" [attr.aria-pressed]="selected() === id" (click)="select(id)"><app-avatar [userId]="id" [size]="28" /><span class="ellipsis">{{ session.name(id) }}</span></button>
                 } @empty { <p class="small muted">Tutti in campo.</p> }
               </div>
               @if (selected() && placeOf(selected()!)) {
@@ -106,7 +112,7 @@ interface Place { team: Team; slot: number | null }
               }
             </section>
 
-            <div class="stack">
+            <div class="acts">
               @if (session.isStaff()) {
                 <button class="btn primary block" [disabled]="busy()" (click)="save(true)">
                   {{ m.lineup_status === 'official' ? 'Salva e avvisa i giocatori' : 'Pubblica le formazioni' }}
@@ -176,23 +182,54 @@ interface Place { team: Team; slot: number | null }
     .tv.black { top: 75%; background: rgb(20 32 26 / 88%); color: #fff; }
     /* badge del valore sulla foto, dal rosso al verde */
     .ph { position: relative; display: block; }
-    .ovb { position: absolute; right: -6px; top: -4px; min-width: 22px; height: 22px; padding: 0 3px; border-radius: 11px; display: grid; place-items: center;
+    .ovb { position: absolute; right: -13px; top: -9px; min-width: 22px; height: 22px; padding: 0 3px; border-radius: 11px; display: grid; place-items: center;
            font: 800 0.7rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 36%); box-shadow: 0 0 0 2px #fff; }
     .ovb.static { position: static; box-shadow: none; }
     .spot .name { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.72rem; }
     .pitch.small .spot { width: 64px; } .pitch.small .spot .name { max-width: 62px; font-size: 0.66rem; }
     .pitch.small .disc { width: 38px; height: 38px; }
-    /* scheda del giocatore: fondo pieno e ombra per staccarsi dal campo; righe a cascata */
-    .shield { position: absolute; inset: 0; z-index: 4; }
-    .pinfo { position: absolute; z-index: 5; transform: translateX(-50%); width: 190px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px;
-             background: var(--surface); color: var(--ink); box-shadow: 0 12px 30px rgb(0 0 0 / 40%), 0 0 0 1px var(--line); }
-    .pr { display: flex; justify-content: space-between; gap: 8px; font-size: var(--step--1); padding: 2px 0;
-          animation: pr-in 220ms var(--ease-out) both; animation-delay: calc(var(--i) * 55ms); }
-    .pr.head { font-weight: 800; border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 2px; }
-    .pinfo.closing .pr { animation: pr-out 160ms ease-in both; animation-delay: calc((var(--n) - 1 - var(--i)) * 55ms); }
-    @keyframes pr-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-    @keyframes pr-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px); } }
-    @media (prefers-reduced-motion: reduce) { .pr, .pinfo.closing .pr { animation: none; } }
+    /* raggiera: campo un po' scurito, linee bianche con ombra scura, valori su etichette piene (contrasto alto in ogni tema) */
+    .spot.focus { z-index: 5; }
+    /* raggiera aperta: pallino e nome del giocatore toccato si nascondono (i raggi non li incrociano) */
+    .spot .ovb, .spot .name { transition: opacity 160ms; } .spot.focus .ovb, .spot.focus .name { opacity: 0; }
+    .shade { position: absolute; inset: 0; z-index: 4; background: rgb(0 0 0 / 55%); animation: fade-in 180ms ease-out both; }
+    .shade.closing { animation: fade-out 220ms ease-in both; animation-delay: calc(var(--n, 5) * 40ms); }
+    .rays { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; overflow: visible; }
+    .rays line { stroke-linecap: round; opacity: 0; animation: op-in 200ms ease-out forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
+    .rays .under { stroke: rgb(0 0 0 / 45%); stroke-width: 5; } .rays .ray { stroke: #fff; stroke-width: 2.2; }
+    .rays .arc { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: var(--len) 999; stroke-dashoffset: var(--len); animation: ray-in 240ms ease-out forwards; }
+    .rays.closing line { opacity: 1; animation: op-out 130ms ease-in forwards; animation-delay: calc((var(--n) - 1 - var(--i)) * 45ms); }
+    .rays.closing .arc { stroke-dashoffset: 0; animation: arc-back 170ms ease-in forwards; animation-delay: calc(var(--n, 5) * 45ms); }
+    .rlabels { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+    .rl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; line-height: 1.05;
+          color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 85%), 0 0 1px rgb(0 0 0 / 90%);
+          opacity: 0; animation: op-in 200ms ease-out forwards; animation-delay: calc(300ms + var(--i) * 70ms); }
+    .rl small { font: 700 0.66rem/1.1 var(--font-body); color: #fff; } .rl b { font-size: 1.2rem; }
+    .rlabels.closing .rl { opacity: 1; animation: op-out 130ms ease-in forwards; animation-delay: calc((var(--n) - 1 - var(--i)) * 45ms); }
+    @keyframes op-in { to { opacity: 1; } } @keyframes op-out { to { opacity: 0; } }
+    @keyframes arc-back { from { stroke-dashoffset: 0; } to { stroke-dashoffset: var(--len); } }
+    @keyframes ray-in { to { stroke-dashoffset: 0; } } @keyframes ray-out { from { stroke-dashoffset: 0; } to { stroke-dashoffset: var(--len); } }
+    @keyframes rl-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.6); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    @keyframes rl-out { to { opacity: 0; transform: translate(-50%, -50%) scale(.6); } }
+    @keyframes fade-in { from { opacity: 0; } } @keyframes fade-out { to { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .rays line, .rl, .shade { animation: none !important; stroke-dashoffset: 0; } }
+    /* valore di squadra: rettangolo pieno nei colori delle maglie; bianchi in alto a sinistra, neri in basso a destra */
+    .tv { position: absolute; z-index: 2; left: 14px; top: 14px; right: auto; bottom: auto; transform: none; width: 68px; height: 42px; padding: 0; border-radius: 10px; pointer-events: none;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+          background: var(--kit-white); color: var(--kit-white-ink); box-shadow: 0 3px 8px rgb(0 0 0 / 30%); }
+    .tv span { font: 700 0.62rem/1 var(--font-body); opacity: 0.85; }
+    .tv.black { left: auto; top: auto; right: 14px; bottom: 14px; background: var(--kit-black); color: var(--kit-black-ink); }
+    .tv b { font: 800 1.3rem/1 var(--font-display); }
+    /* pallino del portiere sulla foto, in basso a destra */
+    .gkd { position: absolute; right: -7px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
+    .gkd.green { background: hsl(150 58% 40%); } .gkd.yellow { background: hsl(48 88% 52%); } .gkd.red { background: hsl(4 76% 50%); }
+    .bgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .bchip { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 4px 8px 4px 4px; border-radius: 22px; border: 1.5px solid var(--line);
+             background: var(--surface); color: var(--ink); font: 600 var(--step--1)/1.2 var(--font-body); cursor: pointer; }
+    .bchip[aria-pressed='true'] { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); background: var(--turf-soft); }
+    .bchip .ellipsis { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .acts .btn { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .acts .btn:only-child { grid-column: 1 / -1; }
     .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
     .pick button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 6px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1.2 var(--font-body); cursor: pointer; text-align: left; }
     .pick button:hover { background: var(--surface-2); }
@@ -274,35 +311,64 @@ export class LineupTab {
   }
   private readonly hostRef = inject(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  /** pallino del portiere scelto dal Leader */
+  protected gkOf(id: string): string | null { return this.ratings.cards().get(id)?.gk ?? null; }
   protected hue(v: number): number { return 130 * Math.max(0, Math.min(1, (v - 50) / 35)); }
 
   // ------------------------------------------------ scheda del giocatore (a cascata)
-  protected readonly info = signal<{ id: string; left: number; top: string | null; bottom: string | null } | null>(null);
+  protected readonly info = signal<{ id: string; w: number; h: number; cx: number; cy: number; arc: string; arcLen: number;
+    rays: { label: string; value: string; x: number; y: number; x1: number; y1: number; len: number; i: number }[] } | null>(null);
   protected readonly infoClosing = signal(false);
   private readonly avgVotes = signal<Map<string, number | null>>(new Map());
-  protected readonly infoRows = computed(() => {
-    const inf = this.info(); if (!inf) return [];
-    const c = this.ratings.cards().get(inf.id);
-    const v = this.avgVotes().get(inf.id);
-    return [
-      { label: this.session.name(inf.id), value: '' },
-      { label: 'Punta', value: c?.pu ?? '–' }, { label: 'Esterno offensivo', value: c?.eo ?? '–' },
-      { label: 'Esterno difensivo', value: c?.ed ?? '–' }, { label: 'Difensore centrale', value: c?.dc ?? '–' },
-      { label: 'Media voto', value: v != null ? String(Math.round(v * 100) / 100).replace('.', ',') : '–' },
-    ];
-  });
+  protected readonly infoRows = computed(() => this.info()?.rays ?? []);
   protected openInfo(id: string, s: Spot): void {
-    if (!this.avgVotes().size) void this.api.stats(null, null).then((rows) => this.avgVotes.set(new Map(rows.map((r) => [r.user_id, r.avg_vote])))).catch(() => undefined);
-    const left = Math.max(26, Math.min(74, s.x));
-    // metà alta: sotto il giocatore; metà bassa: sopra (copre meno gli altri)
+    if (!this.avgVotes().size) void this.api.stats(null, null).then((rows) => { this.avgVotes.set(new Map(rows.map((r) => [r.user_id, r.avg_vote]))); this.refreshInfo(); }).catch(() => undefined);
+    this.infoSpot = { id, s };
     this.infoClosing.set(false);
-    this.info.set(s.y < 50 ? { id, left, top: `calc(${s.y}% + 34px)`, bottom: null } : { id, left, top: null, bottom: `calc(${100 - s.y}% + 34px)` });
+    this.refreshInfo();
+  }
+  private infoSpot: { id: string; s: Spot } | null = null;
+  /** raggiera rivolta verso il centro del campo: si vede sempre, anche per chi è sul bordo */
+  private refreshInfo(): void {
+    const el = this.pitchEl()?.nativeElement; const sp = this.infoSpot;
+    if (!el || !sp) return;
+    const w = el.clientWidth, h = el.clientHeight, pr = el.getBoundingClientRect();
+    // centro e raggio presi dalla foto vera (il posto comprende anche il nome sotto)
+    const ph = el.querySelector(`.spot[data-uid="${sp.id}"] .ph app-avatar`) as HTMLElement | null;
+    const fr = ph?.getBoundingClientRect();
+    const cx = fr ? fr.left + fr.width / 2 - pr.left : (sp.s.x / 100) * w, cy = fr ? fr.top + fr.height / 2 - pr.top : (sp.s.y / 100) * h;
+    const rPhoto = fr ? fr.width / 2 : (this.smallPitch() ? 19 : 23);
+    const c = this.ratings.cards().get(sp.id); const v = this.avgVotes().get(sp.id);
+    const items = [
+      { label: 'Punta', value: String(c?.pu ?? '–') }, { label: 'Est. off.', value: String(c?.eo ?? '–') },
+      { label: 'Est. dif.', value: String(c?.ed ?? '–') }, { label: 'Difensore', value: String(c?.dc ?? '–') },
+      { label: 'Voto', value: v != null ? String(Math.round(v * 100) / 100).replace('.', ',') : '–' },
+    ];
+    const a0 = Math.atan2(h / 2 - cy, w / 2 - cx), spread = (200 * Math.PI) / 180, R = rPhoto + 44;
+    // arco intorno alla metà della foto rivolta verso la raggiera (2 px di stacco), da lì partono i raggi
+    const rA = rPhoto + 3;   // 2 px di stacco + metà del tratto
+    const p0 = [cx + rA * Math.cos(a0 - Math.PI / 2), cy + rA * Math.sin(a0 - Math.PI / 2)], p1 = [cx + rA * Math.cos(a0 + Math.PI / 2), cy + rA * Math.sin(a0 + Math.PI / 2)];
+    // l'arco si disegna da sinistra a destra: si parte dall'estremo più a sinistra
+    const [q0, q1, sweep] = p0[0] <= p1[0] ? [p0, p1, 1] : [p1, p0, 0];
+    const arc = `M ${q0[0].toFixed(1)} ${q0[1].toFixed(1)} A ${rA} ${rA} 0 0 ${sweep} ${q1[0].toFixed(1)} ${q1[1].toFixed(1)}`;
+    const rays = items.map((it, i) => {
+      const a = a0 + (i - (items.length - 1) / 2) * (spread / (items.length - 1));
+      const x = Math.max(30, Math.min(w - 30, cx + R * Math.cos(a))), y = Math.max(16, Math.min(h - 16, cy + R * Math.sin(a)));
+      const x1 = cx + (rA + 6) * Math.cos(a), y1 = cy + (rA + 6) * Math.sin(a);   // staccato dall'arco
+      // il raggio si ferma lontano dal numero
+      const d = Math.hypot(x - x1, y - y1), k = Math.max(0, (d - 24) / d);
+      return { ...it, x: Math.round(x), y: Math.round(y), x1: Math.round(x1), y1: Math.round(y1), len: Math.round(d * k), i, xe: x1 + (x - x1) * k, ye: y1 + (y - y1) * k };
+    }).map((r) => ({ ...r, xr: Math.round(r.xe), yr: Math.round(r.ye) }));
+    const order = [...rays].sort((a, b) => b.y - a.y).map((r) => r.i);   // 0 = il più basso
+    this.info.set({ id: sp.id, w, h, cx: Math.round(cx), cy: Math.round(cy), arc, arcLen: Math.round(Math.PI * rA),
+      rays: rays.map((r) => ({ ...r, i: order.indexOf(r.i), x2: r.xr, y2: r.yr })) as never });
   }
   protected closeInfo(): void {
     if (this.infoClosing()) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.infoClosing.set(true);
-    setTimeout(() => { this.info.set(null); this.infoClosing.set(false); }, reduce ? 0 : 60 * this.infoRows().length + 180);
+    // chiusura: raggi dal più alto al più basso, poi l'arco si ritira (più rapido dell'apertura)
+    setTimeout(() => { this.info.set(null); this.infoClosing.set(false); this.infoSpot = null; }, reduce ? 0 : 45 * this.infoRows().length + 130 + 170);
   }
 
   // ------------------------------------------------ posto vuoto: scelta tra i disponibili, dal più adatto
