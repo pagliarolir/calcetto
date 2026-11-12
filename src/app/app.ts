@@ -16,6 +16,7 @@ import { FantaLeader } from './core/fantaleader';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
 import { ConfirmView } from './ui/confirm';
+import { Network } from './core/network';
 
 @Component({
   selector: 'app-root',
@@ -49,10 +50,19 @@ import { ConfirmView } from './ui/confirm';
       </nav>
     }
 
+    <!-- rete: striscia sovrapposta sopra la barra (non cambia l'altezza della pagina) -->
+    <div class="net" [class.no-tabs]="!showTabs()" role="status" aria-live="polite">
+      @if (!network.online()) {
+        <p class="net-bar off"><app-icon name="wifi-off" [size]="18" /> Sei offline: quello che vedi potrebbe non essere aggiornato</p>
+      } @else if (network.back()) {
+        <p class="net-bar on"><app-icon name="check" [size]="18" /> Di nuovo online</p>
+      }
+    </div>
+
     <app-reprimand />
     <app-confirm />
 
-    <div class="toasts" role="status" aria-live="polite">
+    <div class="toasts" [class.above-net]="!network.online() || network.back()" role="status" aria-live="polite">
       @for (t of toasts.items(); track t.id) {
         <button class="toast enter-fade" [class.error]="t.tone === 'error'" (click)="toasts.dismiss(t.id)">{{ t.text }}</button>
       }
@@ -120,6 +130,20 @@ import { ConfirmView } from './ui/confirm';
       box-shadow: 0 8px 24px rgb(0 0 0 / 20%); text-align: left;
     }
     .toast.error { background: var(--danger); color: var(--danger-ink); }
+    .toasts.above-net { bottom: calc(var(--tabbar-total) + 64px); }
+    .net { position: absolute; z-index: 55; left: 0; right: 0; bottom: var(--tabbar-total); pointer-events: none; }
+    .net.no-tabs { bottom: env(safe-area-inset-bottom, 0px); }
+    .net-bar {
+      margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 8px 16px;
+      font: 600 var(--step--1)/1.3 var(--font-body); text-align: center; box-shadow: 0 -4px 14px rgb(0 0 0 / 14%);
+    }
+    .net-bar app-icon { flex: none; }
+    .net-bar.off { background: var(--ink); color: var(--bg); }
+    .net-bar.on { background: var(--turf); color: var(--turf-ink); }
+    @media (prefers-reduced-motion: no-preference) {
+      .net-bar { animation: net-in 220ms var(--ease-out); }
+      @keyframes net-in { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+    }
   `,
 })
 export class App {
@@ -134,6 +158,7 @@ export class App {
   /** la voce «Fanta» compare solo a chi può vedere FantaLeader */
   private readonly fl = inject(FantaLeader);
   protected readonly toasts = inject(Toasts);
+  protected readonly network = inject(Network);
   protected readonly unread = inject(Unread);
 
   private readonly url = toSignal(
