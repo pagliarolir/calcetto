@@ -1,7 +1,7 @@
 import { afterNextRender, DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 /**
- * Tiene un titolo su una sola riga (l'elemento deve avere la sua larghezza, es. `flex: 1 1 0`): se il testo non entra nello spazio, il carattere si rimpicciolisce
+ * Tiene un titolo su una sola riga (in una riga flex con `min-width: 0`): se il testo non entra nello spazio, il carattere si rimpicciolisce
  * (fino al 70%); oltre, i puntini di sospensione. Si ricalcola quando cambiano larghezza o testo.
  */
 @Directive({ selector: '[appFitText]' })
@@ -39,7 +39,7 @@ export class FitText {
     const base = parseFloat(getComputedStyle(el).fontSize) || 16;
     let size = base;
     // larghezza reale del testo (con i decimali) contro lo spazio disponibile: niente puntini per mezzo pixel
-    const over = () => el.scrollWidth > el.clientWidth || this.textWidth() > el.clientWidth - 0.5;
+    const over = () => el.scrollWidth > el.clientWidth || this.textWidth() > el.getBoundingClientRect().width + 0.05;
     while (over() && size > base * 0.7) {
       size -= 0.5;
       el.style.fontSize = `${size}px`;
