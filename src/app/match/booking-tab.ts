@@ -1,6 +1,6 @@
 import { ActivatedRoute, Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal } from '@angular/core';
-import { FORM_RANK, overallOf, Ratings } from '../core/ratings';
+import { formOf, overallOf, Ratings } from '../core/ratings';
 import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
@@ -431,7 +431,7 @@ export class BookingTab {
     const card = (x: T) => this.ratings.cards().get(x.user_id);
     const mode = this.effSort();
     if (mode === 'ovr') return [...rows].sort((a, b) => (overallOf(card(b)) ?? -1) - (overallOf(card(a)) ?? -1) || alpha(a, b));
-    if (mode === 'form') return [...rows].sort((a, b) => (FORM_RANK[card(b)?.form ?? ''] ?? -1) - (FORM_RANK[card(a)?.form ?? ''] ?? -1) || alpha(a, b));
+    if (mode === 'form') return [...rows].sort((a, b) => formOf(card(b)) - formOf(card(a)) || alpha(a, b));
     if (mode === 'insert') {
       const at = (x: T) => { const r = x as unknown as { sort_key?: string | number; updated_at?: string }; return String(r.sort_key ?? r.updated_at ?? ''); };
       return [...rows].sort((a, b) => at(a).localeCompare(at(b)) || alpha(a, b));

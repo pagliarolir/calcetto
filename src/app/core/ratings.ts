@@ -19,8 +19,12 @@ export type SlotKind = Band | 'est' | 'gk';
 /** La scheda che vedono tutti: solo valori calcolati (le 13 caratteristiche le vede solo il Leader). */
 export interface RatingCard {
   user_id: string; has: boolean; role: string | null; gk: Gk;
-  /** stato di forma (ultime due giornate): up, upright, equal (ultima pareggiata), none (ultima non giocata), downright, down */
-  form?: 'up' | 'upright' | 'equal' | 'none' | 'downright' | 'down';
+  /** forma provvisoria, da -3 a +3 (migrazione 48); le versioni precedenti mandavano uno stato a parole */
+  form?: number | string;
+  /** ±1 definitivi accumulati (già compresi nei valori dei ruoli) */
+  form_def?: number;
+  /** esito dell'ultima giornata: V vittoria, P pareggio, S sconfitta, N non ha giocato */
+  form_last?: 'V' | 'P' | 'S' | 'N' | null;
   best?: string; role_value?: number; overall?: number;
   dc?: number; ed?: number; eo?: number; pu?: number; cen?: number; hex?: Hex;
 }
@@ -71,14 +75,25 @@ export function centerCss(c: RatingCard): string {
   return `rgb(${m[0]} ${m[1]} ${m[2]})`;
 }
 
-/** bonus della forma sulla valutazione e ordine delle forme (dalla migliore) */
-export const FORM_BONUS: Record<string, number> = { up: 2, upright: 1, equal: 0, none: 0, downright: -1, down: -2 };
-export const FORM_RANK: Record<string, number> = { up: 4, upright: 3, equal: 2, none: 1.5, downright: 1, down: 0 };
-/** valutazione mostrata: il valore più alto tra i ruoli (o quello impostato dal Leader), più il bonus della forma */
+/**
+ * Forma provvisoria (da -3 a +3): ogni vittoria di fila +1, ogni sconfitta o pareggio -1; alla quarta un ±1 definitivo
+ * (già compreso nei valori). Assenze: contano solo in forma positiva (vedi migrazione 48).
+ */
+export function formOf(c: RatingCard | undefined): number {
+  const f = c?.form;
+  if (typeof f === 'number') return Math.max(-3, Math.min(3, Math.round(f)));
+  // scheda salvata prima della migrazione 48
+  return ({ up: 2, upright: 1, downright: -1, down: -2 } as Record<string, number>)[f ?? ''] ?? 0;
+}
+/** forma scritta come «+2», «-1», «0» */
+export function formLabel(n: number): string {
+  return n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0';
+}
+/** valutazione mostrata: il valore più alto tra i ruoli (o quello impostato dal Leader), più la forma provvisoria */
 export function overallOf(c: RatingCard | undefined): number | null {
   if (!c?.has) return null;
   const best = Math.max(c.role_value ?? 0, c.dc ?? 0, c.ed ?? 0, c.eo ?? 0, c.pu ?? 0);
-  return Math.max(0, Math.min(100, best + (FORM_BONUS[c.form ?? 'equal'] ?? 0)));
+  return Math.max(0, Math.min(100, best + formOf(c)));
 }
 
 /** valore di un giocatore in un tipo di posto (portiere = valore generale con il bonus del portiere) */
@@ -86,8 +101,11 @@ export function valueAt(c: RatingCard | undefined, kind: SlotKind): number | nul
   if (!c?.has) return null;
   // portiere: la valutazione del giocatore, come negli altri elenchi (il pallino resta solo come indicazione)
   if (kind === 'gk') return overallOf(c);
-  if (kind === 'est') return c.ed !== undefined && c.eo !== undefined ? Math.round((c.ed + c.eo) / 2) : null;
-  return c[kind] ?? null;
+  // nelle formazioni conta anche la forma provvisoria
+  const f = formOf(c);
+  if (kind === 'est') return c.ed !== undefined && c.eo !== undefined ? Math.max(0, Math.min(100, Math.round((c.ed + c.eo) / 2) + f)) : null;
+  const v = c[kind];
+  return v === undefined ? null : Math.max(0, Math.min(100, v + f));
 }
 
 @Injectable({ providedIn: 'root' })

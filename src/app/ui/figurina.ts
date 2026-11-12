@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { overallOf, Ratings } from '../core/ratings';
+import { formLabel, formOf, overallOf, Ratings } from '../core/ratings';
 import { RouterLink } from '@angular/router';
 import { Session } from '../core/session';
 import { Avatar } from './avatar';
@@ -39,9 +39,10 @@ import { Avatar } from './avatar';
       @if (note(); as n) { <span class="sub" [class.turf]="noteTone() === 'turf'">{{ n }}</span> }
     </span>
     @if (form(); as f) {
-      <span class="frm" [class.eq]="f.state === 'equal' || f.state === 'none'" [style.color]="f.color || null" role="img" [attr.aria-label]="f.label" [title]="f.label">
-        @if (f.state === 'equal') { = } @else if (f.state === 'none') { – } @else {
+      <span class="frm" [class.eq]="!!f.sym" [style.color]="f.color || null" role="img" [attr.aria-label]="f.label" [title]="f.label">
+        @if (f.sym) { {{ f.sym }} } @else {
           <svg viewBox="3 3 18 18" aria-hidden="true" [style.transform]="'rotate(' + f.rot + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <span class="fn">{{ f.text }}</span>
         }
       </span>
     }
@@ -90,6 +91,10 @@ import { Avatar } from './avatar';
     /* la forma parte esattamente dove inizia il nome: niente spazio a sinistra del simbolo */
     .frm { grid-column: 2; grid-row: 2; justify-self: start; height: 22px; display: grid; place-items: center start; }
     .frm svg { width: 18px; height: 18px; display: block; }
+    .frm:not(.eq) { display: inline-flex; align-items: center; gap: 2px; }
+    /* il numero della forma resta nel colore del testo (leggibile), la freccia è colorata */
+    .fn { font: 800 0.78rem/1 var(--font-display); color: var(--ink); letter-spacing: 0.02em; }
+    :host(.ta) .fn, :host(.tb) .fn { color: var(--tci); }
     .frm.eq { color: var(--muted); font: 800 1.15rem/1 var(--font-body); }
     .ovr { grid-column: 3; grid-row: 2; align-self: center; justify-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
            font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); }
@@ -143,20 +148,18 @@ export class Figurina {
     return id ? overallOf(this.ratings.cards().get(id)) : null;
   });
   protected readonly hue = computed(() => 130 * Math.max(0, Math.min(1, ((this.overall() ?? 50) - 50) / 35)));
-  /** stato di forma: freccia ruotata (da ↑ a ↓) e colore dal verde al rosso */
+  /** forma provvisoria (da -3 a +3): freccia che sale o scende di 30° per punto, colore dal verde al rosso, e il numero */
   protected readonly form = computed(() => {
     const id = this.userId();
-    const f = id ? this.ratings.cards().get(id)?.form : undefined;
-    if (!f) return null;
-    const M: Record<string, { rot: number; color: string; label: string }> = {
-      up: { rot: -90, color: 'hsl(130 65% 36%)', label: 'Forma: due vittorie di fila' },
-      upright: { rot: -45, color: 'hsl(95 60% 38%)', label: 'Forma: ha vinto l\'ultima' },
-      equal: { rot: 0, color: '', label: 'Forma: ha pareggiato l\'ultima' },
-      none: { rot: 0, color: '', label: 'Forma: non ha giocato l\'ultima' },
-      downright: { rot: 45, color: 'hsl(25 85% 45%)', label: 'Forma: ha perso l\'ultima' },
-      down: { rot: 90, color: 'hsl(0 70% 45%)', label: 'Forma: due sconfitte di fila' },
-    };
-    return M[f] ? { state: f, ...M[f] } : null;
+    const c = id ? this.ratings.cards().get(id) : undefined;
+    if (!c) return null;
+    const n = formOf(c);
+    if (n === 0) {
+      const none = c.form_last === 'N';
+      return { sym: none ? '–' : '=', rot: 0, color: '', text: '', label: none ? 'Forma: non ha giocato l\'ultima, nessun bonus' : 'Forma: nessun bonus' };
+    }
+    const color = n > 0 ? `hsl(${[95, 112, 130][n - 1]} 62% 36%)` : `hsl(${[28, 14, 0][-n - 1]} 78% 45%)`;
+    return { sym: null, rot: -30 * n, color, text: formLabel(n), label: `Forma: ${formLabel(n)} provvisorio` };
   });
 
   constructor() {
