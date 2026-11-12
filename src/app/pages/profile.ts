@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { PlayerPage } from './player';
 import { PALETTE } from '../core/color';
-import { Theme, ThemeChoice } from '../core/theme';
+import { hasPalette, isNeu, Theme, ThemeChoice } from '../core/theme';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
@@ -199,9 +199,11 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
               <div class="themes" role="radiogroup" aria-label="Tema dell'app">
                 @for (o of themeOptions; track o.id) {
                   <button type="button" role="radio" class="theme" [class.on]="theme.choice() === o.id" [attr.aria-checked]="theme.choice() === o.id" (click)="theme.set(o.id)">
-                    <span class="prev" aria-hidden="true" [style.background]="o.bg">
-                      <i class="ph" [style.background]="o.hero"></i>
-                      <span class="pr"><i [style.background]="o.primary"></i><i [style.background]="o.accent"></i><i class="grow" [style.background]="o.soft"></i></span>
+                    @let pv = theme.preview(o.id);
+                    <span class="prev" aria-hidden="true" [class.neu]="o.neu" [class.in]="o.id === 'rientranza'" [class.dark]="o.neu && theme.neuBase() === 'dark'"
+                          [style.background]="o.neu && theme.neuBase() === 'dark' ? '#252A31' : o.bg">
+                      <i class="ph" [style.background]="pv?.hero ?? o.hero"></i>
+                      <span class="pr"><i [style.background]="pv?.primary ?? o.primary"></i><i [style.background]="o.accent"></i><i class="grow" [style.background]="o.soft"></i></span>
                     </span>
                     <span class="tn"><app-icon [name]="o.icon" [size]="16" /><strong>{{ o.label }}</strong>@if (theme.choice() === o.id) { <app-icon name="check" [size]="16" class="ok" /> }</span>
                     <span class="small muted">{{ o.desc }}</span>
@@ -217,6 +219,32 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                 <span class="small muted">Scegli tu i colori</span>
               </button>
               </div>
+              @if (hasPalette(theme.choice())) {
+                <!-- tavolozze pronte: il tema resta lo stesso, cambia il colore principale -->
+                <div class="panel stack custom-ed">
+                  @if (isNeu(theme.choice())) {
+                    <div class="stack-s">
+                      <span class="lab">Base</span>
+                      <div class="ui-seg" role="radiogroup" aria-label="Base del tema">
+                        <button type="button" role="radio" [attr.aria-checked]="theme.neuBase() === 'light'" (click)="theme.setNeuBase('light')"><app-icon name="sun" [size]="16" /> Chiara</button>
+                        <button type="button" role="radio" [attr.aria-checked]="theme.neuBase() === 'dark'" (click)="theme.setNeuBase('dark')"><app-icon name="moon" [size]="16" /> Scura</button>
+                      </div>
+                    </div>
+                  }
+                  <div class="stack-s">
+                    <span class="lab">Colore principale <span class="muted">(pulsanti, collegamenti, intestazione)</span></span>
+                    <div class="sw" role="radiogroup" aria-label="Colore principale del tema">
+                      <button type="button" role="radio" class="auto" [attr.aria-checked]="!theme.palette()" (click)="theme.setPalette(null)"><app-icon name="sparkle" [size]="14" /> Originale</button>
+                      @for (p of palette; track p.hex) {
+                        <button type="button" role="radio" class="dot" [style.background]="p.hex" [attr.aria-checked]="theme.palette() === p.hex" [attr.aria-label]="p.name" [title]="p.name" (click)="theme.setPalette(p.hex)">
+                          @if (theme.palette() === p.hex) { <app-icon name="check" [size]="16" /> }
+                        </button>
+                      }
+                    </div>
+                    <span class="small muted">Si adatta da solo al tema perché i testi restino sempre leggibili.</span>
+                  </div>
+                </div>
+              }
               @if (theme.choice() === 'custom') {
                 @let c = theme.custom();
                 <div class="panel stack custom-ed">
@@ -310,7 +338,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     .seg2 button[aria-checked='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 14%); }
     .sw { display: flex; flex-wrap: wrap; gap: 10px; }
     .dot { width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff;
-           box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%); }
+           box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent); }
     .dot[aria-checked='true'], .dot.on { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink); }
     .dot.other { background: conic-gradient(#e53935, #fbc02d, #43a047, #1e88e5, #8e24aa, #e53935); position: relative; }
     .auto { appearance: none; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
@@ -324,6 +352,11 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     .ph { display: block; }
     .pr { display: flex; gap: 5px; align-items: center; padding: 6px; }
     .pr i { display: block; width: 24px; height: 11px; border-radius: 4px; } .pr i.grow { flex: 1; }
+    /* anteprime dei temi neumorphism: la barra lunga sporge (Rilievo) o è scavata (Rientranza) */
+    .prev.neu .pr i.grow { background: transparent !important; box-shadow: 2px 2px 4px #a9b4c4, -2px -2px 4px #ffffff; }
+    .prev.neu.in .pr i.grow { box-shadow: inset 2px 2px 4px #a9b4c4, inset -2px -2px 4px #ffffff; }
+    .prev.neu.dark .pr i.grow { box-shadow: 2px 2px 4px #15181d, -2px -2px 4px #333a44; }
+    .prev.neu.dark.in .pr i.grow { box-shadow: inset 2px 2px 4px #15181d, inset -2px -2px 4px #333a44; }
     .tn { display: flex; align-items: center; gap: 6px; } .tn .ok { margin-left: auto; color: var(--turf); }
     .lead-area { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border-radius: var(--r-m); text-decoration: none; color: var(--ink);
                  background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
@@ -372,13 +405,17 @@ export class ProfilePage {
 
   protected readonly roleLabel = ROLE_LABEL;
   protected readonly theme = inject(Theme);
-  protected readonly themeOptions: { id: ThemeChoice; label: string; icon: string; desc: string; bg: string; hero: string; primary: string; accent: string; soft: string }[] = [
+  protected readonly hasPalette = hasPalette;
+  protected readonly isNeu = isNeu;
+  protected readonly themeOptions: { id: ThemeChoice; label: string; icon: string; desc: string; bg: string; hero: string; primary: string; accent: string; soft: string; neu?: boolean }[] = [
     { id: 'auto', label: 'Automatico', icon: 'sun', desc: 'Gesso di giorno, Notturno con il telefono scuro', bg: 'linear-gradient(90deg, #F3F5F0 50%, #0A120E 50%)', hero: 'linear-gradient(90deg, #1F7A4D 50%, #0F1A14 50%)', primary: '#1B6A43', accent: '#8BE26A', soft: '#9AA59D' },
     { id: 'gesso', label: 'Gesso', icon: 'sun', desc: 'Chiaro, verde campo', bg: '#F3F5F0', hero: '#1F7A4D', primary: '#1B6A43', accent: '#F2B705', soft: '#E6ECE4' },
     { id: 'notturno', label: 'Notturno', icon: 'moon', desc: 'Scuro, luci dello stadio', bg: '#0A120E', hero: '#0F1A14', primary: '#8BE26A', accent: '#FFB547', soft: '#1B2721' },
     { id: 'figurina', label: 'Figurina', icon: 'star', desc: "Album degli anni '90", bg: '#F5ECD7', hero: '#C81E36', primary: '#C81E36', accent: '#E9B44C', soft: '#EBDFC2' },
     { id: 'azzurro', label: 'Azzurro', icon: 'shirt', desc: 'Blu Nazionale e oro', bg: '#F2F5FA', hero: '#0D5BBF', primary: '#0B4EA2', accent: '#C9A227', soft: '#E3EAF5' },
     { id: 'tramonto', label: 'Tramonto', icon: 'sun', desc: 'Scuro e caldo, corallo e oro', bg: '#170F14', hero: '#3A1A24', primary: '#FF8A5B', accent: '#FFD166', soft: '#2D1E27' },
+    { id: 'rilievo', label: 'Rilievo', icon: 'sparkle', desc: 'Morbido, superfici in rilievo', bg: '#E4E9F0', hero: '#1F7A4D', primary: '#1B6A43', accent: '#F2B705', soft: '#E4E9F0', neu: true },
+    { id: 'rientranza', label: 'Rientranza', icon: 'sparkle', desc: 'Morbido, superfici scavate', bg: '#E4E9F0', hero: '#1F7A4D', primary: '#1B6A43', accent: '#F2B705', soft: '#E4E9F0', neu: true },
     { id: 'contrasto', label: 'Alto contrasto', icon: 'eye', desc: 'Massima leggibilità (AAA)', bg: '#FFFFFF', hero: '#000000', primary: '#003D24', accent: '#FFD400', soft: '#F0F0F0' },
   ];
   // ------------------------------------------------ tema personalizzato

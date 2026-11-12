@@ -175,6 +175,69 @@
              radial-gradient(90% 70% at 0% 0%, rgb(214 64 120 / 26%) 0%, transparent 50%), #1e1219;
   --hero-ink: #fff4ee;
 }
+/* =====================================================================
+   Rilievo e Rientranza (neumorphism): fondo e superfici dello stesso colore, le forme si staccano
+   solo con una luce in alto a sinistra e un'ombra in basso a destra. Rilievo = superfici sporgenti,
+   Rientranza = superfici scavate (i pulsanti restano in rilievo, per far capire che si toccano).
+   Base chiara o scura con data-base su <html>. Testo ≥ 4,5:1 (verificato).
+   ===================================================================== */
+:root:is([data-theme='rilievo'], [data-theme='rientranza']) {
+  color-scheme: light;
+  --bg: #e4e9f0; --surface: #e4e9f0; --surface-2: #d8dfe8; --ink: #1c2633; --muted: #4a5666; --line: #c3ccd8;
+  --turf: #1b6a43; --turf-ink: #ffffff; --turf-soft: #d3e3dc; --chalk: #f4f7fa; --armband: #f2b705; --armband-ink: #2b2000;
+  --kit-white: #fafaf7; --kit-white-ink: #13201a; --kit-black: #1a1c20; --kit-black-ink: #f4f4f1;
+  --danger: #b92f27; --danger-ink: #ffffff; --danger-soft: #f3e0e0; --focus: #1b6a43; --backdrop: rgb(20 28 40 / 45%);
+  --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  --r-s: 10px; --r-m: 16px; --r-l: 24px;
+  --hero-bg: linear-gradient(160deg, #1f7a4d 0%, #145235 100%); --hero-ink: #ffffff;
+  /* luce e ombra */
+  --neu-hi: #ffffff; --neu-lo: #a9b4c4;
+  --neu-out: 6px 6px 14px var(--neu-lo), -6px -6px 14px var(--neu-hi);
+  --neu-out-s: 3px 3px 7px var(--neu-lo), -3px -3px 7px var(--neu-hi);
+  --neu-in: inset 6px 6px 12px var(--neu-lo), inset -6px -6px 12px var(--neu-hi);
+  --neu-in-s: inset 3px 3px 6px var(--neu-lo), inset -3px -3px 6px var(--neu-hi);
+}
+:root:is([data-theme='rilievo'], [data-theme='rientranza'])[data-base='dark'] {
+  color-scheme: dark;
+  --bg: #252a31; --surface: #252a31; --surface-2: #2c323a; --ink: #e6ebf1; --muted: #a3aebb; --line: #3a414b;
+  --turf: #72d18f; --turf-ink: #0b1a10; --turf-soft: #2f4a3a; --chalk: #eef3f8; --armband: #ffb547; --armband-ink: #1e1400;
+  --kit-white: #eceee9; --kit-white-ink: #13201a; --kit-black: #050607; --kit-black-ink: #eceee9;
+  --danger: #ff7a6e; --danger-ink: #1a0605; --danger-soft: #45282a; --focus: #72d18f; --backdrop: rgb(0 0 0 / 60%);
+  --hero-bg: radial-gradient(120% 90% at 85% -10%, rgb(114 209 143 / 26%) 0%, transparent 55%), #1c2026; --hero-ink: #ffffff;
+  --neu-hi: #333a44; --neu-lo: #15181d;
+}
+/* controlli: sempre in rilievo (si capisce che si toccano); premuti o scelti, scavati */
+:root:is([data-theme='rilievo'], [data-theme='rientranza']) {
+  .btn:not(.ghost) { border-color: transparent; box-shadow: var(--neu-out-s); }
+  .btn:not(.ghost, .primary, .danger-fill, .danger) { background: var(--surface); }
+  .btn.danger { border-color: currentColor; }
+  .btn:active:not(:disabled) { box-shadow: var(--neu-in-s); }
+  .chip, .choice button { border-color: transparent; box-shadow: var(--neu-out-s); }
+  .chip:not([aria-pressed='true']), .choice button:not([aria-pressed='true']) { background: var(--surface); }
+  /* scelto: resta pieno (colore e testo del pulsante) ma scavato */
+  .chip[aria-pressed='true'], .choice button[aria-pressed='true'] { box-shadow: var(--neu-in-s); }
+  .input, select.input, textarea.input { border-color: transparent; background: var(--surface); box-shadow: var(--neu-in-s); }
+  .input:focus { box-shadow: var(--neu-in-s), 0 0 0 3px color-mix(in srgb, var(--turf) 45%, transparent); }
+  .switch input { border-color: transparent; background: var(--surface); box-shadow: var(--neu-in-s); }
+  .switch input:checked { background: var(--turf); }
+  .switch input::after { box-shadow: var(--neu-out-s); }
+  .ui-seg { background: var(--surface); box-shadow: var(--neu-in-s); }
+  .ui-seg > button:is([aria-selected='true'], [aria-checked='true'], [aria-pressed='true']) { background: var(--surface); box-shadow: var(--neu-out-s); }
+  .empty { border-color: var(--line); }
+}
+/* superfici: sporgenti (Rilievo) o scavate (Rientranza) */
+:root[data-theme='rilievo'] {
+  .panel, .list, .table-wrap { border-color: transparent; box-shadow: var(--neu-out); }
+  app-figurina:not(.ta, .tb, .empty) { border-color: transparent; box-shadow: var(--neu-out-s); }
+}
+:root[data-theme='rientranza'] {
+  .panel, .list, .table-wrap { border-color: transparent; box-shadow: var(--neu-in); }
+  app-figurina:not(.ta, .tb, .empty) { border-color: transparent; box-shadow: var(--neu-in-s); }
+}
+/* la propria figurina resta riconoscibile: contorno del colore principale */
+:root:is([data-theme='rilievo'], [data-theme='rientranza']) app-figurina.me:not(.ta, .tb) { border-color: var(--turf); }
+
 :root[data-theme='tramonto'] .panel { box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgb(0 0 0 / 35%); }
 /* Figurina: bordi netti e ombre «adesive», titoli maiuscoli */
 :root[data-theme='figurina'] .panel { border: 2px solid var(--line); box-shadow: 3px 3px 0 var(--line); }
