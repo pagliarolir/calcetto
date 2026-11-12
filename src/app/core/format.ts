@@ -86,3 +86,9 @@ export function titleCase(text: string | null | undefined): string {
     .toLocaleLowerCase('it')
     .replace(/(^|[\s'’\-\/(.,])(\p{L})/gu, (_m, before: string, letter: string) => before + letter.toLocaleUpperCase('it'));
 }
+
+/** giorno di calendario a Roma (AAAA-MM-GG), per confrontare «oggi», «ieri»… */
+const romeDayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+export const romeDay = (iso: string) => romeDayFmt.format(new Date(iso));
+/** giorni di calendario (a Roma) tra la data e oggi: 0 oggi, 1 ieri… */
+export const daysAgo = (iso: string, now = new Date().toISOString()) => Math.round((Date.parse(romeDay(now)) - Date.parse(romeDay(iso))) / 86_400_000);

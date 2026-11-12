@@ -270,6 +270,10 @@ export class Api {
     return res.count ?? 0;
   }
 
+  async markRead(ids: number[]) {
+    return must(await this.sb.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids).is('read_at', null));
+  }
+
   async markAllRead() {
     return must(await this.sb.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null));
   }
