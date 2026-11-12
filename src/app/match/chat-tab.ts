@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, OnDestroy, signal, viewChild } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, signal, viewChild } from '@angular/core';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -11,11 +11,14 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { scrollAppTo } from '../core/scroller';
+import { Confirm } from '../core/confirm';
+import { haptic } from '../core/haptics';
+import { Icon } from '../ui/icon';
 
 /** Chat di partita: aperta dalla creazione della partita fino a 24 ore dopo la fine. */
 @Component({
   selector: 'app-chat-tab',
-  imports: [FormsModule, Avatar, Empty],
+  imports: [FormsModule, Avatar, Empty, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -33,20 +36,36 @@ import { scrollAppTo } from '../core/scroller';
               @if (msg.user_id !== session.uid()) {
                 @if (!sameAuthor(i)) { <app-avatar [userId]="msg.user_id" [size]="30" /> } @else { <span class="av-space" aria-hidden="true"></span> }
               }
-              <div class="msg enter-fade" [class.mine]="msg.user_id === session.uid()">
+              <!-- pressione lunga, clic destro o Invio: menu Copia / Elimina -->
+              <div class="msg enter-fade" [class.mine]="msg.user_id === session.uid()" [class.held]="menu()?.msg?.id === msg.id"
+                   tabindex="0" role="button" aria-haspopup="menu" [attr.aria-label]="label(msg)"
+                   (pointerdown)="press($event, msg)" (pointermove)="pressMove($event)" (pointerup)="unpress()" (pointercancel)="unpress()"
+                   (contextmenu)="$event.preventDefault(); openMenu(msg, $event.currentTarget)"
+                   (keydown.enter)="openMenu(msg, $event.currentTarget)" (keydown.space)="$event.preventDefault(); openMenu(msg, $event.currentTarget)">
                 @if (msg.user_id !== session.uid() && !sameAuthor(i)) { <span class="who">{{ session.name(msg.user_id) }}</span> }
                 <p>{{ msg.body }}</p>
-                <span class="time">{{ time(msg.created_at) }}
-                  @if (msg.user_id === session.uid() || session.isStaff()) {
-                    <button class="del" (click)="remove(msg)" aria-label="Elimina messaggio">Elimina</button>
-                  }
-                </span>
+                <span class="time">{{ time(msg.created_at) }}</span>
               </div>
             </li>
           } @empty {
             @if (store.t()?.chatOpen) { <li class="empty"><app-empty icon="chat" text="Nessun messaggio. Rompi il ghiaccio." /></li> }
           }
         </ol>
+        <dialog #menuDlg class="msg-menu" (click)="menuBackdrop($event)" (close)="menu.set(null)" aria-label="Azioni sul messaggio">
+          @if (menu(); as mm) {
+            <div class="lift msg" [class.mine]="mm.mine" aria-hidden="true" [style.top.px]="mm.top" [style.left.px]="mm.left" [style.width.px]="mm.width">
+              @if (mm.who) { <span class="who">{{ session.name(mm.msg.user_id) }}</span> }
+              <p>{{ mm.msg.body }}</p>
+              <span class="time">{{ time(mm.msg.created_at) }}</span>
+            </div>
+            <div class="acts" role="menu" [class.mine]="mm.mine" [style.top.px]="mm.menuTop" [style.left.px]="mm.menuLeft">
+              <button type="button" role="menuitem" (click)="copy(mm.msg)"><app-icon name="copy" [size]="20" /> Copia</button>
+              @if (mm.canDelete) {
+                <button type="button" role="menuitem" class="danger" (click)="askRemove(mm.msg)"><app-icon name="trash" [size]="20" /> Elimina</button>
+              }
+            </div>
+          }
+        </dialog>
         @if (store.t()?.chatOpen) {
           <form class="composer" (ngSubmit)="send()">
             <label class="sr-only" for="msg">Messaggio</label>
@@ -71,7 +90,27 @@ import { scrollAppTo } from '../core/scroller';
     .msg p { white-space: pre-wrap; overflow-wrap: anywhere; }
     .who { display: block; font-size: 0.75rem; font-weight: 700; color: var(--turf); margin-bottom: 2px; }
     .time { display: flex; gap: 8px; justify-content: flex-end; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
-    .del { appearance: none; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
+    /* niente menu e selezione di sistema sui fumetti: Copia è nel menu dell'app */
+    .msgs .msg { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; cursor: default; touch-action: manipulation; }
+    .msgs .msg:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .msgs .msg.held { opacity: 0; }
+    dialog.msg-menu { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+                      background: transparent; overflow: hidden; animation: none; }
+    dialog.msg-menu::backdrop { background: var(--backdrop); }
+    .lift { position: absolute; max-width: none; margin: 0; box-shadow: 0 10px 30px rgb(0 0 0 / 30%); }
+    .acts { position: absolute; width: 220px; display: flex; flex-direction: column; padding: 6px; border-radius: var(--r-m);
+            background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px rgb(0 0 0 / 30%); border: 1px solid var(--line); }
+    .acts button { appearance: none; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border: 0; border-radius: var(--r-s);
+                   background: none; color: inherit; font: 500 var(--step-0)/1 var(--font-body); text-align: left; cursor: pointer; }
+    .acts button:hover, .acts button:focus-visible { background: var(--surface-2); outline: none; }
+    .acts button.danger { color: var(--danger); }
+    @media (prefers-reduced-motion: no-preference) {
+      .lift { animation: lift 180ms var(--ease-out) both; }
+      .acts { animation: acts-in 180ms var(--ease-out) both; transform-origin: top left; }
+      .acts.mine { transform-origin: top right; }
+      @keyframes lift { from { transform: scale(1); } 60% { transform: scale(1.04); } to { transform: scale(1.02); } }
+      @keyframes acts-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+    }
     .composer {
       position: sticky; bottom: 8px;
       display: flex; gap: 8px; align-items: flex-end; padding: 8px; border-radius: var(--r-l);
@@ -161,6 +200,81 @@ export class ChatTab implements OnDestroy {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  // ------------------------------------------------ menu del messaggio (pressione lunga)
+  private readonly confirmBox = inject(Confirm);
+  private readonly injector = inject(Injector);
+  private readonly menuDlg = viewChild<ElementRef<HTMLDialogElement>>('menuDlg');
+  protected readonly menu = signal<{ msg: ChatMessage; mine: boolean; who: boolean; canDelete: boolean; top: number; left: number; width: number; menuTop: number; menuLeft: number } | null>(null);
+  private hold: { timer: ReturnType<typeof setTimeout>; x: number; y: number } | null = null;
+  /** quando il dito si alza dopo la pressione lunga parte un clic nello stesso punto: non deve chiudere il menu appena aperto */
+  private held = false;
+  private releasedAt = 0;
+
+  protected label(msg: ChatMessage): string {
+    const who = msg.user_id === this.session.uid() ? 'Tu' : this.session.name(msg.user_id);
+    return `${who}, ${this.time(msg.created_at)}: ${msg.body}. Premi Invio per copiare o eliminare.`;
+  }
+
+  protected press(e: PointerEvent, msg: ChatMessage): void {
+    if (e.pointerType === 'mouse') return;   // da computer: clic destro
+    const el = e.currentTarget as HTMLElement;
+    this.unpress();
+    this.hold = { x: e.clientX, y: e.clientY, timer: setTimeout(() => { this.hold = null; this.held = true; haptic(15); this.openMenu(msg, el); }, 450) };
+  }
+
+  protected pressMove(e: PointerEvent): void {
+    if (this.hold && Math.hypot(e.clientX - this.hold.x, e.clientY - this.hold.y) > 8) this.unpress();
+  }
+
+  protected unpress(): void {
+    if (this.held) { this.held = false; this.releasedAt = performance.now(); }
+    if (this.hold) clearTimeout(this.hold.timer);
+    this.hold = null;
+  }
+
+  protected openMenu(msg: ChatMessage, target: EventTarget | null): void {
+    const el = target as HTMLElement | null;
+    if (!el || this.menu()) return;
+    const r = el.getBoundingClientRect();
+    const mine = msg.user_id === this.session.uid();
+    const canDelete = mine || this.session.isStaff();
+    const vw = window.innerWidth, vh = window.innerHeight, pad = 12, gap = 8, w = 220;
+    const menuH = 12 + 48 * (canDelete ? 2 : 1);
+    // il fumetto resta dov'era; se sotto non c'è posto per il menu, tutto sale quanto basta
+    let top = r.top;
+    if (top + r.height + gap + menuH > vh - pad) top = vh - pad - menuH - gap - r.height;
+    const left = Math.min(Math.max(pad, mine ? r.right - w : r.left), vw - pad - w);
+    this.menu.set({ msg, mine, who: !!el.querySelector('.who'), canDelete, top, left: r.left, width: r.width, menuTop: top + r.height + gap, menuLeft: left });
+    afterNextRender({ write: () => {
+      const d = this.menuDlg()?.nativeElement;
+      if (d && !d.open) { d.showModal(); (d.querySelector('[role=menuitem]') as HTMLElement | null)?.focus(); }
+    } }, { injector: this.injector });
+  }
+
+  protected closeMenu(): void {
+    this.menuDlg()?.nativeElement.close();
+  }
+
+  protected menuBackdrop(e: MouseEvent): void {
+    if (this.held || performance.now() - this.releasedAt < 400) return;
+    if (!(e.target as Element).closest('.acts')) this.closeMenu();
+  }
+
+  protected async copy(msg: ChatMessage): Promise<void> {
+    this.closeMenu();
+    try {
+      await navigator.clipboard.writeText(msg.body);
+      this.toasts.show('Messaggio copiato.');
+    } catch {
+      this.toasts.error('Non riesco a copiare il messaggio.');
+    }
+  }
+
+  protected async askRemove(msg: ChatMessage): Promise<void> {
+    this.closeMenu();
+    if (await this.confirmBox.ask({ title: 'Eliminare il messaggio?', ok: 'Elimina', danger: true })) await this.remove(msg);
   }
 
   protected async remove(msg: ChatMessage): Promise<void> {

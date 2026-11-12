@@ -22,6 +22,7 @@ const PATHS: Record<string, string> = {
   clock: 'M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0 -16 0 M12 8v4l3 2',
   logout: 'M15 4h4v16h-4 M10 8l-4 4l4 4 M6 12h10',
   trash: 'M5 7h14 M10 7V4h4v3 M7 7l1 13h8l1-13',
+  copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
   share: 'M12 3v12 M7 8l5-5l5 5 M5 14v6h14v-6',
   type: 'M4 7V5h16v2 M12 5v14 M9 19h6',
   spacing: 'M4 6h16 M4 12h16 M4 18h16 M2 9l2 3-2 3 M22 9l-2 3 2 3',
