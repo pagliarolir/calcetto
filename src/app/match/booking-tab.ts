@@ -14,6 +14,7 @@ import { Figurina } from '../ui/figurina';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Icon } from '../ui/icon';
+import { FitText } from '../ui/fit-text';
 import { Confirm } from '../core/confirm';
 
 interface SlotView {
@@ -23,15 +24,15 @@ interface SlotView {
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Figurina, FormsModule, Icon, Empty],
+  imports: [Figurina, FormsModule, Icon, FitText, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
       <div class="stack">
         <!-- La mia risposta -->
         <section class="section" aria-labelledby="me-h">
-          <header class="me-head">
-            <h2 id="me-h">{{ myHeadline() }}</h2>
+          <header class="tab-head">
+            <h2 id="me-h" appFitText>{{ myHeadline() }}</h2>
             @if (infoLines().length) {
               <button type="button" class="info-i" aria-label="Come funzionano le prenotazioni" [attr.aria-expanded]="infoOpen()" (click)="infoOpen.set(!infoOpen())">
                 <app-icon name="info" [size]="20" />
@@ -42,7 +43,7 @@ interface SlotView {
               }
             }
             <!-- ordinamento delle liste -->
-            <span class="sortw">
+            <span class="sortw push">
               <button type="button" class="sort-b" aria-label="Ordina i giocatori" [attr.aria-expanded]="sortOpen()" (click)="sortOpen.set(!sortOpen())"><app-icon name="sort" [size]="18" /></button>
               @if (sortOpen()) {
                 <div class="pop-shield" aria-hidden="true" (click)="sortOpen.set(false)"></div>
@@ -69,7 +70,7 @@ interface SlotView {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
             <div class="choice" role="group" aria-label="La tua presenza">
               <button (click)="book('present')">Ci sono</button>
-              <button class="absent" (click)="book('absent')">Non ci sono</button>
+              <button class="absent" (click)="book('absent')">Assente</button>
             </div>
           } @else if (!canBook()) {
           } @else {
@@ -83,12 +84,9 @@ interface SlotView {
                 </button>
               }
               <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" (click)="book('absent')">
-                Non ci sono
+                Assente
               </button>
             </div>
-            @if (store.t()?.within24h && store.mine()?.list === 'team') {
-              <p class="small muted">Mancano meno di 24 ore: se rinunci ora, Leader e Premier ricevono un avviso.</p>
-            }
           }
           @if (m.status === 'scheduled' && !store.t()?.started) {
             @if (store.mine()?.list === 'reserve' && store.t()?.within24h) {
@@ -194,8 +192,6 @@ interface SlotView {
   styles: `
     /* risposta appena data, in attesa del server */
     app-figurina.arriving { opacity: 0.55; transition: opacity 200ms; }
-    .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
-    .me-head h2 { flex: 0 1 auto; min-width: 0; }
     .sortw { margin-left: auto; position: relative; flex: none; }
     .sort-b { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
     .sort-b[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
@@ -322,14 +318,22 @@ export class BookingTab {
   }
 
   protected async askWithdraw(): Promise<void> {
-    if (await this.confirmBox.ask({ title: 'Sicuro di volerti ritirare?', ok: 'Mi ritiro', danger: true })) await this.book('absent');
+    if (await this.confirmBox.ask({ title: 'Sicuro di volerti ritirare?', ok: 'Mi ritiro', danger: true })) await this.book('absent', true);
   }
 
   /** la propria figurina «cade» al suo posto solo subito dopo essersi prenotati, non a ogni apertura della pagina */
   protected readonly dropFor = signal<string | null>(null);
 
-  protected async book(choice: Choice): Promise<void> {
+  protected async book(choice: Choice, confirmed = false): Promise<void> {
     if (this.reprimand.guard() || this.busy()) return;
+    // titolare che rinuncia a meno di 24 ore: prima un avviso (Leader e Premier vengono avvisati)
+    if (!confirmed && choice !== 'present' && this.store.mine()?.list === 'team' && this.store.t()?.within24h) {
+      const ok = await this.confirmBox.ask({
+        title: 'Mancano meno di 24 ore: se rinunci ora, Leader e Premier ricevono un avviso.',
+        ok: choice === 'reserve' ? 'Passo tra le riserve' : 'Rinuncio', danger: true,
+      });
+      if (!ok) return;
+    }
     // risposta immediata: la scelta si vede subito, il posto vero lo decide il server; se rifiuta si torna a prima
     const before = this.store.board();
     const guess = this.guessBoard(before, choice);

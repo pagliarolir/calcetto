@@ -12,6 +12,7 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { FitText } from '../ui/fit-text';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
 
@@ -21,22 +22,22 @@ interface Place { team: Team; slot: number | null }
 
 @Component({
   selector: 'app-lineup-tab',
-  imports: [Sheet, FormsModule, Avatar, Icon],
+  imports: [Sheet, FormsModule, Avatar, Icon, FitText],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
       <div class="stack-l">
         @if (editing()) {
           <section class="stack">
-            <div class="spread">
-              <h2>{{ statusTitle() }}</h2>
-              <button class="btn small" [disabled]="busy()" (click)="suggest()">Consigliate</button>
+            <div class="tab-head">
+              <h2 appFitText>{{ statusTitle() }}</h2>
+              <button class="btn small push" [disabled]="busy()" (click)="suggest()">Consigliate</button>
             </div>
           </section>
         } @else {
-          <header class="fhead">
-            <h2>{{ statusTitle() }}</h2>
-            @if (myTeam(); as t) { <span class="tpill" [class.black]="t === 'black'" >Giochi con i {{ teamLabel()[t] }}</span> }
+          <header class="tab-head fhead">
+            <h2 appFitText>{{ statusTitle() }}</h2>
+            @if (myTeam(); as t) { <span class="tpill push" [class.black]="t === 'black'" >Giochi con i {{ teamLabel()[t] }}</span> }
           </header>
         }
 
@@ -162,7 +163,7 @@ interface Place { team: Team; slot: number | null }
     }
   `,
   styles: `
-    .fhead { display: flex; align-items: center; gap: 10px; margin-bottom: calc(0.5rem - 24px); } .fhead h2 { flex: 1; min-width: 0; }
+    .fhead { margin-bottom: calc(0.5rem - 24px); }
     .tpill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px; font: 700 0.8rem/1 var(--font-body);
              background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px #14201a; }
     .tpill::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
@@ -315,19 +316,21 @@ export class LineupTab {
   protected readonly scale = signal(1);
   protected readonly smallPitch = computed(() => this.scale() < 0.85);
   protected readonly photo = computed(() => Math.round(46 * this.scale()));
+  private pagePad?: HTMLElement;
   private fitPitch(): void {
     const el = this.pitchEl()?.nativeElement; const sc = el?.closest('.scroll-area') as HTMLElement | null;
     if (!el || !sc) return;
     const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
-    const w = el.clientWidth;
     // tra un minimo (telefoni bassi) e un massimo (niente campo troppo allungato)
     // il campo sta sempre nello schermo: se lo spazio non basta, foto, nomi e pallini si rimpiccioliscono (scala k)
     const rows = new Set(formation(this.perTeam()).map((p) => p.y)).size;
     const need = 2 * (23 + 24 + 23 + 30 + (rows - 1) * 70);           // altezza che serve a grandezza piena
     // si toglie anche il margine inferiore della pagina, così la pagina non scorre
+    // il campo prende tutto lo spazio che resta sotto il titolo, fino alla barra (come l'elenco della Lista):
+    // il margine inferiore della pagina si riduce e si ripristina uscendo
     const page = el.closest('.page') as HTMLElement | null;
-    const pad = page ? parseFloat(getComputedStyle(page).paddingBottom) || 0 : 0;
-    const H = Math.round(Math.max(300, Math.min(w * 2.1, sc.clientHeight - top - pad - 4)));
+    if (page && page.style.paddingBottom !== '4px') { this.pagePad = page; page.style.paddingBottom = '4px'; }
+    const H = Math.round(Math.max(300, sc.clientHeight - top - 10));
     // sotto il 60% foto e nomi diventerebbero illeggibili: lì il campo resta un po' più alto e la pagina scorre appena
     const k = Math.max(0.6, Math.min(1, H / need));
     this.scale.set(k);
@@ -466,7 +469,7 @@ export class LineupTab {
       ro.observe(this.hostRef.nativeElement as HTMLElement);
       const sc = (this.hostRef.nativeElement as HTMLElement).closest('.scroll-area'); if (sc) ro.observe(sc);
       this.fitPitch();
-      this.destroyRef.onDestroy(() => ro.disconnect());
+      this.destroyRef.onDestroy(() => { ro.disconnect(); if (this.pagePad) this.pagePad.style.paddingBottom = ''; });
     });
     // valori dei titolari e di chi è in formazione
     effect(() => {
