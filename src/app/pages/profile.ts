@@ -444,13 +444,13 @@ export class ProfilePage {
     ((): ProfileTab => {
       const q = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda') as ProfileTab | null;
       // le schede valide sono quelle dell'elenco (anche quelle aggiunte in futuro)
-      return q && ['dati', 'stats', 'foto', 'notifiche', 'aspetto', 'sicurezza'].includes(q) ? q : 'dati';
+      return q && ['dati', 'stats', 'foto', 'notifiche', 'aspetto', 'sicurezza'].includes(q) ? q : 'stats';
     })(),
   );
 
   protected selectTab(t: ProfileTab): void {
     this.tab.set(t);
-    void this.router.navigate([], { queryParams: { scheda: t === 'dati' ? null : t }, replaceUrl: true });
+    void this.router.navigate([], { queryParams: { scheda: t === 'stats' ? null : t }, replaceUrl: true });
   }
 
   /** frecce sinistra e destra per passare da una scheda all'altra */

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { Icon } from '../ui/icon';
 import { Session } from '../core/session';
 import { FIELD_ROLE_LABEL, FieldRole } from '../core/models';
-import { Ratings, ROLE_SHORT } from '../core/ratings';
+import { formLabel, formOf, Ratings, ROLE_SHORT } from '../core/ratings';
 import { HexChart, PitchChart, RatingRing } from './charts';
 
 /** La scheda dei valori che vedono tutti: cerchio con il valore nel ruolo, esagono e campo. */
@@ -21,6 +21,15 @@ import { HexChart, PitchChart, RatingRing } from './charts';
                 <button type="button" class="ri" aria-label="Perché questo ruolo" [attr.aria-expanded]="tip()" (click)="tip.set(!tip())"><app-icon name="info" [size]="14" /></button>
               }
             </span>
+            <!-- forma provvisoria (+1/+2/+3, -1/-2/-3) e definitivi già compresi nel valore -->
+            @let f = formInfo();
+            <span class="tag fchip" [class.turf]="f.n > 0" [class.danger]="f.n < 0" role="img" [attr.aria-label]="f.label" [title]="f.label">
+              @if (f.n !== 0) {
+                <svg viewBox="3 3 18 18" aria-hidden="true" [style.transform]="'rotate(' + (-30 * f.n) + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              }
+              Forma {{ f.text }}
+            </span>
+            @if (f.def) { <span class="small muted defl">{{ f.defText }} definitiv{{ f.def === 1 || f.def === -1 ? 'o' : 'i' }} nel valore</span> }
             @if (tip()) {
               <div class="pop-shield" aria-hidden="true" (click)="tip.set(false)"></div>
               <div class="tip panel" role="note">Ruolo non indicato nel profilo: è il ruolo migliore secondo i valori.</div>
@@ -48,6 +57,9 @@ import { HexChart, PitchChart, RatingRing } from './charts';
             background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .ring { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
     .rl { text-align: center; }
+    .fchip { font-size: var(--step--1); padding: 3px 10px; gap: 4px; }
+    .fchip svg { width: 14px; height: 14px; display: block; }
+    .defl { text-align: center; }
     /* medie in fondo, alte quanto il campo e allineate a lui (inizio e fine) */
     .avg { list-style: none; margin: auto 0 0; padding: 0; width: 100%; height: 116px; display: flex; flex-direction: column; justify-content: space-between; }
     .avg li { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 26px; padding: 0 6px; border-radius: 8px; font-size: var(--step--1); }
@@ -75,6 +87,15 @@ export class PlayerCard {
       .map(([k, z]) => ({ key: k, label: FIELD_ROLE_LABEL[k as FieldRole], value: c[z] ?? '–', mine: k === mine }));
   });
   readonly userId = input.required<string>();
+  /** forma provvisoria e definitivi */
+  protected readonly formInfo = computed(() => {
+    const c = this.card();
+    const n = formOf(c);
+    const def = c?.form_def ?? 0;
+    const text = formLabel(n);
+    return { n, text, def, defText: formLabel(def),
+      label: n === 0 ? 'Forma: nessun bonus provvisorio' : `Forma: ${text} provvisorio sul valore` };
+  });
   protected readonly card = computed(() => this.ratings.cards().get(this.userId()));
   protected readonly roleShort = computed(() => {
     const c = this.card();
