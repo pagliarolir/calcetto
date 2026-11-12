@@ -127,9 +127,9 @@ import { MatchStore } from './match-store';
                 <input class="input" type="datetime-local" [(ngModel)]="priorityAt" />
               </label>
               <button class="btn small primary" [disabled]="!priorityPick().size || !priorityAt" (click)="savePriority()">Apri la finestra</button>
-              @if (windows().length) {
+              @if (store.windows().length) {
                 <ul class="list">
-                  @for (w of windows(); track w.user_id) {
+                  @for (w of store.windows(); track w.user_id) {
                     <li class="list-item">
                       <span class="grow">{{ session.name(w.user_id) }} <span class="muted small">da {{ when(w.opens_at) }}</span></span>
                       <button class="btn small ghost" (click)="clearWindow(w.user_id)">Togli</button>
@@ -201,7 +201,6 @@ export class LeaderTools {
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
   protected readonly busy = signal(false);
-  protected readonly windows = signal<{ user_id: string; opens_at: string }[]>([]);
   protected readonly priorityPick = signal(new Set<string>());
   protected placeUser = '';
   protected priorityAt = '';
@@ -318,7 +317,7 @@ export class LeaderTools {
     await this.run(async () => {
       const id = this.store.match()!.id;
       await this.api.setPriorityWindow(id, [...this.priorityPick()], fromLocalInput(this.priorityAt));
-      this.windows.set(await this.api.priorityWindows(id));
+      await this.store.reload('priority_windows');
       this.priorityPick.set(new Set());
       this.toasts.show('Finestra di precedenza aperta.');
     });
@@ -328,7 +327,7 @@ export class LeaderTools {
     await this.run(async () => {
       const id = this.store.match()!.id;
       await this.api.clearPriorityWindow(id, userId);
-      this.windows.set(await this.api.priorityWindows(id));
+      await this.store.reload('priority_windows');
     });
   }
 
@@ -392,7 +391,6 @@ export class LeaderTools {
     effect(() => {
       if (!matchKey()) return;
       const m = untracked(() => this.store.match()!);
-      void this.api.priorityWindows(m.id).then((w) => this.windows.set(w)).catch(() => undefined);
       this.moveAt = toLocalInput(m.starts_at);
       this.mConfig.set(configOfMatch(m));
       this.mTime = fmtTime(m.starts_at);

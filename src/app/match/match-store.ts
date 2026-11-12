@@ -1,15 +1,22 @@
-import { computed, inject, Injectable, OnDestroy, signal } from '@angular/core';
-import { Api } from '../core/api';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { Api, MatchBundle } from '../core/api';
+import { Cache } from '../core/cache';
 import { BoardRow, LineupRow, Match, Result, ResultReview, Scorer, Team } from '../core/models';
 import { Session } from '../core/session';
 import { teamNames } from '../core/kits';
 
-/** Stato di una partita condiviso tra le schede (lista, squadre, risultato, voti, chat). */
-@Injectable()
-export class MatchStore implements OnDestroy {
+/**
+ * Stato della partita aperta, condiviso tra le schede (lista, squadre, risultato, voti, chat) e tenuto per tutta l'app:
+ * tornando sulla partita i dati si vedono subito (anche quelli salvati sul telefono, vedi core/cache.ts)
+ * e si aggiornano in sottofondo; l'ascolto in tempo reale resta attivo anche mentre si guarda un'altra pagina.
+ */
+@Injectable({ providedIn: 'root' })
+export class MatchStore {
   private readonly api = inject(Api);
   private readonly session = inject(Session);
+  private readonly cache = inject(Cache);
   private stopWatch: (() => void) | null = null;
+  private currentId: string | null = null;
   private ticker = setInterval(() => this.now.set(Date.now()), 30_000);
 
   readonly now = signal(Date.now());
@@ -19,6 +26,8 @@ export class MatchStore implements OnDestroy {
   readonly result = signal<Result | null>(null);
   readonly reviews = signal<ResultReview[]>([]);
   readonly scorers = signal<Scorer[]>([]);
+  /** finestre di precedenza: chi le ha può prenotarsi prima dell'apertura */
+  readonly windows = signal<{ user_id: string; opens_at: string }[]>([]);
   readonly loading = signal(true);
   readonly notFound = signal(false);
 
@@ -67,25 +76,59 @@ export class MatchStore implements OnDestroy {
     return !!m && (this.session.isStaff() || m.lineup_delegate === this.session.uid());
   });
 
+  /** apre una partita: se è già nota si vede subito e si aggiorna in sottofondo, altrimenti c'è lo scheletro */
   async load(id: string): Promise<void> {
-    this.loading.set(true);
-    this.stopWatch?.();
-    try {
-      this.match.set(await this.api.match(id));
+    if (this.currentId !== id) {
+      this.stopWatch?.();
+      this.stopWatch = null;
+      this.currentId = id;
+      const snap = this.cache.get<MatchBundle>(`match:${id}`);
+      this.apply(snap ?? { match: null as unknown as MatchBundle['match'], board: [], lineup: [], result: null, reviews: [], scorers: [], windows: [] });
       this.notFound.set(false);
+      this.loading.set(!snap);
+    }
+    try {
       await this.reloadAll();
-      this.stopWatch = this.api.watchMatch(id, ['bookings', 'matches', 'lineup', 'results', 'result_reviews', 'scorers'], (table) =>
-        void this.reload(table),
-      );
+      if (this.currentId === id && !this.stopWatch) {
+        this.stopWatch = this.api.watchMatch(id, ['bookings', 'matches', 'lineup', 'results', 'result_reviews', 'scorers'], (table) =>
+          void this.reload(table),
+        );
+      }
     } catch {
-      this.notFound.set(true);
+      if (this.currentId === id && !this.match()) this.notFound.set(true);
     } finally {
-      this.loading.set(false);
+      if (this.currentId === id) this.loading.set(false);
     }
   }
 
+  /** tutto in una chiamata (o in un solo giro in parallelo, vedi Api.matchBundle) */
   async reloadAll(): Promise<void> {
-    await Promise.all(['matches', 'bookings', 'lineup', 'results', 'result_reviews', 'scorers'].map((t) => this.reload(t)));
+    const id = this.currentId;
+    if (!id) return;
+    const b = await this.api.matchBundle(id);
+    if (this.currentId !== id) return;
+    this.now.set(Date.now());
+    this.apply(b);
+    this.remember();
+  }
+
+  private apply(b: MatchBundle): void {
+    this.match.set(b.match ?? null);
+    this.board.set(b.board ?? []);
+    this.lineup.set(b.lineup ?? []);
+    this.result.set(b.result ?? null);
+    this.reviews.set(b.reviews ?? []);
+    this.scorers.set(b.scorers ?? []);
+    this.windows.set(b.windows ?? []);
+  }
+
+  /** salva lo stato attuale: in RAM sempre, sul telefono solo la prossima partita (quella che si apre all'avvio) */
+  private remember(): void {
+    const m = this.match();
+    if (!m) return;
+    const snap: MatchBundle = { match: m, board: this.board(), lineup: this.lineup(), result: this.result(), reviews: this.reviews(),
+      scorers: this.scorers(), windows: this.windows() };
+    this.cache.set(`match:${m.id}`, snap, m.id === this.cache.get<string>('next-match'));
   }
 
   async reload(table: string): Promise<void> {
@@ -100,11 +143,17 @@ export class MatchStore implements OnDestroy {
       case 'results': this.result.set(await this.api.result(id)); break;
       case 'result_reviews': this.reviews.set(await this.api.reviews(id)); break;
       case 'scorers': this.scorers.set(await this.api.scorers(id)); break;
+      case 'priority_windows': this.windows.set(await this.api.priorityWindows(id)); break;
     }
+    if (this.currentId === id) this.remember();
   }
 
-  ngOnDestroy(): void {
+  /** all'uscita dall'account */
+  reset(): void {
     this.stopWatch?.();
-    clearInterval(this.ticker);
+    this.stopWatch = null;
+    this.currentId = null;
+    this.apply({ match: null as unknown as MatchBundle['match'], board: [], lineup: [], result: null, reviews: [], scorers: [], windows: [] });
+    this.loading.set(true);
   }
 }

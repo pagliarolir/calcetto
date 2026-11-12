@@ -5,7 +5,8 @@ import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { kit } from '../core/kits';
-import { Api } from '../core/api';
+import { Api, StatsBundle } from '../core/api';
+import { Cache } from '../core/cache';
 import { fmtDate, fmtWhen } from '../core/format';
 import { KitStatsRow, LeaderPointsEntry, LeaderPointsRow, PairRow, StatsRow } from '../core/models';
 import { Session } from '../core/session';
@@ -565,6 +566,7 @@ export class StatsPage {
   protected readonly whenFull = fmtWhen;
   protected readonly statsSince = signal<string | null>(null);
 
+  private readonly cache = inject(Cache);
   protected readonly period = signal<Period>('year');
   protected readonly rows = signal<StatsRow[]>([]);
   protected readonly loading = signal(true);
@@ -760,12 +762,15 @@ export class StatsPage {
   }
 
   private async loadPoints(): Promise<void> {
+    const seen = this.cache.get<{ t: LeaderPointsRow[]; h: LeaderPointsEntry[] }>('leader-points');
+    if (seen) { this.lpTable.set(seen.t); this.lpHistory.set(seen.h); }
     try {
       const [t, h] = await Promise.all([this.api.leaderPointsTable(), this.api.leaderPointsHistory()]);
       this.lpTable.set(t);
       this.lpHistory.set(h);
+      this.cache.set('leader-points', { t, h }, true);
     } catch (e) {
-      this.toasts.error(errorMessage(e));
+      if (!seen) this.toasts.error(errorMessage(e));
     }
   }
 
@@ -799,35 +804,48 @@ export class StatsPage {
     }
   }
 
+  /** «mostra subito, poi aggiorna»: i dati già visti per questo periodo compaiono subito, poi arrivano quelli nuovi */
   protected async reload(): Promise<void> {
-    this.loading.set(true);
+    const per = this.period();
+    const key = `stats:${per}${per === 'custom' ? `:${this.customFrom}:${this.customTo}` : ''}`;
+    this.statsKey = key;
+    const seen = this.cache.get<{ range: { from: string | null; to: string | null }; b: StatsBundle }>(key);
+    if (seen) { this.applyStats(seen.range, seen.b); this.loading.set(false); }
+    else this.loading.set(true);
     try {
       const r = await this.computeRange();
-      this.range.set(r);
-      const [rows, kits, pkits, pairs] = await Promise.all([
-        this.api.stats(r.from, r.to),
-        this.api.teamKitStats(r.from, r.to), this.api.playerKitStats(r.from, r.to), this.api.pairStats(r.from, r.to),
-      ]);
-      // la classifica mostra tutti i membri del gruppo: chi non ha partite nel periodo compare a zero
-      const seen = new Set(rows.map((x) => x.user_id));
-      const zero = (id: string) => ({ user_id: id, played: 0, wins: 0, draws: 0, losses: 0, points: 0, points_per_game: null, win_pct: null, goals: 0,
-        goals_per_game: null, assists: 0, own_goals: 0, team_goals_for: null, team_goals_against: null, team_goal_diff: null, avg_vote: null,
-        best_avg_vote: null, worst_avg_vote: null, mvp_count: 0, current_form: null, cur_win_streak: 0, best_win_streak: 0, cur_unbeaten: 0,
-        best_unbeaten: 0, cur_loss_streak: 0, worst_loss_streak: 0, cur_winless: 0, worst_winless: 0 }) as unknown as StatsRow;
-      this.rows.set([...rows, ...this.session.members().filter((m) => !seen.has(m.id)).map((m) => zero(m.id))]);
-      this.kitRows.set(kits);
-      this.playerKits.set(pkits);
-      this.pairs.set(pairs);
-      // se chi guarda non ha giocato nel periodo, si parte dal primo della classifica
-      if (!rows.some((x) => x.user_id === this.focus() && x.played > 0)) {
-        const first = rows.find((x) => x.played > 0);
-        if (first) this.focus.set(first.user_id);
-      }
-      void this.api.statsResetInfo(null).then((i) => this.statsSince.set(i.global)).catch(() => undefined);
+      const b = await this.api.statsBundle(r.from, r.to);
+      if (this.statsKey !== key) return;
+      this.applyStats(r, b);
+      // sul telefono solo il periodo che si apre per primo (l'anno)
+      this.cache.set(key, { range: r, b }, per === 'year');
     } catch (e) {
-      this.toasts.error(errorMessage(e));
+      if (!seen) this.toasts.error(errorMessage(e));
     } finally {
-      this.loading.set(false);
+      if (this.statsKey === key) this.loading.set(false);
+    }
+  }
+
+  private statsKey = '';
+
+  private applyStats(r: { from: string | null; to: string | null }, b: StatsBundle): void {
+    const rows = b.rows ?? [];
+    this.range.set(r);
+    // la classifica mostra tutti i membri del gruppo: chi non ha partite nel periodo compare a zero
+    const seen = new Set(rows.map((x) => x.user_id));
+    const zero = (id: string) => ({ user_id: id, played: 0, wins: 0, draws: 0, losses: 0, points: 0, points_per_game: null, win_pct: null, goals: 0,
+      goals_per_game: null, assists: 0, own_goals: 0, team_goals_for: null, team_goals_against: null, team_goal_diff: null, avg_vote: null,
+      best_avg_vote: null, worst_avg_vote: null, mvp_count: 0, current_form: null, cur_win_streak: 0, best_win_streak: 0, cur_unbeaten: 0,
+      best_unbeaten: 0, cur_loss_streak: 0, worst_loss_streak: 0, cur_winless: 0, worst_winless: 0 }) as unknown as StatsRow;
+    this.rows.set([...rows, ...this.session.members().filter((m) => !seen.has(m.id)).map((m) => zero(m.id))]);
+    this.kitRows.set(b.kits ?? []);
+    this.playerKits.set(b.pkits ?? []);
+    this.pairs.set(b.pairs ?? []);
+    this.statsSince.set(b.since ?? null);
+    // se chi guarda non ha giocato nel periodo, si parte dal primo della classifica
+    if (!rows.some((x) => x.user_id === this.focus() && x.played > 0)) {
+      const first = rows.find((x) => x.played > 0);
+      if (first) this.focus.set(first.user_id);
     }
   }
 

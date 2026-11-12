@@ -4,6 +4,12 @@ import { AppNotification, AppSettings, AttendanceRow, BoardRow, ChatMessage, Cho
 import { Supabase } from './supabase';
 import { ConfigField, MatchConfig } from './match-config';
 
+export interface MatchBundle {
+  match: Match; board: BoardRow[]; lineup: LineupRow[]; result: Result | null; reviews: ResultReview[]; scorers: Scorer[];
+  windows: { user_id: string; opens_at: string }[];
+}
+export interface StatsBundle { rows: StatsRow[]; kits: KitStatsRow[]; pkits: KitStatsRow[]; pairs: PairRow[]; since: string | null }
+
 const MATCH_COLS = '*,ends_at,result_opens_at,lock_at,votes_close_at,lineup_opens_at,chat_opens_at,chat_closes_at';
 
 /** Solleva l'errore di Supabase così che i componenti lo mostrino. */
@@ -15,6 +21,49 @@ function must<T>(res: { data: T | null; error: unknown }): T {
 @Injectable({ providedIn: 'root' })
 export class Api {
   private readonly sb = inject(Supabase).client;
+  /**
+   * Le funzioni «bundle» (una chiamata al posto di tante) arrivano con una migrazione: finché non è applicata
+   * con «Aggiorna Supabase» il database risponde «funzione inesistente» e si torna alle chiamate separate.
+   */
+  private bundles = true;
+
+  private async bundle<T>(fn: string, args: Record<string, unknown>, fallback: () => Promise<T>): Promise<T> {
+    if (this.bundles) {
+      const { data, error } = await this.sb.rpc(fn, args);
+      if (!error) return data as T;
+      const code = (error as { code?: string }).code;
+      if (code !== 'PGRST202' && code !== '42883') throw error;
+      this.bundles = false;
+    }
+    return fallback();
+  }
+
+  /** tutto quello che serve alla pagina della partita, in una chiamata */
+  async matchBundle(id: string): Promise<MatchBundle> {
+    const b = await this.bundle<MatchBundle | null>('match_bundle', { p_match: id }, async () => {
+      const [match, board, lineup, result, reviews, scorers, windows] = await Promise.all([
+        this.match(id), this.board(id), this.lineup(id), this.result(id), this.reviews(id), this.scorers(id), this.priorityWindows(id),
+      ]);
+      return { match, board, lineup, result, reviews, scorers, windows };
+    });
+    if (!b?.match) throw new Error('Partita non trovata');
+    return b;
+  }
+
+  /** avvio: «ultimo accesso» e profilo, punizione in corso e membri, in una chiamata (null: si usano le chiamate separate) */
+  async bootstrap(): Promise<{ me: unknown; punishment: unknown; members: unknown[] } | null> {
+    return this.bundle('bootstrap', {}, async () => null);
+  }
+
+  /** tutto quello che serve alla Classifica per un periodo, in una chiamata */
+  async statsBundle(from: string | null, to: string | null): Promise<StatsBundle> {
+    return this.bundle<StatsBundle>('stats_bundle', { p_from: from ?? '-infinity', p_to: to ?? 'infinity' }, async () => {
+      const [rows, kits, pkits, pairs, reset] = await Promise.all([
+        this.stats(from, to), this.teamKitStats(from, to), this.playerKitStats(from, to), this.pairStats(from, to), this.statsResetInfo(null),
+      ]);
+      return { rows, kits, pkits, pairs, since: reset.global };
+    });
+  }
 
   // ------------------------------------------------------------------ partite
   async nextMatch(): Promise<Match | null> {
