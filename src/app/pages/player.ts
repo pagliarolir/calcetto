@@ -7,29 +7,29 @@ import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { age, fmtDate, fmtWhen } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { teamNames } from '../core/kits';
-import { Location } from '@angular/common';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { StickerStrip } from '../ui/sticker-strip';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
+import { Back } from '../ui/back';
 
 @Component({
   selector: 'app-player',
-  imports: [Sheet, RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
+  imports: [Back, Sheet, RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (member(); as m) {
       @if (!embedded()) {
         <!-- parte alta ferma: foto, nome, sticker e informazioni -->
         <header class="page-head phead stack">
-          <button type="button" class="back" (click)="back()"><app-icon name="back" [size]="18" /> Indietro</button>
+          <div class="detail-bar"><app-back fallback="/classifica" /></div>
           <div class="id">
             <app-avatar [userId]="m.id" [size]="88" />
             <h1>{{ session.fullName(m.id) }}</h1>
@@ -140,8 +140,6 @@ import { Sheet } from '../ui/sheet';
     .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .menu button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
     .menu button:hover { background: var(--surface-2); }
-    .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0; border: 0; background: none;
-            color: var(--ink); opacity: 0.85; font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; }
     .id { display: flex; align-items: center; gap: 16px; }
     hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-m); overflow: hidden; }
@@ -154,15 +152,8 @@ import { Sheet } from '../ui/sheet';
 })
 export class PlayerPage {
   private readonly confirmBox = inject(Confirm);
-  private readonly routerNav = inject(Router);
-  private readonly location = inject(Location);
 
   /** torna alla pagina da cui si è arrivati (lista, chat, classifica...); se si è entrati da un link, alla Classifica */
-  protected back(): void {
-    if (this.routerNav.lastSuccessfulNavigation()?.previousNavigation) this.location.back();
-    else void this.routerNav.navigate(['/classifica']);
-  }
-
   readonly id = input.required<string>();
   /** nel Profilo (scheda Stats): solo la parte sotto l'intestazione */
   readonly embedded = input(false);

@@ -16,15 +16,17 @@ import { scrollAppTo } from '../core/scroller';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
 import { ProfileAdmin } from '../ratings/profile-admin';
+import { Back } from '../ui/back';
 
 @Component({
   selector: 'app-admin',
-  imports: [Sheet, FormsModule, Icon, Avatar, RouterLink, WeightsEditor, ProfileAdmin],
+  imports: [Back, Sheet, FormsModule, Icon, Avatar, RouterLink, WeightsEditor, ProfileAdmin],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
+      <div class="detail-bar"><app-back fallback="/profilo" /></div>
       <header class="stack">
-        <h1>Gestione</h1>
+        <div class="titlebar"><h1>Gestione</h1></div>
         <p class="muted">{{ leadershipText() }}</p>
       </header>
 

@@ -258,6 +258,18 @@ a { color: inherit; }
   -webkit-overflow-scrolling: touch;
 }
 .page.in-body { padding-top: 16px; }
+
+/* Intestazioni: due modelli (punto 9 dell'analisi UX).
+   Sezione (pagine della barra in basso): parte alta fissa .page-head con .titlebar (titolo e al massimo un'azione), sotto le schede.
+   Dettaglio (pagine aperte da un'altra): .detail-bar con <app-back> (e l'eventuale ⋯ a destra), sotto il titolo. */
+.titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.titlebar > h1 { margin: 0; min-width: 0; }
+.detail-bar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: -10px 0 -6px -8px; }
+.back-btn {
+  appearance: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 8px; border: 0; border-radius: var(--r-s);
+  background: none; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); cursor: pointer;
+}
+.back-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 /* Pagine sotto un'intestazione che ha già lasciato spazio alla barra di stato */
 .page.below-header { padding-top: 16px; }
 

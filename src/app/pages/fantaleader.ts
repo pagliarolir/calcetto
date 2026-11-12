@@ -24,7 +24,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
   template: `
     <div class="page-head">
       <div class="head-in">
-        <header class="spread">
+        <header class="titlebar">
           <h1>FantaLeader</h1>
           @if (fl.settings(); as st) { <span class="tag" [class.turf]="st.market_open">{{ st.market_open ? 'Mercato aperto' : 'Mercato chiuso' }}</span> }
         </header>

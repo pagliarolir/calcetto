@@ -397,7 +397,6 @@ const RECORDS: Record[] = [
     table.fit th button { font-size: 0.72rem; padding: 0; }
     .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .cols-btn { gap: 6px; }
-    .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .period { position: relative; flex: 0 1 auto; }
     .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 180px; }
     .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }

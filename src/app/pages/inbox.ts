@@ -23,17 +23,21 @@ interface Section { id: SectionId; label: string; rows: GroupRow[] }
   imports: [Icon, FormsModule, Empty, Skeleton, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page stack-l">
-      <header class="spread">
-        <h1>{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
-        @if (tab() === 'avvisi' && hasUnread()) { <button class="btn small" (click)="readAll()">Segna tutti come letti</button> }
-        @if (tab() === 'info' && session.isLeader() && !editing()) { <button class="btn small" (click)="startEdit()">Modifica</button> }
-      </header>
-
-      <div class="ui-seg" role="tablist" aria-label="Avvisi e informazioni">
-        <button role="tab" [attr.aria-selected]="tab() === 'avvisi'" (click)="selectTab('avvisi')"><app-icon name="bell" [size]="18" /> Avvisi</button>
-        <button role="tab" [attr.aria-selected]="tab() === 'info'" (click)="selectTab('info')"><app-icon name="info" [size]="18" /> Info</button>
+    <div class="page-head">
+      <div class="head-in">
+        <header class="titlebar">
+          <h1>{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
+          @if (tab() === 'avvisi' && hasUnread()) { <button class="btn small" (click)="readAll()">Segna tutti come letti</button> }
+          @if (tab() === 'info' && session.isLeader() && !editing()) { <button class="btn small" (click)="startEdit()">Modifica</button> }
+        </header>
+        <div class="ui-seg" role="tablist" aria-label="Avvisi e informazioni">
+          <button role="tab" [attr.aria-selected]="tab() === 'avvisi'" (click)="selectTab('avvisi')"><app-icon name="bell" [size]="18" /> Avvisi</button>
+          <button role="tab" [attr.aria-selected]="tab() === 'info'" (click)="selectTab('info')"><app-icon name="info" [size]="18" /> Info</button>
+        </div>
       </div>
+    </div>
+    <main class="scroll-area">
+      <div class="page stack-l in-body">
 
       @if (tab() === 'info') {
         <!-- regole e storie del Leader: il testo lo scrive solo lui -->
@@ -119,9 +123,11 @@ interface Section { id: SectionId; label: string; rows: GroupRow[] }
       }
       }
       }
+      </div>
     </main>
   `,
   styles: `
+    :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .itabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); margin-top: -8px; }
     .itabs button { appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; min-height: 42px; border-radius: 10px;
                     display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 var(--step--1)/1 var(--font-body); }
