@@ -28,6 +28,15 @@ export class MatchStore {
   readonly scorers = signal<Scorer[]>([]);
   /** finestre di precedenza: chi le ha può prenotarsi prima dell'apertura */
   readonly windows = signal<{ user_id: string; opens_at: string }[]>([]);
+  /** ultimo messaggio in chat scritto da altri e ultimo già visto su questo telefono: pallino della Chat */
+  readonly chatLast = signal<string | null>(null);
+  readonly chatSeen = signal<string | null>(null);
+  readonly chatUnread = computed(() => {
+    const last = this.chatLast();
+    if (!last) return false;
+    const seen = this.chatSeen();
+    return !seen || new Date(last).getTime() > new Date(seen).getTime();
+  });
   readonly loading = signal(true);
   readonly notFound = signal(false);
 
@@ -90,7 +99,7 @@ export class MatchStore {
     try {
       await this.reloadAll();
       if (this.currentId === id && !this.stopWatch) {
-        this.stopWatch = this.api.watchMatch(id, ['bookings', 'matches', 'lineup', 'results', 'result_reviews', 'scorers'], (table) =>
+        this.stopWatch = this.api.watchMatch(id, ['bookings', 'matches', 'lineup', 'results', 'result_reviews', 'scorers', 'chat_messages'], (table) =>
           void this.reload(table),
         );
       }
@@ -120,6 +129,18 @@ export class MatchStore {
     this.reviews.set(b.reviews ?? []);
     this.scorers.set(b.scorers ?? []);
     this.windows.set(b.windows ?? []);
+    this.chatLast.set(b.chat_last ?? null);
+    this.chatSeen.set(b.match ? this.cache.get<string>(`chat-seen:${b.match.id}`) ?? null : null);
+  }
+
+  /** la chat è stata vista fino a `upTo` (ora del messaggio più recente mostrato): il pallino si spegne */
+  markChatSeen(upTo: string | null): void {
+    const id = this.match()?.id;
+    const at = [upTo, this.chatLast(), this.chatSeen()].filter((x): x is string => !!x)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+    if (!id || !at || at === this.chatSeen()) return;
+    this.chatSeen.set(at);
+    this.cache.set(`chat-seen:${id}`, at, true);
   }
 
   /** salva lo stato attuale: in RAM sempre, sul telefono solo la prossima partita (quella che si apre all'avvio) */
@@ -127,7 +148,7 @@ export class MatchStore {
     const m = this.match();
     if (!m) return;
     const snap: MatchBundle = { match: m, board: this.board(), lineup: this.lineup(), result: this.result(), reviews: this.reviews(),
-      scorers: this.scorers(), windows: this.windows() };
+      scorers: this.scorers(), windows: this.windows(), chat_last: this.chatLast() };
     this.cache.set(`match:${m.id}`, snap, m.id === this.cache.get<string>('next-match'));
   }
 
@@ -144,6 +165,7 @@ export class MatchStore {
       case 'result_reviews': this.reviews.set(await this.api.reviews(id)); break;
       case 'scorers': this.scorers.set(await this.api.scorers(id)); break;
       case 'priority_windows': this.windows.set(await this.api.priorityWindows(id)); break;
+      case 'chat_messages': this.chatLast.set(await this.api.chatLast(id)); break;
     }
     if (this.currentId === id) this.remember();
   }

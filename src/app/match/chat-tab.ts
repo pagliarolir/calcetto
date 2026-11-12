@@ -1,4 +1,4 @@
-import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, signal, viewChild } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, signal, untracked, viewChild } from '@angular/core';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -146,6 +146,13 @@ export class ChatTab implements OnDestroy {
   protected readonly ids = computed(() => this.messages().map((m) => m.id));
 
   constructor() {
+    // con la chat aperta tutto quello che si vede è letto: il pallino della scheda si spegne
+    effect(() => {
+      const l = this.messages();
+      const last = l.length ? l[l.length - 1].created_at : null;
+      this.store.chatLast();
+      untracked(() => this.store.markChatSeen(last));
+    });
     effect(() => {
       const m = this.store.match();
       if (!m || this.loadedFor === m.id) return;
