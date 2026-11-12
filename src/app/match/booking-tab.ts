@@ -402,7 +402,7 @@ export class BookingTab {
       { id: 'alpha', label: 'Alfabetico' }, { id: 'ovr', label: 'Valutazione' }, { id: 'form', label: 'Stato di forma' },
     ];
     if (this.listTab() !== 'team') out.push({ id: 'insert', label: 'Ordine di inserimento' });
-    else if (this.store.teamOf().size) out.push({ id: 'team', label: 'Squadra (bianchi a sinistra, neri a destra)' });
+    else if (this.store.teamOf().size) out.push({ id: 'team', label: 'Formazione' });
     return out;
   });
   /** squadra del titolare, solo con le formazioni ufficiali (prima non si colora nulla) */
