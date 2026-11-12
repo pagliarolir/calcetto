@@ -179,7 +179,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
               <li>
                 <label class="switch">
                   <span><strong>{{ c.label }}</strong><br /><span class="small muted">{{ c.hint }}</span></span>
-                  <input type="checkbox" [checked]="wants(c.key)" [disabled]="prefsBusy()" (change)="togglePref(c.key)" />
+                  <input type="checkbox" [checked]="wants(c.key)" (change)="togglePref(c.key)" />
                 </label>
               </li>
             }
@@ -605,26 +605,34 @@ export class ProfilePage {
     { key: 'votes', label: 'Votazioni', hint: 'Quando puoi votare i compagni' },
     { key: 'achievements', label: 'Obiettivi sbloccati', hint: 'Quando qualcuno vince uno sticker' },
   ];
-  protected readonly prefsBusy = signal(false);
+
+  /** scelte appena toccate, in attesa del server (risposta immediata) */
+  private readonly prefsDraft = signal<Partial<Record<NotifyCategory, boolean>>>({});
+  private prefsQueue: Promise<void> = Promise.resolve();
 
   /** voce mancante = accesa, tranne la chat (spenta finché non la accendi) */
   protected wants(key: NotifyCategory): boolean {
-    return this.session.profile()?.notify_prefs?.[key] ?? key !== 'chat';
+    return this.prefsDraft()[key] ?? this.session.profile()?.notify_prefs?.[key] ?? key !== 'chat';
   }
 
-  protected async togglePref(key: NotifyCategory): Promise<void> {
+  /** l'interruttore cambia subito; i salvataggi partono in fila e un errore riporta la voce com'era */
+  protected togglePref(key: NotifyCategory): void {
     const uid = this.session.uid();
     if (!uid) return;
-    const next = { ...(this.session.profile()?.notify_prefs ?? {}), [key]: !this.wants(key) };
-    this.prefsBusy.set(true);
-    try {
-      await this.api.updateProfile(uid, { notify_prefs: next });
-      await this.session.refresh();
-    } catch (e) {
-      this.toasts.error(errorMessage(e));
-    } finally {
-      this.prefsBusy.set(false);
-    }
+    const value = !this.wants(key);
+    this.prefsDraft.update((d) => ({ ...d, [key]: value }));
+    this.prefsQueue = this.prefsQueue.then(async () => {
+      const next = { ...(this.session.profile()?.notify_prefs ?? {}), [key]: value };
+      try {
+        await this.api.updateProfile(uid, { notify_prefs: next });
+        await this.session.refresh();
+      } catch (e) {
+        this.toasts.error(errorMessage(e));
+      } finally {
+        // tolta solo se nel frattempo non è stata toccata di nuovo
+        this.prefsDraft.update((d) => { if (d[key] !== value) return d; const { [key]: _, ...rest } = d; return rest; });
+      }
+    });
   }
 
   protected async togglePush(on: boolean): Promise<void> {

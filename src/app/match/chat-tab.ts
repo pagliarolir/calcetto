@@ -37,14 +37,18 @@ import { Icon } from '../ui/icon';
                 @if (!sameAuthor(i)) { <app-avatar [userId]="msg.user_id" [size]="30" /> } @else { <span class="av-space" aria-hidden="true"></span> }
               }
               <!-- pressione lunga, clic destro o Invio: menu Copia / Elimina -->
-              <div class="msg enter-fade" [class.mine]="msg.user_id === session.uid()" [class.held]="menu()?.msg?.id === msg.id"
+              <div class="msg enter-fade" [class.mine]="msg.user_id === session.uid()" [class.held]="menu()?.msg?.id === msg.id" [class.sending]="msg.state === 'sending'"
                    tabindex="0" role="button" aria-haspopup="menu" [attr.aria-label]="label(msg)"
                    (pointerdown)="press($event, msg)" (pointermove)="pressMove($event)" (pointerup)="unpress()" (pointercancel)="unpress()"
                    (contextmenu)="$event.preventDefault(); openMenu(msg, $event.currentTarget)"
                    (keydown.enter)="openMenu(msg, $event.currentTarget)" (keydown.space)="$event.preventDefault(); openMenu(msg, $event.currentTarget)">
                 @if (msg.user_id !== session.uid() && !sameAuthor(i)) { <span class="who">{{ session.name(msg.user_id) }}</span> }
                 <p>{{ msg.body }}</p>
-                <span class="time">{{ time(msg.created_at) }}</span>
+                @if (msg.state === 'failed') {
+                  <button type="button" class="retry" (click)="retry(msg)">Non inviato. Riprova</button>
+                } @else {
+                  <span class="time">{{ msg.state === 'sending' ? 'Invio…' : time(msg.created_at) }}</span>
+                }
               </div>
             </li>
           } @empty {
@@ -71,7 +75,7 @@ import { Icon } from '../ui/icon';
             <label class="sr-only" for="msg">Messaggio</label>
             <textarea id="msg" class="input" name="body" [(ngModel)]="body" rows="1" maxlength="1000"
                       placeholder="Scrivi al gruppo" (keydown.enter)="enter($event)" (focus)="onFocus($event)"></textarea>
-            <button class="btn primary" type="submit" [disabled]="!body.trim() || busy()">Invia</button>
+            <button class="btn primary" type="submit" [disabled]="!body.trim()">Invia</button>
           </form>
         }
       </div>
@@ -94,6 +98,9 @@ import { Icon } from '../ui/icon';
     .msgs .msg { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; cursor: default; touch-action: manipulation; }
     .msgs .msg:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
     .msgs .msg.held { opacity: 0; }
+    .msgs .msg.sending { opacity: 0.7; }
+    .retry { display: block; margin: 4px 0 0 auto; min-height: 44px; padding: 0 4px; border: 0; background: none; color: inherit;
+             font: 600 var(--step--1)/1.2 var(--font-body); text-decoration: underline; cursor: pointer; }
     dialog.msg-menu { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
                       background: transparent; overflow: hidden; animation: none; }
     dialog.msg-menu::backdrop { background: var(--backdrop); }
@@ -129,7 +136,6 @@ export class ChatTab implements OnDestroy {
   private readonly list = viewChild<ElementRef<HTMLElement>>('list');
 
   protected readonly messages = signal<ChatMessage[]>([]);
-  protected readonly busy = signal(false);
   protected body = '';
   protected readonly when = fmtWhen;
   protected readonly time = fmtTime;
@@ -149,7 +155,10 @@ export class ChatTab implements OnDestroy {
       this.stop = this.api.watchChat(
         m.id,
         (msg) => {
-          if (!this.messages().some((x) => x.id === msg.id)) {
+          // il proprio messaggio appena scritto è già in elenco: si sostituisce, non si duplica
+          const temp = this.messages().find((x) => x.state === 'sending' && x.user_id === msg.user_id && x.body === msg.body);
+          if (temp) this.settle(temp.id, msg);
+          else if (!this.messages().some((x) => x.id === msg.id)) {
             this.messages.update((l) => [...l, msg]);
             this.scroll();
           }
@@ -185,21 +194,44 @@ export class ChatTab implements OnDestroy {
     }
   }
 
+  /** risposta immediata: il messaggio compare subito («Invio…») e diventa vero quando il server lo salva */
   protected async send(): Promise<void> {
     if (this.reprimand.guard()) return;
     const text = this.body.trim();
     if (!text) return;
-    this.busy.set(true);
+    const temp: ChatMessage = { id: -Date.now(), match_id: this.store.match()!.id, user_id: this.session.uid()!, body: text,
+                                created_at: new Date().toISOString(), state: 'sending' };
+    this.messages.update((l) => [...l, temp]);
+    this.body = '';
+    this.scroll();
+    await this.deliver(temp);
+  }
+
+  protected async retry(msg: ChatMessage): Promise<void> {
+    if (this.reprimand.guard()) return;
+    this.messages.update((l) => l.map((x) => (x.id === msg.id ? { ...x, state: 'sending' as const } : x)));
+    await this.deliver(msg);
+  }
+
+  private async deliver(temp: ChatMessage): Promise<void> {
     try {
-      await this.api.sendChat(this.store.match()!.id, this.session.uid()!, text);
-      this.body = '';
+      this.settle(temp.id, await this.api.sendChat(temp.match_id, temp.user_id, temp.body));
     } catch (e) {
       await this.session.refreshPunishment();
-      if (this.reprimand.guard()) return;
+      if (this.reprimand.guard()) {
+        // in punizione: il messaggio torna da scrivere
+        this.messages.update((l) => l.filter((x) => x.id !== temp.id));
+        this.body = temp.body;
+        return;
+      }
+      this.messages.update((l) => l.map((x) => (x.id === temp.id ? { ...x, state: 'failed' as const } : x)));
       this.toasts.error(errorMessage(e));
-    } finally {
-      this.busy.set(false);
     }
+  }
+
+  /** il messaggio provvisorio diventa quello salvato (se il tempo reale l'ha già portato, si toglie il doppione) */
+  private settle(tempId: number, real: ChatMessage): void {
+    this.messages.update((l) => (l.some((x) => x.id === real.id) ? l.filter((x) => x.id !== tempId) : l.map((x) => (x.id === tempId ? real : x))));
   }
 
   // ------------------------------------------------ menu del messaggio (pressione lunga)
@@ -236,7 +268,7 @@ export class ChatTab implements OnDestroy {
 
   protected openMenu(msg: ChatMessage, target: EventTarget | null): void {
     const el = target as HTMLElement | null;
-    if (!el || this.menu()) return;
+    if (!el || this.menu() || msg.state === 'sending') return;
     const r = el.getBoundingClientRect();
     const mine = msg.user_id === this.session.uid();
     const canDelete = mine || this.session.isStaff();
@@ -274,6 +306,8 @@ export class ChatTab implements OnDestroy {
 
   protected async askRemove(msg: ChatMessage): Promise<void> {
     this.closeMenu();
+    // non ancora salvato: si toglie e basta
+    if (msg.id < 0) { this.messages.update((l) => l.filter((x) => x.id !== msg.id)); return; }
     if (await this.confirmBox.ask({ title: 'Eliminare il messaggio?', ok: 'Elimina', danger: true })) await this.remove(msg);
   }
 

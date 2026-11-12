@@ -113,6 +113,8 @@ export interface BoardRow {
   updated_at: string;
   is_leader: boolean;
   slot: number | null;
+  /** solo nell'app: risposta appena data, in attesa del server */
+  provisional?: boolean;
 }
 
 export interface LineupRow {
@@ -183,6 +185,8 @@ export interface ChatMessage {
   user_id: string;
   body: string;
   created_at: string;
+  /** solo nell'app: messaggio appena scritto (id negativo) in invio o non partito */
+  state?: 'sending' | 'failed';
 }
 
 export interface AppNotification {

@@ -203,8 +203,8 @@ export class Api {
     return must(await this.sb.from('chat_messages').select('*').eq('match_id', matchId).order('created_at').limit(500)) as ChatMessage[];
   }
 
-  async sendChat(matchId: string, userId: string, body: string) {
-    return must(await this.sb.from('chat_messages').insert({ match_id: matchId, user_id: userId, body }));
+  async sendChat(matchId: string, userId: string, body: string): Promise<ChatMessage> {
+    return must(await this.sb.from('chat_messages').insert({ match_id: matchId, user_id: userId, body }).select().single()) as ChatMessage;
   }
 
   async deleteChat(id: number) {

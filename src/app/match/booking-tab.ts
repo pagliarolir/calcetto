@@ -72,22 +72,21 @@ interface SlotView {
           } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
             <div class="choice" role="group" aria-label="La tua presenza">
-              <button [disabled]="busy()" (click)="book('present')">Ci sono</button>
-              <button class="absent" [disabled]="busy()" (click)="book('absent')">Non ci sono</button>
+              <button (click)="book('present')">Ci sono</button>
+              <button class="absent" (click)="book('absent')">Non ci sono</button>
             </div>
           } @else if (!canBook()) {
           } @else {
             <div class="choice" role="group" aria-label="La tua presenza">
-              <button [attr.aria-pressed]="store.mine()?.choice === 'present'" [disabled]="busy()" (click)="book('present')">
+              <button [attr.aria-pressed]="store.mine()?.choice === 'present'" (click)="book('present')">
                 Ci sono
               </button>
               @if (!store.free()) {
-                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy()"
-                        (click)="book('reserve')">
+                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" (click)="book('reserve')">
                   Riserva
                 </button>
               }
-              <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" [disabled]="busy()" (click)="book('absent')">
+              <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" (click)="book('absent')">
                 Non ci sono
               </button>
             </div>
@@ -125,7 +124,7 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
@@ -133,7 +132,7 @@ interface SlotView {
                   @for (s of sortedSlots(); track s.slot) {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
                       @if (s.row; as r) {
-                        <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
+                        <app-figurina [class.arriving]="!!r.provisional" [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       } @else {
@@ -147,7 +146,7 @@ interface SlotView {
             @case ('pending') {
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
+                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun disponibile." /></li> }
               </ul>
             }
@@ -156,7 +155,7 @@ interface SlotView {
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                     }
                   </ul>
                 } @else {
@@ -176,7 +175,7 @@ interface SlotView {
             @case ('out') {
               <ul class="people board">
                 @for (r of byName(store.absents()); track r.user_id) {
-                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
+                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun assente." /></li> }
               </ul>
               @if (silent().length) {
@@ -339,6 +338,8 @@ interface SlotView {
     }
   `,
   styles: `
+    /* risposta appena data, in attesa del server */
+    app-figurina.arriving { opacity: 0.55; transition: opacity 200ms; }
     .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
     .me-head h2 { flex: 0 1 auto; min-width: 0; }
     .sortw { margin-left: auto; position: relative; flex: none; }
@@ -514,12 +515,25 @@ export class BookingTab {
   protected readonly dropFor = signal<string | null>(null);
 
   protected async book(choice: Choice): Promise<void> {
-    if (this.reprimand.guard()) return;
-    await this.run(async () => {
-      haptic();
-      const res = await this.api.book(this.store.match()!.id, choice);
+    if (this.reprimand.guard() || this.busy()) return;
+    // risposta immediata: la scelta si vede subito, il posto vero lo decide il server; se rifiuta si torna a prima
+    const before = this.store.board();
+    const guess = this.guessBoard(before, choice);
+    haptic();
+    if (guess) {
+      this.store.board.set(guess);
       this.dropFor.set(this.session.uid());
       setTimeout(() => this.dropFor.set(null), 900);
+    }
+    await this.run(async () => {
+      let res;
+      try {
+        res = await this.api.book(this.store.match()!.id, choice);
+      } catch (e) {
+        if (this.store.board() === guess) this.store.board.set(before);
+        else await this.store.reload('bookings');
+        throw e;
+      }
       await this.store.reload('bookings');
       // con «sceglie il Leader» i posti non sono numerati
       const n = res.slot ? ` con il numero ${res.slot}` : '';
@@ -528,6 +542,30 @@ export class BookingTab {
       else if (res.list === 'pending') this.toasts.show('Sei tra i disponibili: titolari e riserve li sceglie il Leader.');
       else this.toasts.show('Segnato come assente.');
     });
+  }
+
+  /** dove finirà probabilmente il giocatore (null = non si indovina: si aspetta il server) */
+  private guessBoard(board: BoardRow[], choice: Choice): BoardRow[] | null {
+    const uid = this.session.uid(), m = this.store.match();
+    if (!uid || !m || this.amLeaderTitular()) return null;
+    const mine = board.find((b) => b.user_id === uid);
+    if (mine?.choice === choice) return null;
+    let list: BoardRow['list'], slot: number | null = null;
+    if (choice === 'absent') list = 'out';
+    else if (this.store.free()) list = 'pending';
+    else if (choice === 'present' && mine?.list === 'team') return null;
+    else if (choice === 'present' && this.store.team().length < this.store.size()) {
+      list = 'team';
+      slot = this.slots().find((s) => !s.row && s.slot !== 1)?.slot ?? null;
+    } else {
+      list = 'reserve';
+      slot = this.store.reserves().filter((r) => r.user_id !== uid).length + 1;
+    }
+    const row: BoardRow = {
+      match_id: m.id, user_id: uid, choice, list, slot, placed_by: null, late_withdrawal: false, reserve_reply: null,
+      updated_at: new Date().toISOString(), is_leader: false, ...(mine ? { is_leader: mine.is_leader } : {}), provisional: true,
+    };
+    return [...board.filter((b) => b.user_id !== uid), row];
   }
 
   protected async reply(r: 'confirmed' | 'declined'): Promise<void> {
