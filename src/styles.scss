@@ -368,10 +368,11 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 /* riga del titolo delle schede della partita: stessa altezza e posizione in tutte le schede,
    titolo sempre su una riga (appFitText lo rimpicciolisce se serve), icone e pillole a destra */
 .tab-head { display: flex; align-items: center; gap: 4px; height: calc(var(--step-2) * 1.05 + 12px); position: relative; flex: none; }
-.tab-head > h2 { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab-head > h2 { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tab-head > .push { margin-left: auto; }
 /* la lineetta verde dei titoli di sezione, anche fuori da .section */
 .tab-head > h2::before { content: ''; display: inline-block; vertical-align: -0.08em; width: 4px; height: 0.9em; margin-right: 10px; border-radius: 2px; background: var(--turf); }
+.section > header.tab-head { align-items: center; }
 .section > header.tab-head > h2 { display: block; }
 .section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 /* il segno verde a sinistra dei titoli di sezione richiama le linee del campo */

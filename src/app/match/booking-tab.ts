@@ -22,6 +22,8 @@ interface SlotView {
   row: BoardRow | null;
 }
 
+type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
+
 @Component({
   selector: 'app-booking-tab',
   imports: [Figurina, FormsModule, Icon, FitText, Empty],
@@ -43,7 +45,7 @@ interface SlotView {
               }
             }
             <!-- ordinamento delle liste -->
-            <span class="sortw push">
+            <span class="sortw">
               <button type="button" class="sort-b" aria-label="Ordina i giocatori" [attr.aria-expanded]="sortOpen()" (click)="sortOpen.set(!sortOpen())"><app-icon name="sort" [size]="18" /></button>
               @if (sortOpen()) {
                 <div class="pop-shield" aria-hidden="true" (click)="sortOpen.set(false)"></div>
@@ -397,7 +399,18 @@ export class BookingTab {
   /** giocatori in ordine alfabetico, con il Leader per primo (modalità "sceglie il Leader": nessun ordine) */
   // ------------------------------------------------ ordinamento delle liste
   private readonly ratings = inject(Ratings);
-  protected readonly sortMode = signal<'alpha' | 'ovr' | 'form' | 'insert' | 'team'>('alpha');
+  /** ordinamento scelto: resta lo stesso cambiando pagina o partita (nell'indirizzo e sul telefono) */
+  protected readonly sortMode = signal<SortMode>(BookingTab.savedSort());
+  private static readonly SORT_KEY = 'gdl-lista-ordine';
+  private static readonly SORTS: SortMode[] = ['alpha', 'ovr', 'form', 'insert', 'team'];
+  private static savedSort(): SortMode {
+    try {
+      const q = new URLSearchParams(location.search).get('ordine') ?? localStorage.getItem(BookingTab.SORT_KEY);
+      return BookingTab.SORTS.includes(q as SortMode) ? (q as SortMode) : 'alpha';
+    } catch {
+      return 'alpha';
+    }
+  }
   protected readonly sortOpen = signal(false);
   /** modi disponibili per la lista che si sta guardando */
   protected readonly sortOptions = computed(() => {
@@ -420,8 +433,10 @@ export class BookingTab {
   /** nome di transizione di una figurina (per farla scivolare quando cambia l'ordine) */
   protected vt(id: string): string { return 'f-' + id; }
   /** cambia ordine con una transizione: le figurine scivolano nella nuova posizione */
-  protected setSort(id: 'alpha' | 'ovr' | 'form' | 'insert' | 'team'): void {
+  protected setSort(id: SortMode): void {
     this.sortOpen.set(false);
+    try { localStorage.setItem(BookingTab.SORT_KEY, id); } catch { /* resta solo per questa visita */ }
+    void this.listRouter.navigate([], { relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge', queryParams: { ordine: id === 'alpha' ? null : id } });
     const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
     if (doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(() => this.sortMode.set(id));
     else this.sortMode.set(id);
