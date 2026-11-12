@@ -20,6 +20,7 @@ export const routes: Routes = [
           { path: 'risultato', loadComponent: () => import('./match/result-tab').then((m) => m.ResultTab), title: 'Risultato' },
           { path: 'voti', loadComponent: () => import('./match/votes-tab').then((m) => m.VotesTab), title: 'Pagelle' },
           { path: 'chat', loadComponent: () => import('./match/chat-tab').then((m) => m.ChatTab), title: 'Chat' },
+          { path: 'strumenti', loadComponent: () => import('./match/leader-tools').then((m) => m.LeaderTools), title: 'Strumenti del Leader' },
         ],
       },
       { path: 'partite', loadComponent: () => import('./pages/matches').then((m) => m.MatchesPage), title: 'Partite' },
