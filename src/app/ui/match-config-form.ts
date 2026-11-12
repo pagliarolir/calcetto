@@ -1,41 +1,40 @@
 import { ChangeDetectionStrategy, Component, computed, model } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { InfoTip } from './info-tip';
 import { KITS, kit } from '../core/kits';
 import { MatchConfig } from '../core/match-config';
 
 /** Modulo della configurazione di una partita: usato per creare, per la configurazione predefinita e per modificare. */
 @Component({
   selector: 'app-match-config-form',
-  imports: [FormsModule],
+  imports: [FormsModule, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="cfg stack">
+    <div class="cfg">
       <fieldset>
-        <legend>Giocatori</legend>
-        <div class="row-wrap" role="group" aria-label="Giocatori per squadra">
+        <legend><span>Giocatori</span><app-info-tip label="Come funziona la lista" [lines]="playersInfo()" /></legend>
+        <div class="one-row" role="group" aria-label="Giocatori per squadra">
           @for (n of players; track n) {
-            <button type="button" class="chip" [attr.aria-pressed]="config().players_per_team === n" (click)="set('players_per_team', n)">{{ n }} contro {{ n }}</button>
+            <button type="button" class="chip" [attr.aria-pressed]="config().players_per_team === n" [attr.aria-label]="n + ' contro ' + n" (click)="set('players_per_team', n)">{{ n }} vs {{ n }}</button>
           }
         </div>
-        <p class="small muted">In lista {{ config().players_per_team * 2 }} posti, il Leader resta il numero 1; le riserve partono dal {{ config().players_per_team * 2 + 1 }}.</p>
       </fieldset>
 
       <fieldset>
-        <legend>Durata</legend>
-        <div class="row-wrap duration">
+        <legend><span>Durata</span><app-info-tip label="Sulla durata" [lines]="['Da 1 a 90 minuti.', 'Le votazioni si aprono contando dalla fine della partita.']" /></legend>
+        <div class="one-row duration">
           @for (d of durations; track d) {
-            <button type="button" class="chip" [attr.aria-pressed]="config().duration_min === d" (click)="set('duration_min', d)">{{ d }} minuti</button>
+            <button type="button" class="chip" [attr.aria-pressed]="config().duration_min === d" [attr.aria-label]="d + ' minuti'" (click)="set('duration_min', d)">{{ d }} min</button>
           }
           <label class="field mins"><span class="sr-only">Durata in minuti</span>
             <input class="input" type="number" inputmode="numeric" min="1" max="90" step="1"
                    [ngModel]="config().duration_min" (ngModelChange)="setDuration($event)" aria-label="Durata in minuti" />
           </label>
         </div>
-        <p class="small muted">Da 1 a 90 minuti. Le votazioni si aprono contando dalla fine della partita.</p>
       </fieldset>
 
       <fieldset>
-        <legend>Colori delle squadre</legend>
+        <legend><span>Colori delle squadre</span></legend>
         @for (side of sides; track side.key) {
           <div class="kit-row">
             <span class="small kit-label">{{ side.label }}: <strong>{{ kitOf(side.key).name }}</strong></span>
@@ -48,23 +47,14 @@ import { MatchConfig } from '../core/match-config';
             </div>
           </div>
         }
-        <p class="vs"><span class="pill" [style.background]="kitOf('team_a_kit').color" [style.color]="kitOf('team_a_kit').ink">{{ kitOf('team_a_kit').name }}</span>
-          contro <span class="pill" [style.background]="kitOf('team_b_kit').color" [style.color]="kitOf('team_b_kit').ink">{{ kitOf('team_b_kit').name }}</span></p>
       </fieldset>
 
       <fieldset>
-        <legend>Prenotazioni</legend>
-        <div class="row-wrap" role="group" aria-label="Modalità di prenotazione">
+        <legend><span>Prenotazioni</span><app-info-tip label="Come funzionano le prenotazioni" [lines]="bookingInfo()" /></legend>
+        <div class="one-row two" role="group" aria-label="Modalità di prenotazione">
           <button type="button" class="chip" [attr.aria-pressed]="config().booking_mode === 'order'" (click)="set('booking_mode', 'order')">In ordine di arrivo</button>
           <button type="button" class="chip" [attr.aria-pressed]="config().booking_mode === 'free'" (click)="set('booking_mode', 'free')">Sceglie il Leader</button>
         </div>
-        <p class="small muted">
-          @if (config().booking_mode === 'order') {
-            Fa fede l'ordine di prenotazione: i primi {{ config().players_per_team * 2 }} giocano, gli altri sono riserve in ordine.
-          } @else {
-            Nessun ordine: i giocatori dicono solo se ci sono; dopo la chiusura il Leader sceglie titolari e riserve e li avvisa.
-          }
-        </p>
         <div class="pair">
           <label class="field"><span>Si aprono</span>
             <select class="input" [ngModel]="config().booking_open_days" (ngModelChange)="set('booking_open_days', +$event)">
@@ -85,11 +75,10 @@ import { MatchConfig } from '../core/match-config';
             <input class="input" type="time" [ngModel]="config().booking_close_time" (ngModelChange)="set('booking_close_time', $event)" />
           </label>
         </div>
-        <p class="small muted">Dopo la chiusura i giocatori non possono più cambiare: il Leader sì, fino all'inizio.</p>
       </fieldset>
 
       <fieldset>
-        <legend>Votazioni</legend>
+        <legend><span>Votazioni</span></legend>
         <div class="pair">
           <label class="field"><span>Si aprono</span>
             <select class="input" [ngModel]="config().votes_open_after_min" (ngModelChange)="set('votes_open_after_min', +$event)">
@@ -106,18 +95,26 @@ import { MatchConfig } from '../core/match-config';
     </div>
   `,
   styles: `
-    fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    legend { font: 600 var(--step-1)/1.2 var(--font-display); margin-bottom: 6px; padding: 0; }
-    .pair { display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
+    /* sezioni ben staccate; titoli con la lineetta verde dei titoli di sezione */
+    .cfg { display: flex; flex-direction: column; gap: 22px; }
+    fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    legend { display: flex; align-items: center; gap: 4px; font: 600 var(--step-1)/1.2 var(--font-display); margin-bottom: 6px; padding: 0; }
+    legend > span { display: inline-flex; align-items: center; gap: 10px; }
+    legend > span::before { content: ''; width: 4px; height: 0.9em; border-radius: 2px; background: var(--turf); flex: none; }
+    /* minmax(0, …): i campi con l'ora non allargano la riga oltre lo schermo */
+    .pair { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; }
+    .pair .input { width: 100%; min-width: 0; }
+    /* scelte su una riga sola, della stessa larghezza */
+    .one-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+    .one-row .chip { justify-content: center; padding-left: 4px; padding-right: 4px; white-space: nowrap; min-width: 0; }
+    .one-row.duration { grid-auto-columns: auto; grid-template-columns: repeat(3, minmax(0, 1fr)) 72px; align-items: center; }
     .kit-row { display: flex; flex-direction: column; gap: 6px; }
     .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
     .swatch { appearance: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid var(--line); padding: 0; }
     .swatch[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--turf); }
     .swatch:disabled { opacity: 0.25; cursor: not-allowed; }
-    .vs { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
-    .duration { align-items: center; }
-    .mins { width: 88px; position: relative; }
-    .pill { padding: 4px 12px; border-radius: 999px; font-weight: 700; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%); }
+    .mins { width: 72px; position: relative; }
+    .mins .input { width: 100%; min-width: 0; }
   `,
 })
 export class MatchConfigForm {
@@ -135,6 +132,19 @@ export class MatchConfigForm {
   protected readonly voteHourOptions = computed(() => withValue([12, 24, 48, 72, 168], this.config().votes_hours));
 
   protected readonly durations = [45, 60, 90];
+
+  /** spiegazioni nella «i»: una frase per riga */
+  protected readonly playersInfo = computed(() => {
+    const n = this.config().players_per_team * 2;
+    return [`In lista ci sono ${n} posti.`, 'Il Leader resta il numero 1.', `Le riserve partono dal ${n + 1}.`];
+  });
+  protected readonly bookingInfo = computed(() => [
+    ...(this.config().booking_mode === 'order'
+      ? ['Fa fede l\'ordine di prenotazione.', `I primi ${this.config().players_per_team * 2} giocano, gli altri sono riserve in ordine.`]
+      : ['Nessun ordine: i giocatori dicono solo se ci sono.', 'Dopo la chiusura il Leader sceglie titolari e riserve e li avvisa.']),
+    'Dopo la chiusura i giocatori non possono più cambiare.',
+    'Il Leader sì, fino all\'inizio.',
+  ]);
 
   protected setDuration(v: number | string): void {
     const n = Math.round(Number(v));

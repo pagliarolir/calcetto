@@ -15,7 +15,7 @@ import { HexChart, PitchChart, RatingRing } from './charts';
       @if (c.has) {
         <div class="card">
           <div class="ring">
-            <app-rating-ring [label]="roleShort()" [value]="c.role_value" [size]="140" />
+            <app-rating-ring [label]="roleShort()" [value]="c.role_value" [size]="112" />
             <span class="small muted rl">{{ roleLabel() }}
               @if (!c.role) {
                 <button type="button" class="ri" aria-label="Perché questo ruolo" [attr.aria-expanded]="tip()" (click)="tip.set(!tip())"><app-icon name="info" [size]="14" /></button>

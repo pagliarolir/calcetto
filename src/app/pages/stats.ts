@@ -42,8 +42,10 @@ const COLUMNS: Col[] = [
 ];
 
 /** colonne visibili all'inizio (le altre si aggiungono dalla finestra «Colonne») */
-/** larghezza della colonna dei nomi: entra «Massimiliano», i nomi più lunghi finiscono con … */
-const NAME_COL = 136;
+/** larghezza della colonna dei nomi: quanto serve a «Massimiliano» con il carattere del tema (misurato), i nomi più lunghi finiscono con … */
+const NAME_COL = 124;
+/** avatar 22, spazio 5, margini 8 + 4 */
+const NAME_EXTRA = 22 + 5 + 8 + 4;
 
 const DEFAULT_COLS = ['points', 'played', 'wins', 'draws', 'losses', 'goals', 'own_goals', 'avg_vote'];
 const COLS_KEY = 'gdl-classifica-colonne';
@@ -200,7 +202,7 @@ const RECORDS: Record[] = [
             <button class="btn small ghost cols-btn" (click)="openCols()" aria-haspopup="dialog"><app-icon name="table" [size]="16" /> Colonne</button>
           </header>
           <div class="fit-wrap">
-            <table class="data fit">
+            <table class="data fit" [style.--name-col.px]="nameCol()">
               <thead>
                 <tr>
                   <th scope="col">Giocatore</th>
@@ -390,7 +392,7 @@ const RECORDS: Record[] = [
     .fit-wrap { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-left: -8px; margin-right: -8px; }
     table.fit { table-layout: fixed; width: 100%; border-collapse: collapse; }
     table.fit th, table.fit td { padding-top: 7px; padding-bottom: 7px; }
-    table.fit th:first-child, table.fit td:first-child { width: 136px; padding-left: 8px; padding-right: 4px; overflow: hidden; }
+    table.fit th:first-child, table.fit td:first-child { width: var(--name-col, 124px); padding-left: 8px; padding-right: 4px; overflow: hidden; }
     table.fit th:not(:first-child), table.fit td:not(:first-child) { padding-left: 0; padding-right: 0; text-align: center; font-size: 0.9rem; }
     table.fit th:last-child, table.fit td:last-child { padding-right: 6px; }
     table.fit td.wide, table.fit th.wide { width: 60px; }
@@ -472,11 +474,23 @@ export class StatsPage {
   // ---------------------------------------------------------- colonne visibili
   private readonly colsDialog = viewChild<ElementRef<HTMLDialogElement>>('colsDialog');
   private readonly viewport = signal(typeof window === 'undefined' ? 400 : window.innerWidth);
+  /** colonna dei nomi stretta il più possibile: «Massimiliano» intero nel carattere e nella dimensione del tema */
+  protected readonly nameCol = signal(NAME_COL);
+  private measureNameCol(): void {
+    try {
+      const root = document.documentElement, body = getComputedStyle(document.body);
+      const px = parseFloat(getComputedStyle(root).fontSize) * 0.92;
+      const ctx = document.createElement('canvas').getContext('2d');
+      if (!ctx) return;
+      ctx.font = `600 ${px}px ${body.fontFamily}`;
+      this.nameCol.set(Math.ceil(ctx.measureText('Massimiliano').width) + NAME_EXTRA + 1);
+    } catch { /* resta il valore di partenza */ }
+  }
   protected readonly chosen = signal<string[]>(this.loadCols());
   /** quante colonne entrano: larghezza utile meno il nome, diviso la larghezza di una colonna */
   // almeno 122 px per il nome (avatar compreso): i nomi lunghi come «Massimiliano» entrano interi; poi colonne da 30 px
   // colonna del nome larga quanto «Massimiliano» (NAME_COL px), le altre da 30 px; 6 px di respiro a destra
-  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 18 - NAME_COL - 6) / 30)));
+  protected readonly maxCols = computed(() => Math.max(3, Math.floor((Math.min(this.viewport(), 640) - 18 - this.nameCol() - 6) / 30)));
   /** colonne mostrate: quelle scelte, nell'ordine della tabella, finché c'è posto */
   protected readonly shownCols = computed(() => {
     const out: Col[] = [];
@@ -539,6 +553,7 @@ export class StatsPage {
   }
 
   protected onResize(): void {
+    this.measureNameCol();
     this.viewport.set(window.innerWidth);
   }
   protected readonly tabs: { id: Tab; label: string }[] = [
@@ -629,6 +644,9 @@ export class StatsPage {
   protected readonly folds = signal<Set<string>>(new Set());
 
   constructor() {
+    // i caratteri del tema arrivano dopo: si misura subito e di nuovo quando sono pronti
+    this.measureNameCol();
+    void document.fonts?.ready.then(() => this.measureNameCol());
     // tutto quello che si sceglie è nell'indirizzo: «Indietro» da una scheda giocatore riapre la stessa vista
     const qp = inject(ActivatedRoute).snapshot.queryParamMap;
     const raw = qp.get('scheda');
@@ -881,7 +899,7 @@ export class StatsPage {
     if (v === null || v === undefined || v === '') return '–';
     if (c.fmt === 'form') return String(v).replace(/W/g, 'V').replace(/D/g, 'N').replace(/L/g, 'P');
     if (c.fmt === 'dec') return Number(v).toFixed(2).replace('.', ',');
-    if (c.fmt === 'pct') return `${Number(v).toFixed(0)}%`;
+    if (c.fmt === 'pct') return Number(v).toFixed(0);   // il % è nell'intestazione «%V»: «100» entra nella colonna, «100%» sbordava
     return String(v);
   }
 
