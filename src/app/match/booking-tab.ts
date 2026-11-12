@@ -220,12 +220,12 @@ interface SlotView {
     /* meno spazio tra la propria risposta e le schede */
     .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-top: -8px; }
     /* scorre solo l'elenco dei giocatori: l'altezza è quella che resta sotto le schede (fitList) */
-    .list-panel { padding: 14px 6px 8px 0; margin-right: -6px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+    .list-panel { padding: 10px 6px 8px 0; margin-right: -6px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
     /* titolari: le card si allargano in altezza fino a riempire lo spazio sotto le schede (fitList imposta --avail) */
-    .board.fill { min-height: calc(var(--avail, 0px) - 22px); grid-auto-rows: minmax(60px, 1fr); }
+    .board.fill { min-height: calc(var(--avail, 0px) - 18px); grid-auto-rows: minmax(60px, 1fr); }
     /* X rossa per ritirarsi, nell'angolo della propria figurina */
     /* pallino del ritiro piccolo; l'area di tocco resta comoda grazie al margine invisibile */
     .wd::after { content: ''; position: absolute; inset: -9px; }
