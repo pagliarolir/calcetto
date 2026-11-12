@@ -59,7 +59,7 @@ import { haptic } from '../core/haptics';
                   </a>
                 }
               </div>
-              <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="22" /></a>
+              <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
             </div>
             @if (!finished()) {
             <div class="strip" [class.played]="!!scoreboard()">
@@ -83,7 +83,7 @@ import { haptic } from '../core/haptics';
             <!-- Strumenti del Leader: la pagina della partita si gira e mostra gli strumenti; ritoccando si torna indietro -->
             <button type="button" class="tools-btn" [attr.aria-pressed]="tools()" (click)="toggleTools()"
                     [attr.aria-label]="tools() ? 'Chiudi gli strumenti del Leader' : 'Strumenti del Leader'" [title]="tools() ? 'Chiudi gli strumenti' : 'Strumenti del Leader'">
-              <app-icon name="tools" [size]="20" />
+              <app-icon name="tools" [size]="18" />
             </button>
           }
         </nav>
@@ -119,10 +119,12 @@ import { haptic } from '../core/haptics';
     /* icona calendario: porta all'elenco delle partite */
     /* in alto a destra, fuori dalla colonna: le righe sotto (indirizzo) usano tutta la larghezza */
     .ticket.with-cal { position: relative; }
-    .ticket.with-cal .tmain h1, .ticket.with-cal .tmain .flags { padding-right: 46px; }
-    .cal-link { position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    .ticket.with-cal .tmain h1, .ticket.with-cal .tmain .flags { padding-right: 38px; }
+    /* stessa misura dell'icona di ordinamento (32 px); l'area di tocco resta 44 px con il margine invisibile */
+    .cal-link { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
                 color: inherit; background: rgb(255 255 255 / 14%); }
-    .cal-link app-icon { display: grid; place-items: center; width: 22px; height: 22px; }
+    .cal-link::after, .tools-btn::after { content: ''; position: absolute; inset: -6px; }
+    .cal-link app-icon { display: grid; place-items: center; width: 18px; height: 18px; }
     .cal-link app-icon ::ng-deep svg { display: block; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
     .link { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: 0.85; font-size: var(--step--1); font-weight: 600; text-decoration: none; min-height: 36px; }
@@ -174,7 +176,7 @@ import { haptic } from '../core/haptics';
     .tabs.off a { opacity: 0.4; pointer-events: none; }
     .tabs.off a.on::after { opacity: 0; }
     /* interruttore degli strumenti: spento trasparente, acceso pieno */
-    .tools-btn { flex: none; margin: 0 0 4px auto; width: 40px; height: 40px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    .tools-btn { position: relative; flex: none; margin: 0 4px 6px auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
                  color: inherit; background: rgb(255 255 255 / 14%); transition: background 200ms, color 200ms; }
     .tools-btn[aria-pressed='true'] { background: var(--chalk); color: var(--turf); }
     .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }

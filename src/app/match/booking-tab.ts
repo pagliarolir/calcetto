@@ -118,18 +118,18 @@ interface SlotView {
           @switch (listTab()) {
             @case ('team') {
               @if (store.free()) {
-                <ul class="people board">
+                <ul class="people board fill">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [team]="store.teamOf().get(r.user_id) ?? null" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
-                <ol class="board">
+                <ol class="board fill">
                   @for (s of sortedSlots(); track s.slot) {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
                       @if (s.row; as r) {
                         <app-figurina [class.arriving]="!!r.provisional" [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
-                                      />
+                                      [team]="store.teamOf().get(r.user_id) ?? null" />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
@@ -224,6 +224,8 @@ interface SlotView {
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
+    /* titolari: le card si allargano in altezza fino a riempire lo spazio sotto le schede (fitList imposta --avail) */
+    .board.fill { min-height: calc(var(--avail, 0px) - 22px); grid-auto-rows: minmax(60px, 1fr); }
     /* X rossa per ritirarsi, nell'angolo della propria figurina */
     /* pallino del ritiro piccolo; l'area di tocco resta comoda grazie al margine invisibile */
     .wd::after { content: ''; position: absolute; inset: -9px; }
@@ -509,7 +511,9 @@ export class BookingTab {
     // l'elenco arriva fino alla barra in basso: il margine inferiore della pagina si riduce (e si ripristina uscendo)
     const page = panel.closest('.page') as HTMLElement | null;
     if (page && page.style.paddingBottom !== '4px') { this.pagePad = page; page.style.paddingBottom = '4px'; }
-    panel.style.maxHeight = `${Math.max(240, Math.floor(sc.clientHeight - top - 6))}px`;
+    const avail = Math.max(240, Math.floor(sc.clientHeight - top - 6));
+    panel.style.maxHeight = `${avail}px`;
+    panel.style.setProperty('--avail', `${avail}px`);
   }
 
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
