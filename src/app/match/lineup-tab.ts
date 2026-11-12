@@ -13,6 +13,7 @@ import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string; kind: SlotKind }
 interface Place { team: Team; slot: number | null }
@@ -20,7 +21,7 @@ interface Place { team: Team; slot: number | null }
 
 @Component({
   selector: 'app-lineup-tab',
-  imports: [FormsModule, Avatar, Icon],
+  imports: [Sheet, FormsModule, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -41,8 +42,9 @@ interface Place { team: Team; slot: number | null }
 
         @if (visible()) {
           <dialog #pickDlg class="sheet" (click)="$event.target === pickDlg && pickDlg.close()" aria-label="Scegli un giocatore">
+            <div class="grab" aria-hidden="true"></div>
+            <button type="button" class="x-close" (click)="pickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
             @if (pickFor(); as pf) {
-              <button type="button" class="x-close" (click)="pickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
               <h3>{{ teamLabel()[pf.team] }} · {{ pf.label }}</h3>
               <p class="small muted">Disponibili, dal più adatto a questo posto.</p>
               <ul class="pick">
@@ -249,10 +251,6 @@ interface Place { team: Team; slot: number | null }
     .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
     .pick button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 6px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1.2 var(--font-body); cursor: pointer; text-align: left; }
     .pick button:hover { background: var(--surface-2); }
-    dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 80dvh; overflow-y: auto; border: 0; color: var(--ink);
-                   background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
-    dialog.sheet::backdrop { background: var(--backdrop); }
-    dialog.sheet h3 { margin: 4px 48px 4px 0; }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
       background: repeating-linear-gradient(180deg, #24774c 0 10%, #1f6b45 10% 20%);

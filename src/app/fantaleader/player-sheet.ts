@@ -7,16 +7,18 @@ import { StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { Avatar } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
+import { Sheet } from '../ui/sheet';
 
 /** Scheda di un giocatore del FantaLeader: quotazioni, descrizione, skill, statistiche e punti per giornata. */
 @Component({
   selector: 'app-fl-player-sheet',
-  imports: [Avatar, Skeleton, Icon],
+  imports: [Sheet, Avatar, Skeleton, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog #dlg class="sheet" (click)="backdrop($event)" aria-labelledby="fls-h" (close)="userId.set(null)">
+      <div class="grab" aria-hidden="true"></div>
+      <button type="button" class="x-close" (click)="dlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (userId(); as id) {
-        <div class="grab" aria-hidden="true"></div>
         <header class="head">
           <app-avatar [userId]="id" [size]="64" />
           <div class="grow">
@@ -25,7 +27,6 @@ import { Skeleton } from '../ui/skeleton';
               <p class="small muted">{{ r.pos }}° in classifica · {{ fmt(r.total) }} punti · prossimo coefficiente ×{{ fmt(r.next_coef) }}</p>
             }
           </div>
-          <button type="button" class="x-close" (click)="close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
         </header>
 
         @if (fl.rankOf().get(id); as r) {
@@ -98,12 +99,7 @@ import { Skeleton } from '../ui/skeleton';
     </dialog>
   `,
   styles: `
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88dvh; overflow-y: auto; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 14px; }
-    .sheet::backdrop { background: var(--backdrop); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; flex: none; }
-    .head { display: flex; align-items: center; gap: 12px; padding-right: 40px; }
+    .head { display: flex; align-items: center; gap: 12px; }
     .head h2 { font-size: var(--step-1); }
     .x { border: 0; background: var(--surface-2); color: var(--muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; flex: none; }
     .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

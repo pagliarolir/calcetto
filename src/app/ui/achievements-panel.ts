@@ -11,11 +11,12 @@ import { Toasts } from '../core/toast';
 import { Avatar } from './avatar';
 import { Icon } from './icon';
 import { Confirm } from '../core/confirm';
+import { Sheet } from './sheet';
 
 /** Scheda «Obiettivi»: album degli sticker, dettaglio, classifica e strumenti del Leader. */
 @Component({
   selector: 'app-achievements-panel',
-  imports: [FormsModule, RouterLink, Avatar, Icon, Empty],
+  imports: [Sheet, FormsModule, RouterLink, Avatar, Icon, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack-l">
@@ -82,9 +83,9 @@ import { Confirm } from '../core/confirm';
     </div>
 
     <dialog #dlg class="sheet" (click)="backdrop($event)" (close)="sel.set(null)" aria-labelledby="st-h">
+      <div class="grab" aria-hidden="true"></div>
+      <button type="button" class="x-close" (click)="dlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (sel(); as a) {
-        <button type="button" class="x-close" (click)="close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
-        <div class="grab" aria-hidden="true"></div>
         <div class="detail">
           <span class="pic big" [class.got]="!!ach.mine(a.id)" [class.shadowed]="!ach.mine(a.id) && !session.isLeader() && !!a.image_path">
             @if (ach.mine(a.id) || session.isLeader()) {
@@ -188,11 +189,6 @@ import { Confirm } from '../core/confirm';
     .count { position: static; font-weight: 700; background: none; box-shadow: none; min-width: 36px; }
     .file-btn { position: relative; justify-content: center; }
     /* dettaglio */
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 14px; }
-    .sheet::backdrop { background: var(--backdrop); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .detail { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
     .pic.big { width: 120px; height: 120px; margin-bottom: 6px; }
     .mission { margin: 6px 0 0; }

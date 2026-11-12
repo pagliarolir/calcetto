@@ -15,6 +15,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 interface Form {
   first_name: string;
@@ -30,7 +31,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, Avatar, Icon, PlayerPage],
+  imports: [Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
@@ -112,6 +113,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
       <!-- nascondere il nome: al suo posto il soprannome -->
       <dialog #nickDlg class="sheet" (click)="nickBackdrop($event)" aria-labelledby="nick-h">
         <div class="grab" aria-hidden="true"></div>
+        <button type="button" class="x-close" (click)="nickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
         <h2 id="nick-h">Mostra il soprannome</h2>
         <p class="small muted">Al posto del nome, gli altri vedranno il tuo soprannome: in lista, in classifica, nella chat e negli avvisi.</p>
         <label class="field"><span>Soprannome</span>
@@ -338,11 +340,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     label.btn { position: relative; }
     label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .opt { display: flex; align-items: flex-end; gap: 12px; }
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: var(--backdrop); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .toggle:disabled { opacity: 0.6; cursor: not-allowed; }
     .opt .field { min-width: 0; }
     .opt .input { min-width: 0; }

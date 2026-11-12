@@ -15,6 +15,7 @@ import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { AchievementsPanel } from '../ui/achievements-panel';
 import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
 type Tab = 'classifica' | 'record' | 'squadre' | 'punti' | 'obiettivi';
@@ -67,7 +68,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
+  imports: [Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -223,6 +224,7 @@ const RECORDS: Record[] = [
         <!-- «Scegli dettagli»: quali colonne vedere, senza mai superare la larghezza dello schermo -->
         <dialog #colsDialog class="sheet" (click)="colsBackdrop($event)" aria-labelledby="cols-h">
           <div class="grab" aria-hidden="true"></div>
+          <button type="button" class="x-close" (click)="colsDialog.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
           <h2 id="cols-h">Colonne della classifica</h2>
           <p class="small muted">Su questo schermo ne entrano {{ maxCols() }}: ne hai scelte {{ chosenWeight() }}. Per aggiungerne una, togline un'altra.</p>
           <ul class="cols">
@@ -398,13 +400,6 @@ const RECORDS: Record[] = [
     .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .period { position: relative; flex: 0 1 auto; }
     .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 180px; }
-    .sheet {
-      position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; border: 0; color: var(--ink);
-      background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
-    }
-    .sheet[open] { display: flex; flex-direction: column; gap: 10px; }
-    .sheet::backdrop { background: var(--backdrop); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .cols li { border-top: 1px solid var(--line); }
     .cols li:first-child { border-top: 0; }

@@ -8,11 +8,12 @@ import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 /** Area del Leader: mercato, schede del documento, giocatori, skill, ricalcoli e registro. */
 @Component({
   selector: 'app-fl-admin',
-  imports: [FormsModule, Avatar, Icon],
+  imports: [Sheet, FormsModule, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let st = fl.settings()!;
@@ -122,6 +123,8 @@ import { Confirm } from '../core/confirm';
 
     <!-- modifica di un giocatore -->
     <dialog #ed class="sheet" (click)="edBackdrop($event)" aria-labelledby="ed-h">
+      <div class="grab" aria-hidden="true"></div>
+      <button type="button" class="x-close" (click)="ed.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (editId(); as id) {
         <h3 id="ed-h">{{ session.name(id) }}</h3>
         <label class="check"><input type="checkbox" [(ngModel)]="form.eligible" /> Acquistabile nel FantaLeader</label>
@@ -161,10 +164,6 @@ import { Confirm } from '../core/confirm';
     .nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
     .check { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
     .log li { font-size: var(--step--1); }
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88dvh; overflow-y: auto; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: var(--backdrop); }
     .skills { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; max-height: 240px; overflow-y: auto; }
   `,
 })

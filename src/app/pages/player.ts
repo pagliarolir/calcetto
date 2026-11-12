@@ -18,10 +18,11 @@ import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { StickerStrip } from '../ui/sticker-strip';
 import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
+  imports: [Sheet, RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (member(); as m) {
@@ -54,6 +55,7 @@ import { Confirm } from '../core/confirm';
               }
             </div>
             <dialog #ratingsDlg class="sheet" (click)="$event.target === ratingsDlg && ratingsDlg.close()" aria-label="Valori del giocatore">
+              <div class="grab" aria-hidden="true"></div>
               <button type="button" class="x-close" (click)="ratingsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
               <h3>Valori di {{ session.name(id()) }}</h3>
               @if (ratingsOn()) { <app-ratings-editor [userId]="id()" /> }
@@ -138,10 +140,6 @@ import { Confirm } from '../core/confirm';
     .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .menu button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
     .menu button:hover { background: var(--surface-2); }
-    dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 90dvh; overflow-y: auto; border: 0; color: var(--ink);
-                   background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
-    dialog.sheet::backdrop { background: var(--backdrop); }
-    dialog.sheet h3 { margin: 4px 48px 12px 0; }
     .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0; border: 0; background: none;
             color: var(--ink); opacity: 0.85; font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; }
     .id { display: flex; align-items: center; gap: 16px; }

@@ -552,6 +552,8 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
    Tutto si spegne con «riduci movimento» del telefono.
    ===================================================================== */
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheet-down { to { transform: translateY(100%); } }
+@keyframes backdrop-out { to { opacity: 0; } }
 @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
 @keyframes enter-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -561,6 +563,9 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
   dialog[open] { animation: pop-in 200ms var(--ease-out); }
   dialog.sheet[open] { animation: sheet-up 320ms cubic-bezier(0.2, 0.9, 0.25, 1); }
   dialog[open]::backdrop { animation: backdrop-in 240ms ease-out; }
+  /* chiusura (ui/sheet.ts): parte dalla posizione attuale, anche a metà trascinamento */
+  dialog.sheet.closing { animation: sheet-down 220ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+  dialog.sheet.closing::backdrop { animation: backdrop-out 220ms ease-in forwards; }
 
   .panel, .list > li, .list-item, .board > li, .people > li, ul.cat > li, ol.rank > li, .mini, .chips > li {
     animation: enter-up 280ms var(--ease-out) both;
@@ -575,6 +580,19 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
   :is(.list, .board, .people, .cat, .rank) > li:nth-child(7), table.fit tbody tr:nth-child(7) { animation-delay: 180ms; }
   :is(.list, .board, .people, .cat, .rank) > li:nth-child(n + 8), table.fit tbody tr:nth-child(n + 8) { animation-delay: 210ms; }
 }
+
+/* Fogli dal basso: un solo stile per tutti; chiusura animata e trascinamento in ui/sheet.ts.
+   In cima sempre la lineetta (.grab) e la X rossa; il primo elemento dopo la lineetta lascia spazio alla X. */
+dialog.sheet {
+  position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88dvh;
+  overflow-y: auto; overscroll-behavior: contain; border: 0; color: var(--ink); background: var(--surface);
+  border-radius: var(--r-l) var(--r-l) 0 0; padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
+}
+dialog.sheet[open] { display: flex; flex-direction: column; gap: 12px; }
+dialog.sheet::backdrop { background: var(--backdrop); opacity: var(--sheet-fade, 1); }
+dialog.sheet > .grab { flex: none; width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+dialog.sheet > .x-close + * { margin-right: 40px; }
 
 /* X rossa per chiudere le finestre (come quella del ritiro): area da toccare 44 px */
 .x-close {

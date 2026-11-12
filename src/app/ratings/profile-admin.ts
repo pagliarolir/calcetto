@@ -7,16 +7,20 @@ import { Session } from '../core/session';
 import { errorMessage, Supabase } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
+import { Icon } from '../ui/icon';
+import { Sheet } from '../ui/sheet';
 
 type Field = 'first_name' | 'last_name' | 'nickname' | 'field_role' | 'birth_date' | 'weight_kg' | 'height_cm';
 
 /** Il Leader modifica profilo e foto di un altro giocatore. Si inviano solo i campi cambiati (quelli nascosti dal giocatore non si cancellano). */
 @Component({
   selector: 'app-profile-admin',
-  imports: [FormsModule, Avatar],
+  imports: [Sheet, Icon, FormsModule, Avatar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog #dlg class="sheet" (click)="backdrop($event)" aria-labelledby="pa-h">
+      <div class="grab" aria-hidden="true"></div>
+      <button type="button" class="x-close" (click)="dlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (userId(); as id) {
         <h3 id="pa-h">Profilo di {{ session.name(id) }}</h3>
         <div class="photo">
@@ -45,10 +49,6 @@ type Field = 'first_name' | 'last_name' | 'nickname' | 'field_role' | 'birth_dat
     </dialog>
   `,
   styles: `
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 90dvh; overflow-y: auto; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 10px; }
-    .sheet::backdrop { background: var(--backdrop); }
     .photo { display: flex; align-items: center; gap: 12px; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   `,
