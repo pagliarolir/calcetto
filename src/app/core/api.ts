@@ -7,6 +7,8 @@ import { ConfigField, MatchConfig } from './match-config';
 export interface MatchBundle {
   match: Match; board: BoardRow[]; lineup: LineupRow[]; result: Result | null; reviews: ResultReview[]; scorers: Scorer[];
   windows: { user_id: string; opens_at: string }[];
+  /** ora dell'ultimo messaggio in chat scritto da altri (null se nessuno) */
+  chat_last?: string | null;
 }
 export interface StatsBundle { rows: StatsRow[]; kits: KitStatsRow[]; pkits: KitStatsRow[]; pairs: PairRow[]; since: string | null }
 
@@ -41,10 +43,10 @@ export class Api {
   /** tutto quello che serve alla pagina della partita, in una chiamata */
   async matchBundle(id: string): Promise<MatchBundle> {
     const b = await this.bundle<MatchBundle | null>('match_bundle', { p_match: id }, async () => {
-      const [match, board, lineup, result, reviews, scorers, windows] = await Promise.all([
-        this.match(id), this.board(id), this.lineup(id), this.result(id), this.reviews(id), this.scorers(id), this.priorityWindows(id),
+      const [match, board, lineup, result, reviews, scorers, windows, chat_last] = await Promise.all([
+        this.match(id), this.board(id), this.lineup(id), this.result(id), this.reviews(id), this.scorers(id), this.priorityWindows(id), this.chatLast(id),
       ]);
-      return { match, board, lineup, result, reviews, scorers, windows };
+      return { match, board, lineup, result, reviews, scorers, windows, chat_last };
     });
     if (!b?.match) throw new Error('Partita non trovata');
     return b;
@@ -250,6 +252,14 @@ export class Api {
   // -------------------------------------------------------------------- chat
   async chat(matchId: string): Promise<ChatMessage[]> {
     return must(await this.sb.from('chat_messages').select('*').eq('match_id', matchId).order('created_at').limit(500)) as ChatMessage[];
+  }
+
+  /** ora dell'ultimo messaggio scritto da altri (per il pallino della Chat) */
+  async chatLast(matchId: string): Promise<string | null> {
+    const uid = (await this.sb.auth.getSession()).data.session?.user.id ?? '';
+    const res = await this.sb.from('chat_messages').select('created_at').eq('match_id', matchId).neq('user_id', uid)
+      .order('created_at', { ascending: false }).limit(1);
+    return (must(res) as { created_at: string }[])[0]?.created_at ?? null;
   }
 
   async sendChat(matchId: string, userId: string, body: string): Promise<ChatMessage> {
