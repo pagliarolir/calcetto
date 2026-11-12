@@ -19,6 +19,15 @@ import { StickerStrip } from '../ui/sticker-strip';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
 import { Back } from '../ui/back';
+import { Cache } from '../core/cache';
+
+/** dati salvati della scheda di un giocatore (core/cache.ts) */
+interface PlayerSeen {
+  stats: StatsRow | null;
+  history: MatchFact[];
+  names: [string, ReturnType<typeof teamNames>][];
+  info: { global: string | null; player: string | null } | null;
+}
 
 @Component({
   selector: 'app-player',
@@ -202,21 +211,36 @@ export class PlayerPage {
 
   /** finché non è arrivato tutto si vede lo scheletro: niente «Ancora nessuna partita» che poi sparisce */
   protected readonly loaded = signal(false);
+  private readonly cache = inject(Cache);
 
+  /** «mostra subito, poi aggiorna»: un giocatore già aperto si vede subito (core/cache.ts), poi arrivano i dati nuovi */
   private async load(id: string): Promise<void> {
-    this.loaded.set(false);
+    const key = `player:${id}`;
+    const seen = this.cache.get<PlayerSeen>(key);
+    if (seen) {
+      this.stats.set(seen.stats);
+      this.history.set(seen.history);
+      this.names.set(new Map(seen.names));
+      if (seen.info) this.info.set(seen.info);
+      this.loaded.set(true);
+    } else this.loaded.set(false);
     const [rows, h, ms, info] = await Promise.all([
-      this.api.stats(null, null).catch(() => []),
-      this.api.history(id, null, null).catch(() => []),
-      this.api.matches(300).catch(() => []),
+      this.api.stats(null, null).catch(() => null),
+      this.api.history(id, null, null).catch(() => null),
+      this.api.matches(300).catch(() => null),
       this.api.statsResetInfo(id).catch(() => null),
     ]);
     if (this.id() !== id) return;   // nel frattempo si è aperto un altro giocatore
-    this.stats.set(rows.find((r) => r.user_id === id) ?? null);
-    this.history.set(h);
-    this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)])));
+    if (rows) this.stats.set(rows.find((r) => r.user_id === id) ?? null);
+    if (h) this.history.set(h);
+    if (ms) this.names.set(new Map(ms.map((m) => [m.id, teamNames(m)])));
     if (info) this.info.set(info);
     this.loaded.set(true);
+    // sul telefono solo la propria scheda (quella del Profilo); gli altri restano in memoria finché l'app è aperta
+    if (rows && h && ms) {
+      const snap: PlayerSeen = { stats: this.stats(), history: this.history(), names: [...this.names()], info: this.info() };
+      this.cache.set(key, snap, id === this.session.uid());
+    }
   }
 
   protected async reset(): Promise<void> {

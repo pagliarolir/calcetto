@@ -17,6 +17,7 @@ import { Toasts } from '../core/toast';
 import { ApplyDialog } from '../ui/apply-dialog';
 import { MatchConfigForm } from '../ui/match-config-form';
 import { Back } from '../ui/back';
+import { Cache } from '../core/cache';
 
 type Panel = 'none' | 'create' | 'defaults';
 
@@ -160,6 +161,7 @@ export class MatchesPage implements OnInit {
   protected readonly items = signal<(Match & { results: Result | null })[]>([]);
   /** vero quando l'elenco è arrivato: prima si vede lo scheletro, non «Ancora nessuna partita» */
   protected readonly loaded = signal(false);
+  private readonly cache = inject(Cache);
   protected readonly settings = signal<AppSettings | null>(null);
   protected readonly panel = signal<Panel>('none');
   protected readonly mode = signal<'one' | 'series'>('one');
@@ -202,11 +204,18 @@ export class MatchesPage implements OnInit {
     await this.load();
   }
 
+  /** «mostra subito, poi aggiorna» (core/cache.ts) */
   private async load(): Promise<void> {
-    const [items, settings] = await Promise.all([this.api.matches(), this.api.settings()]);
-    this.items.set(items);
-    this.settings.set(settings);
-    this.loaded.set(true);
+    const seen = this.cache.get<{ items: Awaited<ReturnType<Api['matches']>>; settings: Awaited<ReturnType<Api['settings']>> }>('matches-list');
+    if (seen) { this.items.set(seen.items); this.settings.set(seen.settings); this.loaded.set(true); }
+    try {
+      const [items, settings] = await Promise.all([this.api.matches(), this.api.settings()]);
+      this.items.set(items);
+      this.settings.set(settings);
+      this.cache.set('matches-list', { items, settings });
+    } finally {
+      this.loaded.set(true);
+    }
   }
 
   protected tick(): void {

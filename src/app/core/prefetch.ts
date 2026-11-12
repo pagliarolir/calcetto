@@ -2,11 +2,12 @@ import { inject, Injectable, Injector } from '@angular/core';
 import { Api } from './api';
 import { Cache } from './cache';
 import { Ratings } from './ratings';
+import { FantaLeader } from './fantaleader';
 import { Session } from './session';
 
 /**
  * Precaricamento: dopo l'avvio, quando l'app è libera, scarica i dati delle altre sezioni
- * (Classifica dell'anno, Punti Leader, valori dei giocatori) così che aprirle sia immediato.
+ * (Classifica dell'anno, Punti Leader, valori dei giocatori, Avvisi, FantaLeader) così che aprirle sia immediato.
  * Non sostituisce il caricamento delle pagine: lo anticipa e riempie la cache (core/cache.ts).
  */
 @Injectable({ providedIn: 'root' })
@@ -40,6 +41,14 @@ export class Prefetch {
         if (!this.cache.get('leader-points')) this.cache.set('leader-points', { t, h }, true);
       }),
       this.injector.get(Ratings).load(this.session.activeMembers().map((m) => m.id)),
+      this.api.notifications().then((list) => {
+        if (!this.cache.get('notifications')) this.cache.set('notifications', list, true);
+      }),
+      // FantaLeader solo per chi lo vede (anteprima): i dati restano nel suo servizio
+      (async () => {
+        const fl = this.injector.get(FantaLeader);
+        if (await fl.checkVisible()) await fl.load();
+      })(),
     ].map((p) => p.catch(() => undefined)));
   }
 }
