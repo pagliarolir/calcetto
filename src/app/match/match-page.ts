@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { MatchSkeleton } from '../ui/match-skeleton';
 import { Skeleton } from '../ui/skeleton';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -10,6 +10,8 @@ import { kit } from '../core/kits';
 import { Branding } from '../core/branding';
 import { MatchStore } from './match-store';
 import { SwipeTabs } from '../ui/swipe-tabs';
+import { Session } from '../core/session';
+import { haptic } from '../core/haptics';
 
 @Component({
   selector: 'app-match-page',
@@ -30,7 +32,7 @@ import { SwipeTabs } from '../ui/swipe-tabs';
       <header class="hero">
           <!-- intestazione a biglietto: calendario, data, orario e luogo; sotto le squadre -->
           <div class="hero-in v-b">
-            <div class="ticket">
+            <div class="ticket with-cal">
               @if (branding.headerUrl(); as logo) {
                 <span class="logo-box" #logoBox><img [src]="logo" alt="" /></span>
               } @else {
@@ -66,21 +68,28 @@ import { SwipeTabs } from '../ui/swipe-tabs';
             </div>
             }
           </div>
-        <nav class="tabs" aria-label="Sezioni della partita">
+        <nav class="tabs" [class.off]="tools()" aria-label="Sezioni della partita">
           @if (finished()) {
-            <a routerLink="risultato" routerLinkActive="on">Risultato</a>
-            <a routerLink="voti" routerLinkActive="on">Pagelle</a>
+            <a routerLink="risultato" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Risultato</a>
+            <a routerLink="voti" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Pagelle</a>
           } @else {
-            <a routerLink="." [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="on">Lista</a>
-            <a routerLink="squadre" routerLinkActive="on">Squadre</a>
+            <a routerLink="." [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Lista</a>
+            <a routerLink="squadre" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Squadre</a>
           }
-          <a routerLink="chat" routerLinkActive="on">Chat
+          <a routerLink="chat" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Chat
             @if (store.t()?.chatOpen) { <span class="dot" aria-label="aperta"></span> }
           </a>
+          @if (canTools()) {
+            <!-- Strumenti del Leader: la pagina della partita si gira e mostra gli strumenti; ritoccando si torna indietro -->
+            <button type="button" class="tools-btn" [attr.aria-pressed]="tools()" (click)="toggleTools()"
+                    [attr.aria-label]="tools() ? 'Chiudi gli strumenti del Leader' : 'Strumenti del Leader'" [title]="tools() ? 'Chiudi gli strumenti' : 'Strumenti del Leader'">
+              <app-icon name="tools" [size]="20" />
+            </button>
+          }
         </nav>
       </header>
       <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
-        <div class="page below-header">
+        <div class="page below-header flip" [class.flip-out]="flipping() === 'out'" [class.flip-in]="flipping() === 'in'">
           <router-outlet />
         </div>
       </main>
@@ -108,9 +117,13 @@ import { SwipeTabs } from '../ui/swipe-tabs';
     .skw.strip { height: 40px; border-radius: 12px; }
     .sk-tabs { display: flex; gap: 22px; } .sk-tabs .w15 { width: 48px; }
     /* icona calendario: porta all'elenco delle partite */
-    .cal-link { align-self: flex-start; flex: none; margin-left: auto; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+    /* in alto a destra, fuori dalla colonna: le righe sotto (indirizzo) usano tutta la larghezza */
+    .ticket.with-cal { position: relative; }
+    .ticket.with-cal .tmain h1, .ticket.with-cal .tmain .flags { padding-right: 46px; }
+    .cal-link { position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
                 color: inherit; background: rgb(255 255 255 / 14%); }
-    .cal-link app-icon { display: block; }
+    .cal-link app-icon { display: grid; place-items: center; width: 22px; height: 22px; }
+    .cal-link app-icon ::ng-deep svg { display: block; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
     .link { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: 0.85; font-size: var(--step--1); font-weight: 600; text-decoration: none; min-height: 36px; }
     .status { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
@@ -134,6 +147,10 @@ import { SwipeTabs } from '../ui/swipe-tabs';
     .line { display: flex; align-items: center; gap: 6px; font-size: var(--step--1); font-weight: 600; min-width: 0; min-height: 26px; color: inherit; text-decoration: none; }
     .line.time { font: 700 1.3rem/1 var(--font-display); letter-spacing: 0.01em; min-height: 28px; }
     .link-line span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    /* l'indirizzo non si taglia: va a capo (al massimo due righe) */
+    .link-line { align-items: flex-start; }
+    .link-line app-icon { margin-top: 5px; }
+    .link-line .ellipsis { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; padding: 4px 0; }
     .mini { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(255 255 255 / 14%); color: inherit; flex: none; }
     /* striscia delle squadre: diventa il punteggio a fine partita */
     .strip { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 10px; border-radius: 14px; background: rgb(0 0 0 / 16%); }
@@ -153,6 +170,24 @@ import { SwipeTabs } from '../ui/swipe-tabs';
     }
     .tabs a.on { opacity: 1; }
     .tabs a.on::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--chalk); }
+    .tabs { align-items: flex-end; }
+    .tabs.off a { opacity: 0.4; pointer-events: none; }
+    .tabs.off a.on::after { opacity: 0; }
+    /* interruttore degli strumenti: spento trasparente, acceso pieno */
+    .tools-btn { flex: none; margin: 0 0 4px auto; width: 40px; height: 40px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+                 color: inherit; background: rgb(255 255 255 / 14%); transition: background 200ms, color 200ms; }
+    .tools-btn[aria-pressed='true'] { background: var(--chalk); color: var(--turf); }
+    .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+    .tools-btn app-icon { display: grid; place-items: center; transition: transform 300ms var(--ease-spring); }
+    .tools-btn[aria-pressed='true'] app-icon { transform: rotate(-45deg); }
+    /* «flip» della pagina sull'asse verticale, con profondità: solo dentro l'area che scorre (la barra non si muove) */
+    @media (prefers-reduced-motion: no-preference) {
+      .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
+      .flip.flip-out { animation: flip-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+      .flip.flip-in { animation: flip-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+      @keyframes flip-out { from { transform: perspective(1400px) rotateY(0); } to { transform: perspective(1400px) rotateY(90deg); opacity: 0.6; } }
+      @keyframes flip-in { from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.6; } to { transform: perspective(1400px) rotateY(0); opacity: 1; } }
+    }
     .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); margin-left: 4px; vertical-align: middle; }
   `,
 })
@@ -218,10 +253,35 @@ export class MatchPage {
   protected readonly finished = computed(() => !!this.store.t()?.ended);
   private readonly router = inject(Router);
 
+  // ------------------------------------------------ strumenti del Leader (rotta «strumenti»)
+  private readonly session = inject(Session);
+  protected readonly tools = computed(() => this.url().split('?')[0].split('/')[3] === 'strumenti');
+  protected readonly canTools = computed(() => {
+    const m = this.store.match();
+    return this.session.isLeader() && !!m && m.status === 'scheduled' && !this.store.t()?.started;
+  });
+  protected readonly flipping = signal<'out' | 'in' | null>(null);
+  /** scheda da cui si sono aperti gli strumenti: richiudendoli si torna lì */
+  private toolsFrom = '';
+
+  protected async toggleTools(): Promise<void> {
+    const m = this.store.match();
+    if (!m || this.flipping()) return;
+    haptic();
+    const opening = !this.tools();
+    if (opening) this.toolsFrom = this.router.url.split('?')[0].split('/')[3] ?? '';
+    const target = ['/partita', m.id, ...(opening ? ['strumenti'] : this.toolsFrom ? [this.toolsFrom] : [])];
+    const motion = matchMedia('(prefers-reduced-motion: no-preference)').matches;
+    if (motion) { this.flipping.set('out'); await new Promise((r) => setTimeout(r, 180)); }
+    await this.router.navigate(target);
+    if (motion) { this.flipping.set('in'); setTimeout(() => this.flipping.set(null), 270); }
+    else this.flipping.set(null);
+  }
+
   /** scorrimento di lato: scheda accanto (Lista, Squadre, Chat; a partita finita Risultato, Pagelle, Chat) */
   protected swipeTab(d: 1 | -1): void {
     const m = this.store.match();
-    if (!m) return;
+    if (!m || this.tools()) return;
     const tabs = this.finished() ? ['risultato', 'voti', 'chat'] : ['', 'squadre', 'chat'];
     const seg = this.router.url.split('?')[0].split('/')[3] ?? '';
     const i = tabs.indexOf(seg) + d;

@@ -22,6 +22,7 @@ const PATHS: Record<string, string> = {
   clock: 'M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0 -16 0 M12 8v4l3 2',
   logout: 'M15 4h4v16h-4 M10 8l-4 4l4 4 M6 12h10',
   trash: 'M5 7h14 M10 7V4h4v3 M7 7l1 13h8l1-13',
+  tools: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
   copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
   share: 'M12 3v12 M7 8l5-5l5 5 M5 14v6h14v-6',
   type: 'M4 7V5h16v2 M12 5v14 M9 19h6',
