@@ -201,9 +201,9 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                   <button type="button" role="radio" class="theme" [class.on]="theme.choice() === o.id" [attr.aria-checked]="theme.choice() === o.id" (click)="theme.set(o.id)">
                     @let pv = theme.preview(o.id);
                     <span class="prev" aria-hidden="true" [class.neu]="o.neu" [class.in]="o.id === 'rientranza'" [class.dark]="o.neu && theme.neuBase() === 'dark'"
-                          [style.background]="o.neu && theme.neuBase() === 'dark' ? '#252A31' : o.bg">
+                          [style.background]="pv?.bg ?? (o.neu && theme.neuBase() === 'dark' ? '#252A31' : o.bg)">
                       <i class="ph" [style.background]="pv?.hero ?? o.hero"></i>
-                      <span class="pr"><i [style.background]="pv?.primary ?? o.primary"></i><i [style.background]="o.accent"></i><i class="grow" [style.background]="o.soft"></i></span>
+                      <span class="pr"><i [style.background]="pv?.primary ?? o.primary"></i><i [style.background]="o.accent"></i><i class="grow" [style.background]="pv?.soft ?? o.soft"></i></span>
                     </span>
                     <span class="tn"><app-icon [name]="o.icon" [size]="16" /><strong>{{ o.label }}</strong>@if (theme.choice() === o.id) { <app-icon name="check" [size]="16" class="ok" /> }</span>
                     <span class="small muted">{{ o.desc }}</span>

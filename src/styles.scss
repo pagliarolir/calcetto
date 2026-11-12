@@ -259,7 +259,8 @@ html { font-size: calc(100% * var(--text-scale, 1) * var(--theme-scale, 1)); }
 :root[data-auto] { --theme-scale: 0.9; }
 body {
   margin: 0;
-  background: var(--bg);
+  /* con una tavolozza il fondo si colora un po' di più verso il basso (--bg-grad); senza, è tinta unita */
+  background: var(--bg-grad, var(--bg));
   color: var(--ink);
   font-family: var(--font-body);
   font-size: var(--step-0);
