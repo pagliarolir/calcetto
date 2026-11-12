@@ -60,8 +60,8 @@ export class Reprimand {
     .sheet {
       pointer-events: auto; position: relative; width: min(100%, 360px);
       padding: 76px 24px 22px; border-radius: 18px; text-align: center;
-      background: var(--surface); border: 3px solid #c92a2a;
-      box-shadow: 0 0 0 6px rgb(201 42 42 / 18%), 0 24px 60px rgb(0 0 0 / 45%);
+      background: var(--surface); border: 3px solid var(--danger);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 18%, transparent), 0 24px 60px rgb(0 0 0 / 45%);
       animation: scold 520ms cubic-bezier(.36,.07,.19,.97) both;
     }
     /* il cartellino rosso alzato dall'arbitro */
@@ -72,17 +72,13 @@ export class Reprimand {
       transform: rotate(-9deg); animation: raise 480ms var(--ease-spring) both;
     }
     .msg {
-      margin: 0; color: #c92a2a;
+      margin: 0; color: var(--danger);
       font: 700 1.85rem/1.08 var(--font-display); letter-spacing: 0.005em; text-wrap: balance;
     }
     .sub { margin: 14px 0 0; color: var(--muted); font-size: var(--step--1); }
     .ok {
       margin-top: 18px; min-height: 46px; padding: 0 22px; border-radius: 999px; cursor: pointer;
-      background: #c92a2a; color: #fff; border: 0; font: 600 var(--step-0)/1 var(--font-body);
-    }
-    @media (prefers-color-scheme: dark) {
-      .msg { color: #ff6b6b; }
-      .sheet { border-color: #ff6b6b; box-shadow: 0 0 0 6px rgb(255 107 107 / 16%), 0 24px 60px rgb(0 0 0 / 60%); }
+      background: var(--danger); color: var(--danger-ink); border: 0; font: 600 var(--step-0)/1 var(--font-body);
     }
     @keyframes raise { from { transform: translateY(40px) rotate(-24deg); opacity: 0; } to { transform: rotate(-9deg); opacity: 1; } }
     @keyframes scold {

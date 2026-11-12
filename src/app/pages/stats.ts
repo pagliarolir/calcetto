@@ -14,6 +14,9 @@ import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { AchievementsPanel } from '../ui/achievements-panel';
+import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
+import { SwipeTabs } from '../ui/swipe-tabs';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
 type Tab = 'classifica' | 'record' | 'squadre' | 'punti' | 'obiettivi';
@@ -66,7 +69,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -110,7 +113,7 @@ const RECORDS: Record[] = [
       </nav>
       </div>
     </div>
-    <main class="scroll-area">
+    <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
       <div class="page stack-l in-body">
 
       <div class="tabpanel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
@@ -222,6 +225,7 @@ const RECORDS: Record[] = [
         <!-- «Scegli dettagli»: quali colonne vedere, senza mai superare la larghezza dello schermo -->
         <dialog #colsDialog class="sheet" (click)="colsBackdrop($event)" aria-labelledby="cols-h">
           <div class="grab" aria-hidden="true"></div>
+          <button type="button" class="x-close" (click)="colsDialog.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
           <h2 id="cols-h">Colonne della classifica</h2>
           <p class="small muted">Su questo schermo ne entrano {{ maxCols() }}: ne hai scelte {{ chosenWeight() }}. Per aggiungerne una, togline un'altra.</p>
           <ul class="cols">
@@ -394,16 +398,8 @@ const RECORDS: Record[] = [
     table.fit th button { font-size: 0.72rem; padding: 0; }
     .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .cols-btn { gap: 6px; }
-    .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .period { position: relative; flex: 0 1 auto; }
     .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 180px; }
-    .sheet {
-      position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; border: 0; color: var(--ink);
-      background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
-    }
-    .sheet[open] { display: flex; flex-direction: column; gap: 10px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .cols li { border-top: 1px solid var(--line); }
     .cols li:first-child { border-top: 0; }
@@ -457,6 +453,7 @@ const RECORDS: Record[] = [
   `,
 })
 export class StatsPage {
+  private readonly confirmBox = inject(Confirm);
   private readonly api = inject(Api);
   protected readonly session = inject(Session);
   private readonly toasts = inject(Toasts);
@@ -694,6 +691,12 @@ export class StatsPage {
     });
   }
 
+  /** scorrimento di lato: scheda accanto, senza ricominciare dall'inizio */
+  protected swipeTab(d: 1 | -1): void {
+    const i = this.tabs.findIndex((t) => t.id === this.tab()) + d;
+    if (i >= 0 && i < this.tabs.length) this.selectTab(this.tabs[i].id);
+  }
+
   /** frecce sinistra e destra per passare da una scheda all'altra (tastiera) */
   protected tabKey(e: KeyboardEvent): void {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
@@ -783,7 +786,7 @@ export class StatsPage {
   }
 
   protected async undoPoints(e: LeaderPointsEntry): Promise<void> {
-    if (!confirm(`Annullare ${this.signed(e.points)} a ${this.session.name(e.user_id)} («${e.reason}»)?`)) return;
+    if (!(await this.confirmBox.ask({ title: `Togliere ${this.signed(e.points)} a ${this.session.name(e.user_id)} («${e.reason}»)?`, ok: 'Togli i punti' }))) return;
     this.busy.set(true);
     try {
       await this.api.deleteLeaderPoints(e.id);

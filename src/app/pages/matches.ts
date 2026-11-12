@@ -16,16 +16,18 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { ApplyDialog } from '../ui/apply-dialog';
 import { MatchConfigForm } from '../ui/match-config-form';
+import { Back } from '../ui/back';
 
 type Panel = 'none' | 'create' | 'defaults';
 
 @Component({
   selector: 'app-matches',
-  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
+  imports: [Back, RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
-      <header class="spread">
+      <div class="detail-bar"><app-back /></div>
+      <header class="titlebar">
         <h1>Partite</h1>
         @if (session.isLeader() && panel() === 'none' && !apply()) {
           <button class="btn small primary" (click)="openCreate()">Nuova partita</button>

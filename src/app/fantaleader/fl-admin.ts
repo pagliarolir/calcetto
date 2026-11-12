@@ -7,11 +7,13 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 /** Area del Leader: mercato, schede del documento, giocatori, skill, ricalcoli e registro. */
 @Component({
   selector: 'app-fl-admin',
-  imports: [FormsModule, Avatar, Icon],
+  imports: [Sheet, FormsModule, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let st = fl.settings()!;
@@ -121,6 +123,8 @@ import { Icon } from '../ui/icon';
 
     <!-- modifica di un giocatore -->
     <dialog #ed class="sheet" (click)="edBackdrop($event)" aria-labelledby="ed-h">
+      <div class="grab" aria-hidden="true"></div>
+      <button type="button" class="x-close" (click)="ed.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (editId(); as id) {
         <h3 id="ed-h">{{ session.name(id) }}</h3>
         <label class="check"><input type="checkbox" [(ngModel)]="form.eligible" /> Acquistabile nel FantaLeader</label>
@@ -155,19 +159,16 @@ import { Icon } from '../ui/icon';
     .skill summary { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; list-style: none; }
     .skill summary::-webkit-details-marker { display: none; }
     .sign { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
-    .sign.neg { background: var(--danger); color: #fff; }
+    .sign.neg { background: var(--danger); color: var(--danger-ink); }
     .edit { padding: 0 0 12px 32px; }
     .nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
     .check { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
     .log li { font-size: var(--step--1); }
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88dvh; overflow-y: auto; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
     .skills { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; max-height: 240px; overflow-y: auto; }
   `,
 })
 export class FlAdmin implements OnInit {
+  private readonly confirmBox = inject(Confirm);
   protected readonly fl = inject(FantaLeader);
   protected readonly session = inject(Session);
   private readonly toasts = inject(Toasts);
@@ -208,9 +209,9 @@ export class FlAdmin implements OnInit {
     }
   }
 
-  protected setPublic(v: boolean): void {
+  protected async setPublic(v: boolean): Promise<void> {
     const st = this.fl.settings()!;
-    if (v && !confirm('Rendere FantaLeader visibile a tutti i giocatori?')) { this.fl.settings.set({ ...st }); return; }
+    if (v && !(await this.confirmBox.ask({ title: 'Rendere FantaLeader visibile a tutti?', ok: 'Rendi visibile' }))) { this.fl.settings.set({ ...st }); return; }
     void this.run(() => this.fl.setVisibility(v, st.preview_users), v ? 'FantaLeader ora è visibile a tutti.' : 'FantaLeader torna in anteprima.');
   }
 
@@ -225,12 +226,12 @@ export class FlAdmin implements OnInit {
     void this.run(() => this.fl.setVisibility(st.public, st.preview_users.filter((u) => u !== id)), `${this.session.name(id)} non vede più FantaLeader.`);
   }
 
-  protected toggleMarket(): void {
+  protected async toggleMarket(): Promise<void> {
     const open = this.fl.settings()!.market_open;
-    const msg = open
-      ? 'Chiudere il mercato? Le fantasquadre si bloccano e le quotazioni attuali diventano le nuove quotazioni iniziali.'
-      : 'Aprire il mercato? Tutti potranno creare o cambiare la fantasquadra, pagando i giocatori alla quotazione attuale.';
-    if (!confirm(msg)) return;
+    const ok = await this.confirmBox.ask(open
+      ? { title: 'Chiudere il mercato e bloccare le fantasquadre?', ok: 'Chiudi il mercato' }
+      : { title: 'Aprire il mercato a tutti?', ok: 'Apri il mercato' });
+    if (!ok) return;
     void this.run(() => this.fl.setMarket(!open), open ? 'Mercato chiuso.' : 'Mercato aperto.');
   }
 

@@ -14,13 +14,14 @@ import { Avatar } from '../ui/avatar';
 import { kit } from '../core/kits';
 import { Ball, Boot, KitShirt } from '../ui/match-marks';
 import { Icon } from '../ui/icon';
+import { Sheet } from '../ui/sheet';
 
 interface Line { goals: number; assists: number; own_goals: number }
 type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
+  imports: [Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
@@ -151,8 +152,9 @@ type Field = keyof Line;
 
           <!-- pannello per inserire i dati di un giocatore -->
           <dialog #scorerDlg class="sheet" (click)="scorerBackdrop($event)" (close)="cancelScorer()" aria-labelledby="sc-h">
+            <div class="grab" aria-hidden="true"></div>
+            <button type="button" class="x-close" (click)="scorerDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
             @if (editing(); as id) {
-              <div class="grab" aria-hidden="true"></div>
               <div class="sc-head">
                 <app-avatar [userId]="id" [team]="store.teamOf().get(id)" [size]="40" />
                 <h2 id="sc-h" class="grow">{{ session.name(id) }}</h2>
@@ -242,11 +244,6 @@ type Field = keyof Line;
     .legend app-ball, .legend app-boot { margin-left: 8px; }
     .legend app-ball:first-child { margin-left: 0; }
     /* pannello di inserimento */
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .sc-head { display: flex; align-items: center; gap: 12px; }
     .sc-row { display: flex; align-items: center; gap: 12px; min-height: 48px; border-top: 1px solid var(--line); }
     .sc-ic { width: 24px; display: grid; place-items: center; }

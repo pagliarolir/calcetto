@@ -15,10 +15,12 @@ import { Theme } from './core/theme';
 import { FantaLeader } from './core/fantaleader';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
+import { ConfirmView } from './ui/confirm';
+import { Network } from './core/network';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
@@ -48,9 +50,19 @@ import { AchievementBanner } from './ui/achievement-banner';
       </nav>
     }
 
-    <app-reprimand />
+    <!-- rete: striscia sovrapposta sopra la barra (non cambia l'altezza della pagina) -->
+    <div class="net" [class.no-tabs]="!showTabs()" role="status" aria-live="polite">
+      @if (!network.online()) {
+        <p class="net-bar off"><app-icon name="wifi-off" [size]="18" /> Sei offline: quello che vedi potrebbe non essere aggiornato</p>
+      } @else if (network.back()) {
+        <p class="net-bar on"><app-icon name="check" [size]="18" /> Di nuovo online</p>
+      }
+    </div>
 
-    <div class="toasts" role="status" aria-live="polite">
+    <app-reprimand />
+    <app-confirm />
+
+    <div class="toasts" [class.above-net]="!network.online() || network.back()" role="status" aria-live="polite">
       @for (t of toasts.items(); track t.id) {
         <button class="toast enter-fade" [class.error]="t.tone === 'error'" (click)="toasts.dismiss(t.id)">{{ t.text }}</button>
       }
@@ -73,6 +85,10 @@ import { AchievementBanner } from './ui/achievement-banner';
       overflow: clip;
     }
 
+    @media (prefers-reduced-motion: no-preference) {
+      .app-scroller.page-in > :not(app-achievement-banner) { animation: page-in 150ms ease-out; }
+      @keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+    }
     .app-scroller {
       /* contenitore di riferimento per gli elementi posizionati (anche quelli nascosti, come le caselle dei chip) */
       position: relative;
@@ -103,7 +119,7 @@ import { AchievementBanner } from './ui/achievement-banner';
     .ico { position: relative; display: grid; place-items: center; width: 52px; height: 30px; border-radius: 999px; transition: background 180ms; }
     .badge {
       position: absolute; top: -4px; right: 6px; min-width: 18px; height: 18px; padding: 0 5px;
-      border-radius: 999px; background: var(--danger); color: #fff;
+      border-radius: 999px; background: var(--danger); color: var(--danger-ink);
       font: 700 0.68rem/18px var(--font-body); text-align: center;
     }
     .toasts {
@@ -117,7 +133,21 @@ import { AchievementBanner } from './ui/achievement-banner';
       background: var(--ink); color: var(--bg); font: 500 var(--step--1)/1.35 var(--font-body);
       box-shadow: 0 8px 24px rgb(0 0 0 / 20%); text-align: left;
     }
-    .toast.error { background: var(--danger); color: #fff; }
+    .toast.error { background: var(--danger); color: var(--danger-ink); }
+    .toasts.above-net { bottom: calc(var(--tabbar-total) + 64px); }
+    .net { position: absolute; z-index: 55; left: 0; right: 0; bottom: var(--tabbar-total); pointer-events: none; }
+    .net.no-tabs { bottom: env(safe-area-inset-bottom, 0px); }
+    .net-bar {
+      margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 8px 16px;
+      font: 600 var(--step--1)/1.3 var(--font-body); text-align: center; box-shadow: 0 -4px 14px rgb(0 0 0 / 14%);
+    }
+    .net-bar app-icon { flex: none; }
+    .net-bar.off { background: var(--ink); color: var(--bg); }
+    .net-bar.on { background: var(--turf); color: var(--turf-ink); }
+    @media (prefers-reduced-motion: no-preference) {
+      .net-bar { animation: net-in 220ms var(--ease-out); }
+      @keyframes net-in { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+    }
   `,
 })
 export class App {
@@ -132,6 +162,7 @@ export class App {
   /** la voce «Fanta» compare solo a chi può vedere FantaLeader */
   private readonly fl = inject(FantaLeader);
   protected readonly toasts = inject(Toasts);
+  protected readonly network = inject(Network);
   protected readonly unread = inject(Unread);
 
   private readonly url = toSignal(
@@ -165,8 +196,21 @@ export class App {
     host.addEventListener('scroll', () => {
       if (host.scrollTop || host.scrollLeft) host.scrollTo(0, 0);
     });
-    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
-      this.scroller()?.nativeElement.scrollTo({ top: 0 });
+    let lastPath = '';
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
+      const el = this.scroller()?.nativeElement;
+      el?.scrollTo({ top: 0 });
+      // dissolvenza breve della pagina nuova (punto 18 dell'analisi UX): solo opacità, niente movimento
+      // (vedi CLAUDE.md); non al primo avvio, non per le scelte nell'indirizzo, non tra le schede della stessa partita
+      const path = (e as NavigationEnd).urlAfterRedirects.split('?')[0];
+      const prev = lastPath;
+      lastPath = path;
+      const sameMatch = prev.startsWith('/partita/') && prev.split('/')[2] === path.split('/')[2];
+      if (!el || !prev || prev === path || sameMatch) return;
+      el.classList.remove('page-in');
+      void el.offsetWidth;
+      el.classList.add('page-in');
+      setTimeout(() => el.classList.remove('page-in'), 250);
     });
 
     // nuova versione dell'app pronta: si ricarica alla prossima apertura senza chiedere nulla

@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
-import { fmtAgo, fmtWhen } from '../core/format';
+import { daysAgo, fmtAgo, fmtWhen } from '../core/format';
 import { parseInfo } from '../core/info-text';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
@@ -13,22 +14,30 @@ import { AppNotification } from '../core/models';
 import { Unread } from '../core/unread';
 import { Icon } from '../ui/icon';
 
+type SectionId = 'mine' | 'today' | 'yesterday' | 'week' | 'older';
+interface GroupRow { key: string; items: AppNotification[] }
+interface Section { id: SectionId; label: string; rows: GroupRow[] }
+
 @Component({
   selector: 'app-inbox',
-  imports: [Icon, FormsModule, Empty, Skeleton],
+  imports: [Icon, FormsModule, Empty, Skeleton, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page stack-l">
-      <header class="spread">
-        <h1>{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
-        @if (tab() === 'avvisi' && hasUnread()) { <button class="btn small" (click)="readAll()">Segna tutti come letti</button> }
-        @if (tab() === 'info' && session.isLeader() && !editing()) { <button class="btn small" (click)="startEdit()">Modifica</button> }
-      </header>
-
-      <div class="ui-seg" role="tablist" aria-label="Avvisi e informazioni">
-        <button role="tab" [attr.aria-selected]="tab() === 'avvisi'" (click)="selectTab('avvisi')"><app-icon name="bell" [size]="18" /> Avvisi</button>
-        <button role="tab" [attr.aria-selected]="tab() === 'info'" (click)="selectTab('info')"><app-icon name="info" [size]="18" /> Info</button>
+    <div class="page-head">
+      <div class="head-in">
+        <header class="titlebar">
+          <h1>{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
+          @if (tab() === 'avvisi' && hasUnread()) { <button class="btn small" (click)="readAll()">Segna tutti come letti</button> }
+          @if (tab() === 'info' && session.isLeader() && !editing()) { <button class="btn small" (click)="startEdit()">Modifica</button> }
+        </header>
+        <div class="ui-seg" role="tablist" aria-label="Avvisi e informazioni">
+          <button role="tab" [attr.aria-selected]="tab() === 'avvisi'" (click)="selectTab('avvisi')"><app-icon name="bell" [size]="18" /> Avvisi</button>
+          <button role="tab" [attr.aria-selected]="tab() === 'info'" (click)="selectTab('info')"><app-icon name="info" [size]="18" /> Info</button>
+        </div>
       </div>
+    </div>
+    <main class="scroll-area">
+      <div class="page stack-l in-body">
 
       @if (tab() === 'info') {
         <!-- regole e storie del Leader: il testo lo scrive solo lui -->
@@ -66,25 +75,59 @@ import { Icon } from '../ui/icon';
       @if (!loaded()) {
         <app-skeleton kind="lines" />
       } @else {
-      <ul class="list">
-        @for (n of items(); track n.id) {
-          <li>
-            <button class="list-item" [class.unread]="!n.read_at" (click)="open(n)">
-              <span class="kind" [class]="'kind ' + iconOf(n.kind).tone" aria-hidden="true"><app-icon [name]="iconOf(n.kind).name" [size]="18" /></span>
-              <span class="grow">
-                <strong>{{ n.title }}</strong><br />
-                <span class="small">{{ n.body }}</span>
-              </span>
-              <span class="small muted">{{ ago(n.created_at) }}</span>
-            </button>
-          </li>
-        } @empty { <li class="empty"><app-empty icon="bell" text="Nessun avviso. Qui trovi tutto quello che ti arriva come notifica." /></li> }
-      </ul>
+      <!-- un avviso: riga da toccare -->
+      <ng-template #one let-n>
+        <button class="list-item" [class.unread]="!n.read_at" (click)="open(n)">
+          <span class="kind" [class]="'kind ' + iconOf(n.kind).tone" aria-hidden="true"><app-icon [name]="iconOf(n.kind).name" [size]="18" /></span>
+          <span class="grow">
+            <strong>{{ n.title }}</strong><br />
+            <span class="small">{{ n.body }}</span>
+          </span>
+          <span class="small muted">{{ ago(n.created_at) }}</span>
+        </button>
+      </ng-template>
+      @for (sec of sections(); track sec.id) {
+        <section class="sec" [attr.aria-labelledby]="'sec-' + sec.id">
+          <h2 class="sec-h" [id]="'sec-' + sec.id">{{ sec.label }}</h2>
+          <ul class="list">
+            @for (r of sec.rows; track r.key) {
+              <li>
+                @if (r.items.length === 1) {
+                  <ng-container *ngTemplateOutlet="one; context: { $implicit: r.items[0] }" />
+                } @else {
+                  <!-- avvisi uguali sulla stessa partita: una riga che si apre -->
+                  <button class="list-item group" [class.unread]="unreadIn(r)" [attr.aria-expanded]="openGroup() === r.key" (click)="toggle(r)">
+                    <span class="kind" [class]="'kind ' + iconOf(r.items[0].kind).tone" aria-hidden="true"><app-icon [name]="iconOf(r.items[0].kind).name" [size]="18" /></span>
+                    <span class="grow">
+                      <strong>{{ groupTitle(r) }}</strong><br />
+                      <span class="small">{{ r.items[0].body }}</span>
+                    </span>
+                    <span class="side">
+                      <span class="small muted">{{ ago(r.items[0].created_at) }}</span>
+                      <span class="count" [attr.aria-label]="r.items.length + ' avvisi'">{{ r.items.length }}</span>
+                    </span>
+                    <app-icon class="chev" name="chevron" [size]="18" />
+                  </button>
+                  @if (openGroup() === r.key) {
+                    <ul class="list sub">
+                      @for (n of r.items; track n.id) { <li><ng-container *ngTemplateOutlet="one; context: { $implicit: n }" /></li> }
+                    </ul>
+                  }
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      } @empty {
+        <app-empty icon="bell" text="Nessun avviso. Qui trovi tutto quello che ti arriva come notifica." />
       }
       }
+      }
+      </div>
     </main>
   `,
   styles: `
+    :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .itabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); margin-top: -8px; }
     .itabs button { appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; min-height: 42px; border-radius: 10px;
                     display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 var(--step--1)/1 var(--font-body); }
@@ -101,6 +144,14 @@ import { Icon } from '../ui/icon';
     .kind.gold { background: color-mix(in srgb, var(--armband) 22%, transparent); color: color-mix(in srgb, var(--armband) 70%, var(--ink)); }
     .kind.red { background: var(--danger-soft); color: var(--danger); }
     .list-item.unread .kind { box-shadow: 0 0 0 2px var(--surface); }
+    .sec { display: flex; flex-direction: column; gap: 8px; }
+    .sec-h { margin: 0; font: 700 var(--step--1)/1.2 var(--font-body); color: var(--muted); }
+    .side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+    .count { min-width: 24px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink);
+             font: 700 0.75rem/22px var(--font-body); text-align: center; }
+    .group .chev { flex: none; color: var(--muted); transform: rotate(90deg); transition: transform 200ms var(--ease-out); }
+    .group[aria-expanded='true'] .chev { transform: rotate(-90deg); }
+    .sub { margin: 6px 0 4px 18px; padding-left: 10px; border-left: 2px solid var(--line); }
     .list-item.unread strong::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--turf); margin-right: 8px; vertical-align: middle; }
   `,
 })
@@ -196,8 +247,67 @@ export class InboxPage implements OnInit {
     await this.unread.refresh();
   }
 
+  /** aprirne uno segna letto solo quello */
   protected async open(n: AppNotification): Promise<void> {
-    if (!n.read_at) await this.readAll();
+    if (!n.read_at) await this.markRead([n.id]);
     if (n.url) await this.router.navigateByUrl(n.url);
+  }
+
+  private async markRead(ids: number[]): Promise<void> {
+    const set = new Set(ids);
+    const now = new Date().toISOString();
+    this.items.update((l) => l.map((n) => (set.has(n.id) && !n.read_at ? { ...n, read_at: now } : n)));
+    await this.api.markRead(ids).catch(() => undefined);
+    await this.unread.refresh();
+  }
+
+  // ------------------------------------------------ sezioni e gruppi
+  /** tipi che si possono spegnere nel Profilo (voci di notify_category): gli altri sono personali o compiti dello staff */
+  private static readonly SHARED = new Set(['chat', 'booking_open', 'priority_open', 'team_full', 'withdrawal', 'need_one', 'late_withdrawal',
+    'lineup_official', 'lineup_change', 'match_moved', 'venue_changed', 'match_cancelled', 'result_open', 'result_review', 'result_contested',
+    'result_final', 'result_homologated', 'votes_open', 'achievement']);
+
+  /** «Per te» (personali non letti o delle ultime 24 ore), poi per giorno; gli avvisi uguali sulla stessa partita diventano un gruppo */
+  protected readonly sections = computed<Section[]>(() => {
+    const now = Date.now();
+    const buckets: Record<SectionId, AppNotification[]> = { mine: [], today: [], yesterday: [], week: [], older: [] };
+    for (const n of this.items()) {
+      const personal = !InboxPage.SHARED.has(n.kind);
+      if (personal && (!n.read_at || now - Date.parse(n.created_at) < 86_400_000)) { buckets.mine.push(n); continue; }
+      const d = daysAgo(n.created_at);
+      buckets[d <= 0 ? 'today' : d === 1 ? 'yesterday' : d < 7 ? 'week' : 'older'].push(n);
+    }
+    const labels: Record<SectionId, string> = { mine: 'Per te', today: 'Oggi', yesterday: 'Ieri', week: 'Questa settimana', older: 'Prima' };
+    return (Object.keys(buckets) as SectionId[]).filter((id) => buckets[id].length).map((id) => {
+      const rows = new Map<string, GroupRow>();
+      for (const n of buckets[id]) {
+        const key = id === 'mine' || !InboxPage.SHARED.has(n.kind) ? `n${n.id}` : `${id}:${n.kind}:${n.match_id ?? ''}`;
+        const r = rows.get(key);
+        if (r) r.items.push(n); else rows.set(key, { key, items: [n] });
+      }
+      return { id, label: labels[id], rows: [...rows.values()] };
+    });
+  });
+
+  protected readonly openGroup = signal<string | null>(this.route.snapshot.queryParamMap.get('gruppo'));
+
+  protected groupTitle(r: GroupRow): string {
+    const n = r.items.length, k = r.items[0].kind;
+    if (k === 'chat') return `${n} messaggi in chat`;
+    if (k === 'achievement') return `${n} sticker sbloccati`;
+    return r.items[0].title;
+  }
+
+  protected unreadIn(r: GroupRow): boolean {
+    return r.items.some((n) => !n.read_at);
+  }
+
+  /** aprire un gruppo vuol dire averlo visto: i suoi avvisi diventano letti */
+  protected toggle(r: GroupRow): void {
+    const next = this.openGroup() === r.key ? null : r.key;
+    this.openGroup.set(next);
+    void this.router.navigate([], { queryParams: { gruppo: next }, queryParamsHandling: 'merge', replaceUrl: true });
+    const ids = r.items.filter((n) => !n.read_at).map((n) => n.id);
+    if (next && ids.length) void this.markRead(ids);
   }
 }

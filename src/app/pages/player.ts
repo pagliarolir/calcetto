@@ -7,27 +7,29 @@ import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { age, fmtDate, fmtWhen } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
 import { Session } from '../core/session';
 import { teamNames } from '../core/kits';
-import { Location } from '@angular/common';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { StickerStrip } from '../ui/sticker-strip';
+import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
+import { Back } from '../ui/back';
 
 @Component({
   selector: 'app-player',
-  imports: [RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
+  imports: [Back, Sheet, RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (member(); as m) {
       @if (!embedded()) {
         <!-- parte alta ferma: foto, nome, sticker e informazioni -->
         <header class="page-head phead stack">
-          <button type="button" class="back" (click)="back()"><app-icon name="back" [size]="18" /> Indietro</button>
+          <div class="detail-bar"><app-back fallback="/classifica" /></div>
           <div class="id">
             <app-avatar [userId]="m.id" [size]="88" />
             <h1>{{ session.fullName(m.id) }}</h1>
@@ -53,6 +55,7 @@ import { StickerStrip } from '../ui/sticker-strip';
               }
             </div>
             <dialog #ratingsDlg class="sheet" (click)="$event.target === ratingsDlg && ratingsDlg.close()" aria-label="Valori del giocatore">
+              <div class="grab" aria-hidden="true"></div>
               <button type="button" class="x-close" (click)="ratingsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
               <h3>Valori di {{ session.name(id()) }}</h3>
               @if (ratingsOn()) { <app-ratings-editor [userId]="id()" /> }
@@ -137,12 +140,6 @@ import { StickerStrip } from '../ui/sticker-strip';
     .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .menu button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
     .menu button:hover { background: var(--surface-2); }
-    dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 90dvh; overflow-y: auto; border: 0; color: var(--ink);
-                   background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
-    dialog.sheet::backdrop { background: rgb(10 20 14 / 45%); }
-    dialog.sheet h3 { margin: 4px 48px 12px 0; }
-    .back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0; border: 0; background: none;
-            color: var(--ink); opacity: 0.85; font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; }
     .id { display: flex; align-items: center; gap: 16px; }
     hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-m); overflow: hidden; }
@@ -154,15 +151,9 @@ import { StickerStrip } from '../ui/sticker-strip';
   `,
 })
 export class PlayerPage {
-  private readonly routerNav = inject(Router);
-  private readonly location = inject(Location);
+  private readonly confirmBox = inject(Confirm);
 
   /** torna alla pagina da cui si è arrivati (lista, chat, classifica...); se si è entrati da un link, alla Classifica */
-  protected back(): void {
-    if (this.routerNav.lastSuccessfulNavigation()?.previousNavigation) this.location.back();
-    else void this.routerNav.navigate(['/classifica']);
-  }
-
   readonly id = input.required<string>();
   /** nel Profilo (scheda Stats): solo la parte sotto l'intestazione */
   readonly embedded = input(false);
@@ -230,7 +221,7 @@ export class PlayerPage {
 
   protected async reset(): Promise<void> {
     const name = this.session.name(this.id());
-    if (!confirm(`Azzerare le statistiche di ${name}? Da adesso riparte da zero; potrai ripristinarle.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Azzerare le statistiche di ${name}?`, ok: 'Azzera' }))) return;
     await this.run(() => this.api.resetStats(this.id()), `Statistiche di ${name} azzerate.`);
   }
 
@@ -240,7 +231,7 @@ export class PlayerPage {
 
   protected async erase(): Promise<void> {
     const name = this.session.name(this.id());
-    if (!confirm(`Eliminare definitivamente le statistiche di ${name}? Non si può annullare.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Eliminare per sempre le statistiche di ${name}?`, ok: 'Elimina', danger: true }))) return;
     await this.run(() => this.api.deletePlayerStats(this.id(), this.confirmText), `Statistiche di ${name} eliminate.`);
     this.confirmText = '';
   }

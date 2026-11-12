@@ -9,10 +9,11 @@ import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 import { Branding } from '../core/branding';
 import { MatchStore } from './match-store';
+import { SwipeTabs } from '../ui/swipe-tabs';
 
 @Component({
   selector: 'app-match-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
+  imports: [SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
   providers: [MatchStore],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
@@ -78,7 +79,7 @@ import { MatchStore } from './match-store';
           </a>
         </nav>
       </header>
-      <main class="scroll-area">
+      <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
         <div class="page below-header">
           <router-outlet />
         </div>
@@ -90,15 +91,14 @@ import { MatchStore } from './match-store';
   styles: `
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .hero {
-      color: var(--hero-ink, var(--chalk));
+      color: var(--hero-ink);
       background:
         radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(241 245 239 / 35%) 89px 91px, transparent 92px),
-        var(--hero-bg, linear-gradient(var(--turf), var(--turf)));
+        var(--hero-bg);
       padding-top: env(safe-area-inset-top);
       /* fissa in cima: scorre solo il contenuto sotto (.scroll-area) */
       flex: none; z-index: 2;
     }
-    @media (prefers-color-scheme: dark) { :host-context(html:not([data-theme])) .hero { color: #eef5ef; background-color: #14482f; background-image: radial-gradient(circle at 50% 135%, transparent 0 88px, rgb(207 224 212 / 30%) 89px 91px, transparent 92px); } }
     .hero-in { max-width: 640px; margin: 0 auto; padding: 10px 16px 6px; display: flex; flex-direction: column; gap: 2px; }
     .sk-hero { display: flex; flex-direction: column; gap: 14px; padding-bottom: 12px; }
     .skw { display: block; height: 12px; border-radius: 6px; background: rgb(255 255 255 / 16%); }
@@ -217,6 +217,16 @@ export class MatchPage {
   /** a partita finita le schede sono Risultato, Pagelle e Chat */
   protected readonly finished = computed(() => !!this.store.t()?.ended);
   private readonly router = inject(Router);
+
+  /** scorrimento di lato: scheda accanto (Lista, Squadre, Chat; a partita finita Risultato, Pagelle, Chat) */
+  protected swipeTab(d: 1 | -1): void {
+    const m = this.store.match();
+    if (!m) return;
+    const tabs = this.finished() ? ['risultato', 'voti', 'chat'] : ['', 'squadre', 'chat'];
+    const seg = this.router.url.split('?')[0].split('/')[3] ?? '';
+    const i = tabs.indexOf(seg) + d;
+    if (i >= 0 && i < tabs.length) void this.router.navigate(['/partita', m.id, ...(tabs[i] ? [tabs[i]] : [])]);
+  }
   private readonly url = toSignal(this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
 
   // il logo è un quadrato alto quanto le scritte accanto (le misura e le segue se cambiano)

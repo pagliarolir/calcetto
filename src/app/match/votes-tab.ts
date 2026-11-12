@@ -12,10 +12,12 @@ import { Avatar } from '../ui/avatar';
 import { VoteSlider } from '../ui/vote-slider';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
+import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 @Component({
   selector: 'app-votes-tab',
-  imports: [Avatar, VoteSlider, Icon],
+  imports: [Sheet, Avatar, VoteSlider, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -167,6 +169,7 @@ import { kit } from '../core/kits';
 
         <dialog #mvpDialog class="sheet" (click)="mvpBackdrop($event)" aria-label="Scegli il migliore in campo">
           <div class="grab" aria-hidden="true"></div>
+          <button type="button" class="x-close" (click)="mvpDialog.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
           <h2 class="sheet-title">★ Migliore in campo</h2>
           @for (g of groups(); track g.key) {
             <h3 class="ghead"><i class="dot" [style.background]="g.color"></i>{{ g.label }}</h3>
@@ -240,14 +243,6 @@ import { kit } from '../core/kits';
       color: var(--ink); font: inherit;
     }
     .mvp-star { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--armband); color: var(--armband-ink); font-size: 1.2rem; }
-    .sheet {
-      position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 85vh; overflow-y: auto; border: 0; color: var(--ink);
-      background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-      box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
-    }
-    .sheet[open] { display: flex; flex-direction: column; gap: 10px; animation: rise 260ms var(--ease-out); }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .sheet-title { font-size: var(--step-1); }
     .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
     .pick-p {
@@ -273,6 +268,7 @@ import { kit } from '../core/kits';
   `,
 })
 export class VotesTab {
+  private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
@@ -466,7 +462,7 @@ export class VotesTab {
     haptic();
     if (this.reprimand.guard()) return;
     const id = this.store.match()!.id;
-    if (!confirm('Confermare i voti? Una volta inviati non si possono più cambiare.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Inviare i voti? Poi non si cambiano più.', ok: 'Invia i voti', danger: true }))) return;
     this.busy.set(true);
     try {
       // tutti i compagni: chi non è stato toccato prende 6

@@ -203,8 +203,8 @@ export class Api {
     return must(await this.sb.from('chat_messages').select('*').eq('match_id', matchId).order('created_at').limit(500)) as ChatMessage[];
   }
 
-  async sendChat(matchId: string, userId: string, body: string) {
-    return must(await this.sb.from('chat_messages').insert({ match_id: matchId, user_id: userId, body }));
+  async sendChat(matchId: string, userId: string, body: string): Promise<ChatMessage> {
+    return must(await this.sb.from('chat_messages').insert({ match_id: matchId, user_id: userId, body }).select().single()) as ChatMessage;
   }
 
   async deleteChat(id: number) {
@@ -268,6 +268,10 @@ export class Api {
   async unreadCount(): Promise<number> {
     const res = await this.sb.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
     return res.count ?? 0;
+  }
+
+  async markRead(ids: number[]) {
+    return must(await this.sb.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids).is('read_at', null));
   }
 
   async markAllRead() {

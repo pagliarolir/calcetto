@@ -12,6 +12,8 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
 
 interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string; kind: SlotKind }
 interface Place { team: Team; slot: number | null }
@@ -19,7 +21,7 @@ interface Place { team: Team; slot: number | null }
 
 @Component({
   selector: 'app-lineup-tab',
-  imports: [FormsModule, Avatar, Icon],
+  imports: [Sheet, FormsModule, Avatar, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -40,8 +42,9 @@ interface Place { team: Team; slot: number | null }
 
         @if (visible()) {
           <dialog #pickDlg class="sheet" (click)="$event.target === pickDlg && pickDlg.close()" aria-label="Scegli un giocatore">
+            <div class="grab" aria-hidden="true"></div>
+            <button type="button" class="x-close" (click)="pickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
             @if (pickFor(); as pf) {
-              <button type="button" class="x-close" (click)="pickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
               <h3>{{ teamLabel()[pf.team] }} · {{ pf.label }}</h3>
               <p class="small muted">Disponibili, dal più adatto a questo posto.</p>
               <ul class="pick">
@@ -123,19 +126,6 @@ interface Place { team: Team; slot: number | null }
               } @else {
                 <button class="btn primary block" [disabled]="busy()" (click)="save(true)">Invia per l'approvazione</button>
                 <button class="btn block" [disabled]="busy()" (click)="save(false)">Salva bozza</button>
-              }
-            </div>
-          } @else if (m.lineup_status === 'official') {
-            <div class="teams">
-              @for (t of teams; track t) {
-                <div class="panel">
-                  <h3>{{ teamLabel()[t] }}</h3>
-                  <ul>
-                    @for (l of byTeam(t); track l.user_id) {
-                      <li>{{ session.name(l.user_id) }} <span class="muted small">{{ slotLabel(l.field_slot) }}</span></li>
-                    }
-                  </ul>
-                </div>
               }
             </div>
           }
@@ -248,10 +238,6 @@ interface Place { team: Team; slot: number | null }
     .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
     .pick button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 6px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1.2 var(--font-body); cursor: pointer; text-align: left; }
     .pick button:hover { background: var(--surface-2); }
-    dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 80dvh; overflow-y: auto; border: 0; color: var(--ink);
-                   background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
-    dialog.sheet::backdrop { background: rgb(10 20 14 / 45%); }
-    dialog.sheet h3 { margin: 4px 48px 4px 0; }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
       background: repeating-linear-gradient(180deg, #24774c 0 10%, #1f6b45 10% 20%);
@@ -288,11 +274,10 @@ interface Place { team: Team; slot: number | null }
     .spot.sel .pitch-photo { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband), 0 3px 8px rgb(0 0 0 / 35%); }
     .name { font-size: 0.72rem; font-weight: 600; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       text-shadow: 0 1px 2px rgb(0 0 0 / 60%); }
-    .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .teams ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   `,
 })
 export class LineupTab {
+  private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
@@ -504,14 +489,6 @@ export class LineupTab {
     return this.draft().get(id);
   }
 
-  protected byTeam(t: Team) {
-    return this.store.lineup().filter((l) => l.team === t).sort((a, b) => (a.field_slot ?? 9) - (b.field_slot ?? 9));
-  }
-
-  protected slotLabel(slot: number | null): string {
-    return formation(this.perTeam()).find((f) => f.slot === slot)?.label ?? '';
-  }
-
   protected select(id: string): void {
     this.selected.set(this.selected() === id ? null : id);
   }
@@ -586,7 +563,7 @@ export class LineupTab {
   protected async save(publish: boolean): Promise<void> {
     if (this.reprimand.guard()) return;
     const entries = [...this.draft()].map(([user_id, p]) => ({ user_id, team: p.team, field_slot: p.slot }));
-    if (publish && this.bench().length && !confirm(`${this.bench().length} giocatori non hanno un posto in campo. Procedo lo stesso?`)) return;
+    if (publish && this.bench().length && !(await this.confirmBox.ask({ title: `${this.bench().length} giocatori senza posto in campo: pubblico lo stesso?`, ok: 'Pubblica' }))) return;
     await this.run(async () => {
       const status = await this.api.saveLineup(this.store.match()!.id, entries, publish);
       await Promise.all([this.store.reload('matches'), this.store.reload('lineup')]);

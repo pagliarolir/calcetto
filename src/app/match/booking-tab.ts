@@ -1,5 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FORM_RANK, overallOf, Ratings } from '../core/ratings';
 import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
@@ -18,6 +18,7 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { Confirm } from '../core/confirm';
 
 interface SlotView {
   slot: number;
@@ -71,22 +72,21 @@ interface SlotView {
           } @else if (store.t()?.bookingClosed && !amLeaderTitular()) {
             <!-- non aveva risposto: può ancora mettersi tra le riserve -->
             <div class="choice" role="group" aria-label="La tua presenza">
-              <button [disabled]="busy()" (click)="book('present')">Ci sono</button>
-              <button class="absent" [disabled]="busy()" (click)="book('absent')">Non ci sono</button>
+              <button (click)="book('present')">Ci sono</button>
+              <button class="absent" (click)="book('absent')">Non ci sono</button>
             </div>
           } @else if (!canBook()) {
           } @else {
             <div class="choice" role="group" aria-label="La tua presenza">
-              <button [attr.aria-pressed]="store.mine()?.choice === 'present'" [disabled]="busy()" (click)="book('present')">
+              <button [attr.aria-pressed]="store.mine()?.choice === 'present'" (click)="book('present')">
                 Ci sono
               </button>
               @if (!store.free()) {
-                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" [disabled]="busy()"
-                        (click)="book('reserve')">
+                <button [attr.aria-pressed]="store.mine()?.choice === 'reserve'" (click)="book('reserve')">
                   Riserva
                 </button>
               }
-              <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" [disabled]="busy()" (click)="book('absent')">
+              <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" (click)="book('absent')">
                 Non ci sono
               </button>
             </div>
@@ -124,7 +124,7 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
@@ -132,7 +132,7 @@ interface SlotView {
                   @for (s of sortedSlots(); track s.slot) {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
                       @if (s.row; as r) {
-                        <app-figurina [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
+                        <app-figurina [class.arriving]="!!r.provisional" [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       } @else {
@@ -146,7 +146,7 @@ interface SlotView {
             @case ('pending') {
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
+                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun disponibile." /></li> }
               </ul>
             }
@@ -155,7 +155,7 @@ interface SlotView {
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                     }
                   </ul>
                 } @else {
@@ -175,7 +175,7 @@ interface SlotView {
             @case ('out') {
               <ul class="people board">
                 @for (r of byName(store.absents()); track r.user_id) {
-                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
+                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun assente." /></li> }
               </ul>
               @if (silent().length) {
@@ -335,17 +335,11 @@ interface SlotView {
           </section>
         }
       </div>
-      <!-- conferma del ritiro -->
-      <dialog #wdDlg class="ask" (click)="wdBackdrop($event)" aria-labelledby="wd-q">
-        <p id="wd-q" class="ask-q">Sicuro di volerti ritirare?</p>
-        <div class="row">
-          <button type="button" class="btn ghost grow" (click)="closeWd()">Annulla</button>
-          <button type="button" class="btn danger grow" [disabled]="busy()" (click)="confirmWd()">Mi ritiro</button>
-        </div>
-      </dialog>
     }
   `,
   styles: `
+    /* risposta appena data, in attesa del server */
+    app-figurina.arriving { opacity: 0.55; transition: opacity 200ms; }
     .me-head { display: flex; align-items: center; gap: 4px; position: relative; }
     .me-head h2 { flex: 0 1 auto; min-width: 0; }
     .sortw { margin-left: auto; position: relative; flex: none; }
@@ -380,10 +374,7 @@ interface SlotView {
     /* pallino del ritiro piccolo; l'area di tocco resta comoda grazie al margine invisibile */
     .wd::after { content: ''; position: absolute; inset: -9px; }
     .wd { position: absolute; top: -4px; right: -4px; z-index: 2; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 0; cursor: pointer;
-          display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
-    dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
-    dialog.ask::backdrop { background: rgb(10 20 14 / 45%); }
-    .ask-q { margin: 0 0 16px; text-align: center; font: 700 var(--step-1)/1.25 var(--font-body); }
+          display: grid; place-items: center; background: var(--danger); color: var(--danger-ink); box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
     .who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-decoration: none; color: inherit; font-weight: 600; }
     .who .tag { font-weight: 600; }
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
@@ -403,12 +394,13 @@ interface SlotView {
     .assign li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
     .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
     .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); padding: 0 12px; min-height: 36px; cursor: pointer; }
-    .seg button[aria-pressed='true'] { background: var(--turf); color: var(--on-turf, #fff); }
+    .seg button[aria-pressed='true'] { background: var(--turf); color: var(--turf-ink); }
     .pick .chip { display: inline-flex; align-items: center; }
     @media (max-width: 360px) { .board { grid-template-columns: 1fr; } }
   `,
 })
 export class BookingTab {
+  private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
@@ -508,8 +500,6 @@ export class BookingTab {
   }
 
   // ------------------------------------------------ ritiro dopo la chiusura: X rossa sulla propria figurina
-  private readonly wdDlg = viewChild<ElementRef<HTMLDialogElement>>('wdDlg');
-
   /** la X compare sulla propria figurina (titolare o riserva) dopo la chiusura e prima dell'inizio */
   protected canWithdraw(userId: string): boolean {
     const mine = this.store.mine();
@@ -517,34 +507,33 @@ export class BookingTab {
       && this.store.match()?.status === 'scheduled' && !this.amLeaderTitular() && (mine?.list === 'team' || mine?.list === 'reserve');
   }
 
-  protected askWithdraw(): void {
-    const d = this.wdDlg()?.nativeElement;
-    if (d && !d.open) d.showModal();
-  }
-
-  protected closeWd(): void {
-    this.wdDlg()?.nativeElement.close();
-  }
-
-  protected wdBackdrop(e: MouseEvent): void {
-    if (e.target === this.wdDlg()?.nativeElement) this.closeWd();
-  }
-
-  protected async confirmWd(): Promise<void> {
-    this.closeWd();
-    await this.book('absent');
+  protected async askWithdraw(): Promise<void> {
+    if (await this.confirmBox.ask({ title: 'Sicuro di volerti ritirare?', ok: 'Mi ritiro', danger: true })) await this.book('absent');
   }
 
   /** la propria figurina «cade» al suo posto solo subito dopo essersi prenotati, non a ogni apertura della pagina */
   protected readonly dropFor = signal<string | null>(null);
 
   protected async book(choice: Choice): Promise<void> {
-    if (this.reprimand.guard()) return;
-    await this.run(async () => {
-      haptic();
-      const res = await this.api.book(this.store.match()!.id, choice);
+    if (this.reprimand.guard() || this.busy()) return;
+    // risposta immediata: la scelta si vede subito, il posto vero lo decide il server; se rifiuta si torna a prima
+    const before = this.store.board();
+    const guess = this.guessBoard(before, choice);
+    haptic();
+    if (guess) {
+      this.store.board.set(guess);
       this.dropFor.set(this.session.uid());
       setTimeout(() => this.dropFor.set(null), 900);
+    }
+    await this.run(async () => {
+      let res;
+      try {
+        res = await this.api.book(this.store.match()!.id, choice);
+      } catch (e) {
+        if (this.store.board() === guess) this.store.board.set(before);
+        else await this.store.reload('bookings');
+        throw e;
+      }
       await this.store.reload('bookings');
       // con «sceglie il Leader» i posti non sono numerati
       const n = res.slot ? ` con il numero ${res.slot}` : '';
@@ -553,6 +542,30 @@ export class BookingTab {
       else if (res.list === 'pending') this.toasts.show('Sei tra i disponibili: titolari e riserve li sceglie il Leader.');
       else this.toasts.show('Segnato come assente.');
     });
+  }
+
+  /** dove finirà probabilmente il giocatore (null = non si indovina: si aspetta il server) */
+  private guessBoard(board: BoardRow[], choice: Choice): BoardRow[] | null {
+    const uid = this.session.uid(), m = this.store.match();
+    if (!uid || !m || this.amLeaderTitular()) return null;
+    const mine = board.find((b) => b.user_id === uid);
+    if (mine?.choice === choice) return null;
+    let list: BoardRow['list'], slot: number | null = null;
+    if (choice === 'absent') list = 'out';
+    else if (this.store.free()) list = 'pending';
+    else if (choice === 'present' && mine?.list === 'team') return null;
+    else if (choice === 'present' && this.store.team().length < this.store.size()) {
+      list = 'team';
+      slot = this.slots().find((s) => !s.row && s.slot !== 1)?.slot ?? null;
+    } else {
+      list = 'reserve';
+      slot = this.store.reserves().filter((r) => r.user_id !== uid).length + 1;
+    }
+    const row: BoardRow = {
+      match_id: m.id, user_id: uid, choice, list, slot, placed_by: null, late_withdrawal: false, reserve_reply: null,
+      updated_at: new Date().toISOString(), is_leader: false, ...(mine ? { is_leader: mine.is_leader } : {}), provisional: true,
+    };
+    return [...board.filter((b) => b.user_id !== uid), row];
   }
 
   protected async reply(r: 'confirmed' | 'declined'): Promise<void> {
@@ -743,8 +756,8 @@ export class BookingTab {
 
   protected async confirmLists(): Promise<void> {
     const n = this.store.pending().length;
-    const extra = n ? ` I ${n} ancora da scegliere diventeranno riserve.` : '';
-    if (!confirm(`Confermare titolari e riserve e avvisare tutti? Le prenotazioni si chiudono.${extra}`)) return;
+    const title = n ? `Confermare le liste? I ${n} ancora da scegliere vanno in riserva.` : 'Confermare le liste e avvisare tutti?';
+    if (!(await this.confirmBox.ask({ title: title, ok: 'Conferma le liste' }))) return;
     await this.run(async () => {
       const r = await this.api.leaderConfirmLists(this.store.match()!.id);
       await Promise.all([this.store.reload('bookings'), this.store.reload('matches')]);
@@ -753,7 +766,7 @@ export class BookingTab {
   }
 
   protected async closeBookings(): Promise<void> {
-    if (!confirm('Chiudere adesso le prenotazioni? I giocatori non potranno più cambiare la risposta.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Chiudere adesso le prenotazioni?', ok: 'Chiudi le prenotazioni' }))) return;
     await this.run(async () => {
       await this.api.closeBookings(this.store.match()!.id);
       await this.store.reload('matches');
@@ -784,7 +797,7 @@ export class BookingTab {
   protected async resetAnswer(): Promise<void> {
     const id = this.placeUser;
     const name = this.session.name(id);
-    if (!confirm(`Azzerare la risposta di ${name}? Tornerà tra chi non ha risposto e riceverà un avviso per rispondere di nuovo.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Azzerare la risposta di ${name}?`, ok: 'Azzera' }))) return;
     await this.run(async () => {
       const res = await this.api.leaderResetBooking(this.store.match()!.id, id);
       await this.store.reload('bookings');
@@ -863,7 +876,7 @@ export class BookingTab {
   }
 
   protected async cancel(): Promise<void> {
-    if (!confirm('Annullare la partita? Chi si era prenotato riceve un avviso.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Annullare la partita?', ok: 'Annulla la partita', danger: true }))) return;
     await this.run(async () => {
       await this.api.cancelMatch(this.store.match()!.id);
       await this.store.reload('matches');

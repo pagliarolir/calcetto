@@ -14,6 +14,9 @@ import { Push } from '../core/push';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
+import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
+import { SwipeTabs } from '../ui/swipe-tabs';
 
 interface Form {
   first_name: string;
@@ -29,7 +32,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RouterLink, Avatar, Icon, PlayerPage],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
@@ -59,7 +62,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
       </nav>
       </div>
     </div>
-    <main class="scroll-area">
+    <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
       <div class="page stack-l in-body">
 
       <div class="ppanel" role="tabpanel" [id]="'ppanel-' + tab()" [attr.aria-labelledby]="'ptab-' + tab()">
@@ -111,6 +114,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
       <!-- nascondere il nome: al suo posto il soprannome -->
       <dialog #nickDlg class="sheet" (click)="nickBackdrop($event)" aria-labelledby="nick-h">
         <div class="grab" aria-hidden="true"></div>
+        <button type="button" class="x-close" (click)="nickDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
         <h2 id="nick-h">Mostra il soprannome</h2>
         <p class="small muted">Al posto del nome, gli altri vedranno il tuo soprannome: in lista, in classifica, nella chat e negli avvisi.</p>
         <label class="field"><span>Soprannome</span>
@@ -176,7 +180,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
               <li>
                 <label class="switch">
                   <span><strong>{{ c.label }}</strong><br /><span class="small muted">{{ c.hint }}</span></span>
-                  <input type="checkbox" [checked]="wants(c.key)" [disabled]="prefsBusy()" (change)="togglePref(c.key)" />
+                  <input type="checkbox" [checked]="wants(c.key)" (change)="togglePref(c.key)" />
                 </label>
               </li>
             }
@@ -337,11 +341,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     label.btn { position: relative; }
     label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
     .opt { display: flex; align-items: flex-end; gap: 12px; }
-    .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; border: 0; color: var(--ink);
-             background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
-    .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
-    .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .toggle:disabled { opacity: 0.6; cursor: not-allowed; }
     .opt .field { min-width: 0; }
     .opt .input { min-width: 0; }
@@ -364,6 +363,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
   `,
 })
 export class ProfilePage {
+  private readonly confirmBox = inject(Confirm);
   protected readonly session = inject(Session);
   protected readonly push = inject(Push);
   private readonly api = inject(Api);
@@ -417,6 +417,11 @@ export class ProfilePage {
   }
 
   /** frecce sinistra e destra per passare da una scheda all'altra */
+  protected swipeTab(d: 1 | -1): void {
+    const i = this.tabs.findIndex((t) => t.id === this.tab()) + d;
+    if (i >= 0 && i < this.tabs.length) this.selectTab(this.tabs[i].id);
+  }
+
   protected tabKey(e: KeyboardEvent): void {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     e.preventDefault();
@@ -565,7 +570,7 @@ export class ProfilePage {
   protected async removePhoto(): Promise<void> {
     const uid = this.session.uid();
     const path = this.session.profile()?.avatar_path;
-    if (!uid || !path || !confirm('Rimuovere la foto profilo?')) return;
+    if (!uid || !path || !(await this.confirmBox.ask({ title: 'Rimuovere la foto profilo?', ok: 'Rimuovi', danger: true }))) return;
     this.photoBusy.set(true);
     try {
       await this.api.removeAvatar(uid, path);
@@ -606,26 +611,34 @@ export class ProfilePage {
     { key: 'votes', label: 'Votazioni', hint: 'Quando puoi votare i compagni' },
     { key: 'achievements', label: 'Obiettivi sbloccati', hint: 'Quando qualcuno vince uno sticker' },
   ];
-  protected readonly prefsBusy = signal(false);
+
+  /** scelte appena toccate, in attesa del server (risposta immediata) */
+  private readonly prefsDraft = signal<Partial<Record<NotifyCategory, boolean>>>({});
+  private prefsQueue: Promise<void> = Promise.resolve();
 
   /** voce mancante = accesa, tranne la chat (spenta finché non la accendi) */
   protected wants(key: NotifyCategory): boolean {
-    return this.session.profile()?.notify_prefs?.[key] ?? key !== 'chat';
+    return this.prefsDraft()[key] ?? this.session.profile()?.notify_prefs?.[key] ?? key !== 'chat';
   }
 
-  protected async togglePref(key: NotifyCategory): Promise<void> {
+  /** l'interruttore cambia subito; i salvataggi partono in fila e un errore riporta la voce com'era */
+  protected togglePref(key: NotifyCategory): void {
     const uid = this.session.uid();
     if (!uid) return;
-    const next = { ...(this.session.profile()?.notify_prefs ?? {}), [key]: !this.wants(key) };
-    this.prefsBusy.set(true);
-    try {
-      await this.api.updateProfile(uid, { notify_prefs: next });
-      await this.session.refresh();
-    } catch (e) {
-      this.toasts.error(errorMessage(e));
-    } finally {
-      this.prefsBusy.set(false);
-    }
+    const value = !this.wants(key);
+    this.prefsDraft.update((d) => ({ ...d, [key]: value }));
+    this.prefsQueue = this.prefsQueue.then(async () => {
+      const next = { ...(this.session.profile()?.notify_prefs ?? {}), [key]: value };
+      try {
+        await this.api.updateProfile(uid, { notify_prefs: next });
+        await this.session.refresh();
+      } catch (e) {
+        this.toasts.error(errorMessage(e));
+      } finally {
+        // tolta solo se nel frattempo non è stata toccata di nuovo
+        this.prefsDraft.update((d) => { if (d[key] !== value) return d; const { [key]: _, ...rest } = d; return rest; });
+      }
+    });
   }
 
   protected async togglePush(on: boolean): Promise<void> {
