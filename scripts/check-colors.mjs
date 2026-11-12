@@ -25,7 +25,7 @@ for (const [k, spec] of Object.entries(m.THEME_SPECS)) for (const hex of [...m.P
   const r = m.paletteVars(spec, hex); total++;
   for (const c of r.checks) {
     worst['Tavolozza ' + c.label] = Math.min(worst['Tavolozza ' + c.label] ?? 99, c.ratio);
-    if (c.ratio < 4.5) fails.push(`${k} ${hex}: ${c.label} ${c.ratio.toFixed(2)}`);
+    if (c.ratio < (c.label === 'Testo' ? 7 : 4.5)) fails.push(`${k} ${hex}: ${c.label} ${c.ratio.toFixed(2)}`);
   }
 }
 console.log(`combinazioni: ${total} · non a norma: ${fails.length}`);

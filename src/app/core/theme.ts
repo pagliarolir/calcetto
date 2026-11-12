@@ -1,5 +1,5 @@
 import { computed, effect, Injectable, signal } from '@angular/core';
-import { CustomTheme, deriveTheme, PALETTE, paletteVars, THEME_SPECS } from './color';
+import { CustomTheme, deriveTheme, PALETTE, PALETTE_KEYS, paletteVars, THEME_SPECS } from './color';
 
 export type ThemeChoice = 'auto' | 'gesso' | 'notturno' | 'figurina' | 'azzurro' | 'tramonto' | 'rilievo' | 'rientranza' | 'contrasto' | 'custom';
 export type ThemeName = Exclude<ThemeChoice, 'auto'>;
@@ -48,7 +48,7 @@ export class Theme {
   /** colori calcolati del tema personalizzato e i contrasti ottenuti */
   readonly derived = computed(() => deriveTheme(this.custom()));
   /** variabili scritte su <html>: all'inizio anche quelle che boot.js può aver messo per la tavolozza */
-  private applied: string[] = ['--turf', '--turf-ink', '--turf-soft', '--focus', '--hero-bg', '--hero-ink', '--bar'];
+  private applied: string[] = [...PALETTE_KEYS];
   /** testo: dimensione in percentuale (85-130) e spaziatura (0 = normale, 100 = valori WCAG 1.4.12) */
   private readonly savedScale = signal<number | null>(null);
   /** dimensione scelta nel Profilo (100 = normale); «Automatico» riduce comunque tutto del 10% (data-auto) */
@@ -106,14 +106,14 @@ export class Theme {
   }
 
   /** colore principale e intestazione di un tema con una tavolozza (per le anteprime nel Profilo) */
-  preview(c: ThemeChoice): { primary: string; hero: string } | null {
+  preview(c: ThemeChoice): { primary: string; hero: string; bg: string; soft: string } | null {
     const hex = this.palettes()[c];
     if (!hex) return null;
     const key = c === 'auto' ? (this.systemDark() ? 'notturno' : 'gesso') : isNeu(c) ? (this.neuBase() === 'dark' ? `${c}:dark` : c) : c;
     const spec = THEME_SPECS[key];
     if (!spec) return null;
     const v = paletteVars(spec, hex).vars;
-    return { primary: v['--turf'], hero: v['--hero-bg'] };
+    return { primary: v['--turf'], hero: v['--hero-bg'], bg: v['--bg'], soft: v['--surface-2'] };
   }
 
   /** tavolozza del tema scelto: hex del colore principale oppure null per i colori originali */

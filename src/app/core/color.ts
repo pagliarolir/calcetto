@@ -142,68 +142,123 @@ export function deriveTheme(t: CustomTheme): Derived {
 
 // ================================================================ tavolozze dei temi
 /**
- * Tavolozze pronte: ogni tema (tranne Alto contrasto e Personalizzato) mantiene fondo, superfici, caratteri e forme,
- * e cambia solo il colore principale (pulsanti, collegamenti, intestazione, fuoco). I contrasti restano garantiti:
- * principale come testo su fondo e superfici, testo sui pulsanti, testo bianco sull'intestazione.
+ * Tavolozze pronte: ogni tema (tranne Alto contrasto e Personalizzato) mantiene caratteri, forme e luminosità,
+ * ma prende la TINTA del colore scelto ovunque: fondo (con una leggera sfumatura verso il basso), superfici,
+ * linee, testi, ombre dei temi neumorphism, intestazione e colore principale.
+ * I contrasti restano garantiti: testo ≥ 7:1, testo secondario e principale ≥ 4,5:1 su fondo e superfici.
  */
 export type HeroStyle = 'linear' | 'glow' | 'dots';
-export interface ThemeSpec { dark: boolean; bg: string; surface: string; surface2: string; hero: HeroStyle; heroBase?: string }
+export type ToneKind = 'light' | 'dark' | 'figurina' | 'neu' | 'neu-dark';
+export interface ThemeSpec { kind: ToneKind; hero: HeroStyle }
 /** chiave = valore di data-theme, con «:dark» per la variante scura dei temi neumorphism */
 export const THEME_SPECS: Record<string, ThemeSpec> = {
-  gesso: { dark: false, bg: '#F3F5F0', surface: '#FFFFFF', surface2: '#E6ECE4', hero: 'linear' },
-  notturno: { dark: true, bg: '#0A120E', surface: '#121C17', surface2: '#1B2721', hero: 'glow', heroBase: '#0F1A14' },
-  figurina: { dark: false, bg: '#F5ECD7', surface: '#FFF9EC', surface2: '#EBDFC2', hero: 'dots' },
-  azzurro: { dark: false, bg: '#F2F5FA', surface: '#FFFFFF', surface2: '#E3EAF5', hero: 'linear' },
-  tramonto: { dark: true, bg: '#170F14', surface: '#22161D', surface2: '#2D1E27', hero: 'glow', heroBase: '#1E1219' },
-  rilievo: { dark: false, bg: '#E4E9F0', surface: '#E4E9F0', surface2: '#D8DFE8', hero: 'linear' },
-  'rilievo:dark': { dark: true, bg: '#252A31', surface: '#252A31', surface2: '#2C323A', hero: 'glow', heroBase: '#1C2026' },
-  rientranza: { dark: false, bg: '#E4E9F0', surface: '#E4E9F0', surface2: '#D8DFE8', hero: 'linear' },
-  'rientranza:dark': { dark: true, bg: '#252A31', surface: '#252A31', surface2: '#2C323A', hero: 'glow', heroBase: '#1C2026' },
+  gesso: { kind: 'light', hero: 'linear' },
+  notturno: { kind: 'dark', hero: 'glow' },
+  figurina: { kind: 'figurina', hero: 'dots' },
+  azzurro: { kind: 'light', hero: 'linear' },
+  tramonto: { kind: 'dark', hero: 'glow' },
+  rilievo: { kind: 'neu', hero: 'linear' },
+  'rilievo:dark': { kind: 'neu-dark', hero: 'glow' },
+  rientranza: { kind: 'neu', hero: 'linear' },
+  'rientranza:dark': { kind: 'neu-dark', hero: 'glow' },
+};
+
+/** saturazione e luminosità di ogni colore del tema (la tinta è quella scelta) */
+type SL = [number, number];
+const TONES: Record<ToneKind, { bg: SL; surface: SL; surface2: SL; line: SL | 'ink'; ink: SL; muted: SL; lo?: SL; hi?: SL; heroBase?: SL; grad: number }> = {
+  light:      { bg: [0.42, 0.95], surface: [0.7, 0.99], surface2: [0.36, 0.9], line: [0.3, 0.82], ink: [0.35, 0.12], muted: [0.16, 0.36], grad: 0.2 },
+  figurina:   { bg: [0.55, 0.9], surface: [0.75, 0.97], surface2: [0.45, 0.84], line: 'ink', ink: [0.45, 0.18], muted: [0.18, 0.32], grad: 0.18 },
+  dark:       { bg: [0.32, 0.06], surface: [0.26, 0.1], surface2: [0.22, 0.14], line: [0.18, 0.24], ink: [0.25, 0.94], muted: [0.12, 0.7], heroBase: [0.38, 0.09], grad: 0.12 },
+  neu:        { bg: [0.34, 0.9], surface: [0.34, 0.9], surface2: [0.3, 0.85], line: [0.25, 0.78], ink: [0.35, 0.13], muted: [0.16, 0.33], lo: [0.32, 0.7], hi: [0.7, 0.98], grad: 0.16 },
+  'neu-dark': { bg: [0.22, 0.16], surface: [0.22, 0.16], surface2: [0.2, 0.19], line: [0.16, 0.27], ink: [0.2, 0.94], muted: [0.12, 0.72], lo: [0.28, 0.09], hi: [0.16, 0.24], heroBase: [0.3, 0.1], grad: 0.1 },
 };
 
 export interface PaletteResult { vars: Record<string, string>; bar: string; checks: { label: string; ratio: number }[] }
 
-/** colori di un tema con il principale scelto dalla tavolozza */
+/** il colore che rispetta il contrasto `min` con TUTTI i fondi indicati */
+function readableOn(hex: string, bgs: string[], min: number): string {
+  let c = hex;
+  for (let k = 0; k < 3; k++) for (const b of bgs) c = ensureContrast(c, b, min).hex;
+  return c;
+}
+
+/** tutti i colori di un tema con la tinta e il principale scelti dalla tavolozza */
 export function paletteVars(spec: ThemeSpec, hex: string): PaletteResult {
-  const [h, s, l] = toHsl(hex);
-  // sui temi scuri il principale è una versione chiara e viva del colore scelto
-  let primary = spec.dark ? fromHsl([h, Math.max(s, 0.55), Math.max(l, 0.64)]) : hex.toUpperCase();
-  for (const against of [spec.surface, spec.bg, spec.surface2]) primary = ensureContrast(primary, against, 4.6).hex;
-  const primaryInk = spec.dark ? inkOn(primary, '#0B1210') : inkOn(primary);
+  const t = TONES[spec.kind];
+  const dark = spec.kind === 'dark' || spec.kind === 'neu-dark';
+  const [h, s0, l] = toHsl(hex);
+  // i colori poco saturi (grafite) danno un tema quasi grigio: la saturazione non supera quella scelta (×1,6)
+  const cap = Math.min(1, s0 * 1.6);
+  const tone = ([s, lum]: SL) => fromHsl([h, Math.min(s, cap), lum]);
+  const bg = tone(t.bg), surface = tone(t.surface), surface2 = tone(t.surface2);
+  const bgEnd = mix(bg, hex, t.grad);
+  const fondi = [bg, bgEnd, surface, surface2];
+  const ink = readableOn(tone(t.ink), fondi, 7);
+  const muted = readableOn(tone(t.muted), fondi, 4.6);
+  const line = t.line === 'ink' ? ink : tone(t.line);
+  // principale: sui temi scuri una versione chiara e viva del colore scelto
+  let primary = dark ? fromHsl([h, Math.max(s0, 0.55), Math.max(l, 0.64)]) : hex.toUpperCase();
+  primary = readableOn(primary, fondi, 4.6);
+  const primaryInk = dark ? inkOn(primary, '#0B1210') : inkOn(primary);
   if (contrast(primaryInk, primary) < 4.6) primary = ensureContrast(primary, primaryInk, 4.6).hex;
   // fondo tenue (etichette, avvisi): il principale ci si legge sopra
-  let t = spec.dark ? 0.22 : 0.14;
-  let soft = mix(spec.surface, primary, t);
-  while (t > 0.02 && contrast(primary, soft) < 4.5) { t -= 0.02; soft = mix(spec.surface, primary, t); }
+  let k = dark ? 0.22 : 0.16;
+  let soft = mix(surface, primary, k);
+  while (k > 0.02 && contrast(primary, soft) < 4.5) { k -= 0.02; soft = mix(surface, primary, k); }
   // intestazione: testo bianco sempre leggibile
   const [ph, ps, pl] = toHsl(primary);
   let heroBg: string, bar: string, heroMin: number;
   if (spec.hero === 'glow') {
-    const base = spec.heroBase ?? spec.bg;
-    let alpha = 0.3;
+    const base = tone(t.heroBase ?? t.bg);
+    let alpha = 0.34;
     while (alpha > 0 && contrast('#FFFFFF', mix(base, primary, alpha)) < 4.8) alpha -= 0.03;
     alpha = Math.max(0, alpha);
     heroBg = `radial-gradient(120% 90% at 85% -10%, ${primary}${Math.round(alpha * 255).toString(16).padStart(2, '0')} 0%, transparent 55%), ${base}`;
     bar = base; heroMin = contrast('#FFFFFF', mix(base, primary, alpha));
   } else if (spec.hero === 'dots') {
     // puntini bianchi al 18%: si parte da un colore più scuro perché il testo resti leggibile anche sopra i puntini
-    const c = ensureContrast(fromHsl([h, Math.max(s, 0.5), Math.min(l, 0.45)]), '#FFFFFF', 7.2).hex;
+    const c = ensureContrast(fromHsl([h, Math.max(s0, 0.5), Math.min(l, 0.45)]), '#FFFFFF', 7.2).hex;
     heroBg = `radial-gradient(circle at 1px 1px, rgb(255 255 255 / 18%) 1.2px, transparent 1.6px) 0 0 / 10px 10px, ${c}`;
     bar = c; heroMin = contrast('#FFFFFF', mix(c, '#FFFFFF', 0.18));
   } else {
+    // come nei temi scuri: un bagliore più chiaro del principale in alto a destra che si mescola con la base
     const a = ensureContrast(fromHsl([ph, ps, clamp(pl + 0.05, 0, 0.62)]), '#FFFFFF', 4.8).hex;
     const b = ensureContrast(fromHsl([ph, ps, clamp(pl - 0.1, 0.06, 1)]), '#FFFFFF', 4.8).hex;
-    heroBg = `linear-gradient(160deg, ${a} 0%, ${b} 100%)`;
-    bar = b; heroMin = Math.min(contrast('#FFFFFF', a), contrast('#FFFFFF', b));
+    const glow = fromHsl([ph, Math.min(1, ps + 0.1), clamp(pl + 0.25, 0, 0.85)]);
+    let alpha = 0.6;
+    while (alpha > 0 && contrast('#FFFFFF', mix(a, glow, alpha)) < 4.8) alpha -= 0.03;
+    alpha = Math.max(0, alpha);
+    heroBg = `radial-gradient(120% 90% at 85% -10%, ${glow}${Math.round(alpha * 255).toString(16).padStart(2, '0')} 0%, transparent 60%), linear-gradient(160deg, ${a} 0%, ${b} 100%)`;
+    bar = b; heroMin = Math.min(contrast('#FFFFFF', mix(a, glow, alpha)), contrast('#FFFFFF', b));
   }
   const vars: Record<string, string> = {
+    '--bg': bg, '--surface': surface, '--surface-2': surface2, '--ink': ink, '--muted': muted, '--line': line,
+    // il fondo si colora un po' di più verso il basso (in alto resta uguale: le parti fisse non stonano)
+    '--bg-grad': `linear-gradient(180deg, ${bg} 0%, ${bg} 30%, ${bgEnd} 100%)`,
     '--turf': primary, '--turf-ink': primaryInk, '--turf-soft': soft, '--focus': primary, '--hero-bg': heroBg, '--hero-ink': '#FFFFFF',
   };
+  // rosso degli avvisi: leggibile anche sui fondi colorati
+  const danger = readableOn(dark ? '#FF7A6E' : '#B92F27', fondi, 4.6);
+  vars['--danger'] = danger;
+  vars['--danger-ink'] = contrast('#FFFFFF', danger) >= contrast('#1A0805', danger) ? '#FFFFFF' : '#1A0805';
+  let kd = dark ? 0.2 : 0.12;
+  let dsoft = mix(surface, danger, kd);
+  while (kd > 0.02 && contrast(danger, dsoft) < 4.5) { kd -= 0.02; dsoft = mix(surface, danger, kd); }
+  vars['--danger-soft'] = dsoft;
+  if (t.lo && t.hi) { vars['--neu-lo'] = tone(t.lo); vars['--neu-hi'] = tone(t.hi); }
+  const minOn = (c: string) => Math.min(...fondi.map((f) => contrast(c, f)));
   const checks = [
-    { label: 'Collegamenti', ratio: Math.min(contrast(primary, spec.surface), contrast(primary, spec.bg), contrast(primary, spec.surface2)) },
+    { label: 'Testo', ratio: minOn(ink) },
+    { label: 'Testo secondario', ratio: minOn(muted) },
+    { label: 'Collegamenti', ratio: minOn(primary) },
     { label: 'Pulsanti', ratio: contrast(primaryInk, primary) },
     { label: 'Etichette', ratio: contrast(primary, soft) },
     { label: 'Intestazione', ratio: heroMin },
+    { label: 'Avvisi', ratio: Math.min(minOn(danger), contrast(danger, dsoft), contrast(vars['--danger-ink'], danger)) },
   ];
   return { vars, bar, checks };
 }
+
+/** variabili che una tavolozza può scrivere su <html> (per toglierle cambiando tema) */
+export const PALETTE_KEYS = ['--bg', '--surface', '--surface-2', '--ink', '--muted', '--line', '--bg-grad', '--turf', '--turf-ink', '--turf-soft',
+  '--focus', '--hero-bg', '--hero-ink', '--neu-lo', '--neu-hi', '--danger', '--danger-ink', '--danger-soft', '--bar'];
