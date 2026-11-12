@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, signal } from '@angular/core';
+import { Cache } from '../core/cache';
 import { NgTemplateOutlet } from '@angular/common';
 import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
@@ -227,6 +228,7 @@ export class InboxPage implements OnInit {
   private readonly unread = inject(Unread);
   protected readonly items = signal<AppNotification[]>([]);
   /** vero quando gli avvisi (e il testo Info) sono arrivati: prima lo scheletro, non «Nessun avviso» */
+  private readonly cache = inject(Cache);
   protected readonly loaded = signal(false);
   protected readonly infoLoaded = signal(false);
   protected readonly ago = fmtAgo;
@@ -235,11 +237,22 @@ export class InboxPage implements OnInit {
     return this.items().some((n) => !n.read_at);
   }
 
+  /** «mostra subito, poi aggiorna»: gli avvisi già visti compaiono subito (core/cache.ts), poi arrivano quelli nuovi */
   async ngOnInit(): Promise<void> {
     if (this.tab() === 'info') void this.loadInfo();   // aperta direttamente sulla scheda Info
-    this.items.set(await this.api.notifications().catch(() => []));
+    const seen = this.cache.get<AppNotification[]>('notifications');
+    if (seen) { this.items.set(seen); this.loaded.set(true); }
+    const fresh = await this.api.notifications().catch(() => null);
+    if (fresh) this.items.set(fresh);
+    else if (!seen) this.items.set([]);
     this.loaded.set(true);
   }
+
+  /** ogni cambiamento (nuovi, letti) resta salvato per la prossima apertura */
+  private readonly saveSeen = effect(() => {
+    const list = this.items();
+    if (this.loaded()) this.cache.set('notifications', list, true);
+  });
 
   protected async readAll(): Promise<void> {
     await this.api.markAllRead();
