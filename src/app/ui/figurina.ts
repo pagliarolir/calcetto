@@ -17,6 +17,8 @@ import { Avatar } from './avatar';
     '[class.me]': 'mine()',
     '[class.reserve]': "variant() === 'reserve'",
     '[class.empty]': "variant() === 'empty'",
+    '[class.ta]': "team() === 'white'",
+    '[class.tb]': "team() === 'black'",
   },
   template: `
     <span class="pic">
@@ -30,7 +32,7 @@ import { Avatar } from './avatar';
     </span>
     <span class="txt">
       @if (userId(); as id) {
-        <a class="name ellipsis" [routerLink]="['/giocatore', id]">{{ session.name(id) }}</a>
+        <a class="name ellipsis" [routerLink]="['/giocatore', id]">{{ session.name(id) }}@if (teamLabel(); as t) {<span class="sr-only">, {{ t }}</span>}</a>
       } @else {
         <span class="name muted">{{ emptyLabel() }}</span>
       }
@@ -95,6 +97,24 @@ import { Avatar } from './avatar';
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
     .form.idle { display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 0.72rem/1 var(--font-body); }
     .sub.turf { color: var(--turf); font-weight: 600; }
+    /* formazioni ufficiali: la figurina prende il colore della maglia, testo e decorazioni nel colore opposto */
+    :host(.ta) { --tc: var(--team-a); --tci: var(--team-a-ink); }
+    :host(.tb) { --tc: var(--team-b); --tci: var(--team-b-ink); }
+    :host(.ta), :host(.tb) {
+      --edge: color-mix(in srgb, var(--tc) 65%, var(--tci));
+      background: var(--tc); color: var(--tci); border-color: var(--edge);
+      box-shadow: inset 0 0 16px -4px color-mix(in srgb, var(--tci) 45%, transparent),
+                  inset 0 1px 0 color-mix(in srgb, var(--tci) 30%, transparent),
+                  0 3px 8px -3px rgb(0 0 0 / 30%);
+    }
+    :host(.ta) .name, :host(.tb) .name, :host(.ta) .sub, :host(.tb) .sub, :host(.ta) .sub.turf, :host(.tb) .sub.turf { color: var(--tci); }
+    /* la forma resta leggibile sul colore della maglia: conta la direzione della freccia */
+    :host(.ta) .frm, :host(.tb) .frm { color: var(--tci) !important; }
+    :host(.ta) .num, :host(.tb) .num { background: var(--tci); color: var(--tc); box-shadow: 0 0 0 2px var(--tc); }
+    :host(.ta) .pic app-avatar, :host(.tb) .pic app-avatar, :host(.ta) .armband, :host(.tb) .armband { box-shadow: 0 0 0 2px var(--tc); }
+    :host(.ta) .ovr, :host(.tb) .ovr { box-shadow: 0 0 0 2px color-mix(in srgb, var(--tci) 55%, transparent); }
+    /* la propria figurina resta riconoscibile: contorno del campo staccato dal bordo */
+    :host(.me.ta), :host(.me.tb) { outline: 2px solid var(--turf); outline-offset: 2px; }
   `,
 })
 export class Figurina {
@@ -107,6 +127,10 @@ export class Figurina {
   readonly note = input<string | null>(null);
   readonly noteTone = input<'muted' | 'turf'>('muted');
   readonly emptyLabel = input('Posto libero');
+  /** squadra nelle formazioni ufficiali: colora la figurina con la maglia */
+  readonly team = input<'white' | 'black' | null>(null);
+  /** nome della squadra per i lettori di schermo (il colore da solo non basta) */
+  readonly teamLabel = input<string | null>(null);
 
   private readonly ratings = inject(Ratings);
   /** ruolo semplificato sotto il nome (se la pagina non passa una scritta); se non è nel profilo, quello dedotto dai valori */

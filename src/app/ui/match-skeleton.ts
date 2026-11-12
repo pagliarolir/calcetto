@@ -15,7 +15,6 @@ import { Skeleton } from './skeleton';
       <header class="hero" aria-hidden="true">
         <div class="hero-in sk-hero">
           <div class="sk-ticket"><span class="skw box"></span><span class="sk-lines"><span class="skw w70 h22"></span><span class="skw w50"></span><span class="skw w60"></span></span><span class="skw circ"></span></div>
-          <span class="skw strip"></span>
           <div class="sk-tabs"><span class="skw w15"></span><span class="skw w15"></span><span class="skw w15"></span></div>
         </div>
       </header>
@@ -32,16 +31,15 @@ import { Skeleton } from './skeleton';
       /* fissa in cima: scorre solo il contenuto sotto (.scroll-area) */
       flex: none; z-index: 2;
     }
-    .hero-in { max-width: 640px; margin: 0 auto; padding: 10px 16px 6px; display: flex; flex-direction: column; gap: 2px; }
-    /* misure uguali all'intestazione vera (con l'indirizzo del campo): riga 36, data 111, barra 34, schede 37 = 238 px */
+    .hero-in { max-width: 640px; margin: 0 auto; padding: 8px 16px 4px; display: flex; flex-direction: column; gap: 2px; }
+    /* misure uguali all'intestazione vera (con l'indirizzo del campo): biglietto 111, schede 37 = 162 px (senza la striscia delle squadre) */
     .hero-in.sk-hero { display: flex; flex-direction: column; gap: 0; padding-bottom: 0; }
     .skw { display: block; height: 12px; border-radius: 6px; background: rgb(255 255 255 / 16%); }
     .sk-top { display: flex; justify-content: space-between; align-items: center; height: 36px; } .sk-top .w20 { width: 22%; } .sk-top .w30 { width: 34%; }
-    .sk-ticket { display: flex; gap: 14px; align-items: center; height: 112px; margin-top: 2px; }
-    .skw.circ { flex: none; align-self: flex-start; margin-left: auto; width: 40px; height: 40px; border-radius: 50%; } .skw.box { width: 84px; height: 92px; border-radius: 16px; flex: none; }
+    .sk-ticket { display: flex; gap: 14px; align-items: center; height: 111px; margin-top: 2px; }
+    .skw.circ { flex: none; align-self: flex-start; margin-left: auto; width: 32px; height: 32px; border-radius: 50%; } .skw.box { width: 84px; height: 92px; border-radius: 16px; flex: none; }
     .sk-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; } .skw.w70 { width: 75%; } .skw.w50 { width: 50%; } .skw.w60 { width: 60%; } .skw.h22 { height: 22px; }
-    .skw.strip { height: 34px; border-radius: 12px; margin-top: 10px; }
-    .sk-tabs { display: flex; gap: 22px; align-items: center; height: 37px; margin-top: 6px; } .sk-tabs .w15 { width: 48px; }
+    .sk-tabs { display: flex; gap: 22px; align-items: center; height: 37px; margin-top: 4px; } .sk-tabs .w15 { width: 48px; }
   `,
 })
 export class MatchSkeleton {}
