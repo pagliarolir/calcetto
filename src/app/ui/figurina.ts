@@ -102,10 +102,9 @@ import { Avatar } from './avatar';
     :host(.ta) { --tc: var(--team-a); --tci: var(--team-a-ink); }
     :host(.tb) { --tc: var(--team-b); --tci: var(--team-b-ink); }
     :host(.ta), :host(.tb) {
-      /* bordo dello stesso colore della maglia (non si vede); solo un'ombra esterna leggera per il rilievo */
+      /* bordo dello stesso colore della maglia (non si vede); ombra solo esterna: la figurina sembra in rilievo */
       background: var(--tc); color: var(--tci); border-color: var(--tc);
-      box-shadow: inset 0 0 16px -4px color-mix(in srgb, var(--tci) 45%, transparent),
-                  0 2px 6px -2px rgb(0 0 0 / 22%);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 18%), 0 6px 12px -6px rgb(0 0 0 / 45%);
     }
     :host(.ta) .name, :host(.tb) .name, :host(.ta) .sub, :host(.tb) .sub, :host(.ta) .sub.turf, :host(.tb) .sub.turf { color: var(--tci); }
     /* la forma resta leggibile sul colore della maglia: conta la direzione della freccia */
