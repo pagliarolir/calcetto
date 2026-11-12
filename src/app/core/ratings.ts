@@ -19,8 +19,8 @@ export type SlotKind = Band | 'est' | 'gk';
 /** La scheda che vedono tutti: solo valori calcolati (le 13 caratteristiche le vede solo il Leader). */
 export interface RatingCard {
   user_id: string; has: boolean; role: string | null; gk: Gk;
-  /** stato di forma (ultime due giornate): up, upright, equal (ultima pareggiata o non giocata), downright, down */
-  form?: 'up' | 'upright' | 'equal' | 'downright' | 'down';
+  /** stato di forma (ultime due giornate): up, upright, equal (ultima pareggiata), none (ultima non giocata), downright, down */
+  form?: 'up' | 'upright' | 'equal' | 'none' | 'downright' | 'down';
   best?: string; role_value?: number; overall?: number;
   dc?: number; ed?: number; eo?: number; pu?: number; cen?: number; hex?: Hex;
 }
@@ -72,8 +72,8 @@ export function centerCss(c: RatingCard): string {
 }
 
 /** bonus della forma sulla valutazione e ordine delle forme (dalla migliore) */
-export const FORM_BONUS: Record<string, number> = { up: 2, upright: 1, equal: 0, downright: -1, down: -2 };
-export const FORM_RANK: Record<string, number> = { up: 4, upright: 3, equal: 2, downright: 1, down: 0 };
+export const FORM_BONUS: Record<string, number> = { up: 2, upright: 1, equal: 0, none: 0, downright: -1, down: -2 };
+export const FORM_RANK: Record<string, number> = { up: 4, upright: 3, equal: 2, none: 1.5, downright: 1, down: 0 };
 /** valutazione mostrata: il valore più alto tra i ruoli (o quello impostato dal Leader), più il bonus della forma */
 export function overallOf(c: RatingCard | undefined): number | null {
   if (!c?.has) return null;

@@ -39,9 +39,9 @@ import { Avatar } from './avatar';
       @if (note(); as n) { <span class="sub" [class.turf]="noteTone() === 'turf'">{{ n }}</span> }
     </span>
     @if (form(); as f) {
-      <span class="frm" [class.eq]="f.state === 'equal'" [style.color]="f.color || null" role="img" [attr.aria-label]="f.label" [title]="f.label">
-        @if (f.state === 'equal') { = } @else {
-          <svg viewBox="0 0 24 24" aria-hidden="true" [style.transform]="'rotate(' + f.rot + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      <span class="frm" [class.eq]="f.state === 'equal' || f.state === 'none'" [style.color]="f.color || null" role="img" [attr.aria-label]="f.label" [title]="f.label">
+        @if (f.state === 'equal') { = } @else if (f.state === 'none') { – } @else {
+          <svg viewBox="3 3 18 18" aria-hidden="true" [style.transform]="'rotate(' + f.rot + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
         }
       </span>
     }
@@ -87,11 +87,12 @@ import { Avatar } from './avatar';
     :host { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 6px; row-gap: 3px; align-items: center; align-content: center; }
     .pic { grid-row: 1 / 3; margin-right: 8px; }
     .txt { grid-column: 2 / 4; grid-row: 1; min-width: 0; }
-    .frm { grid-column: 2; grid-row: 2; justify-self: start; width: 20px; height: 22px; display: grid; place-items: center; }
-    .frm svg { width: 20px; height: 20px; }
+    /* la forma parte esattamente dove inizia il nome: niente spazio a sinistra del simbolo */
+    .frm { grid-column: 2; grid-row: 2; justify-self: start; height: 22px; display: grid; place-items: center start; }
+    .frm svg { width: 18px; height: 18px; display: block; }
     .frm.eq { color: var(--muted); font: 800 1.15rem/1 var(--font-body); }
     .ovr { grid-column: 3; grid-row: 2; align-self: center; justify-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
-           font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); box-shadow: 0 2px 6px hsl(var(--h) 70% 30% / 35%); }
+           font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); }
     .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
     /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
@@ -101,18 +102,16 @@ import { Avatar } from './avatar';
     :host(.ta) { --tc: var(--team-a); --tci: var(--team-a-ink); }
     :host(.tb) { --tc: var(--team-b); --tci: var(--team-b-ink); }
     :host(.ta), :host(.tb) {
-      --edge: color-mix(in srgb, var(--tc) 65%, var(--tci));
-      background: var(--tc); color: var(--tci); border-color: var(--edge);
+      /* bordo dello stesso colore della maglia (non si vede); solo un'ombra esterna leggera per il rilievo */
+      background: var(--tc); color: var(--tci); border-color: var(--tc);
       box-shadow: inset 0 0 16px -4px color-mix(in srgb, var(--tci) 45%, transparent),
-                  inset 0 1px 0 color-mix(in srgb, var(--tci) 30%, transparent),
-                  0 3px 8px -3px rgb(0 0 0 / 30%);
+                  0 2px 6px -2px rgb(0 0 0 / 22%);
     }
     :host(.ta) .name, :host(.tb) .name, :host(.ta) .sub, :host(.tb) .sub, :host(.ta) .sub.turf, :host(.tb) .sub.turf { color: var(--tci); }
     /* la forma resta leggibile sul colore della maglia: conta la direzione della freccia */
     :host(.ta) .frm, :host(.tb) .frm { color: var(--tci) !important; }
     :host(.ta) .num, :host(.tb) .num { background: var(--tci); color: var(--tc); box-shadow: 0 0 0 2px var(--tc); }
     :host(.ta) .pic app-avatar, :host(.tb) .pic app-avatar, :host(.ta) .armband, :host(.tb) .armband { box-shadow: 0 0 0 2px var(--tc); }
-    :host(.ta) .ovr, :host(.tb) .ovr { box-shadow: 0 0 0 2px color-mix(in srgb, var(--tci) 55%, transparent); }
     /* la propria figurina resta riconoscibile: contorno del campo staccato dal bordo */
     :host(.me.ta), :host(.me.tb) { outline: 2px solid var(--turf); outline-offset: 2px; }
   `,
@@ -153,7 +152,8 @@ export class Figurina {
     const M: Record<string, { rot: number; color: string; label: string }> = {
       up: { rot: -90, color: 'hsl(130 65% 36%)', label: 'Forma: due vittorie di fila' },
       upright: { rot: -45, color: 'hsl(95 60% 38%)', label: 'Forma: ha vinto l\'ultima' },
-      equal: { rot: 0, color: '', label: 'Forma: ultima pareggiata o non giocata' },
+      equal: { rot: 0, color: '', label: 'Forma: ha pareggiato l\'ultima' },
+      none: { rot: 0, color: '', label: 'Forma: non ha giocato l\'ultima' },
       downright: { rot: 45, color: 'hsl(25 85% 45%)', label: 'Forma: ha perso l\'ultima' },
       down: { rot: 90, color: 'hsl(0 70% 45%)', label: 'Forma: due sconfitte di fila' },
     };
