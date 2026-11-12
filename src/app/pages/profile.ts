@@ -16,6 +16,7 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
+import { SwipeTabs } from '../ui/swipe-tabs';
 
 interface Form {
   first_name: string;
@@ -31,7 +32,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
 
 @Component({
   selector: 'app-profile',
-  imports: [Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
@@ -61,7 +62,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
       </nav>
       </div>
     </div>
-    <main class="scroll-area">
+    <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
       <div class="page stack-l in-body">
 
       <div class="ppanel" role="tabpanel" [id]="'ppanel-' + tab()" [attr.aria-labelledby]="'ptab-' + tab()">
@@ -416,6 +417,11 @@ export class ProfilePage {
   }
 
   /** frecce sinistra e destra per passare da una scheda all'altra */
+  protected swipeTab(d: 1 | -1): void {
+    const i = this.tabs.findIndex((t) => t.id === this.tab()) + d;
+    if (i >= 0 && i < this.tabs.length) this.selectTab(this.tabs[i].id);
+  }
+
   protected tabKey(e: KeyboardEvent): void {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     e.preventDefault();

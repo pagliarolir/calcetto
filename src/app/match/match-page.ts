@@ -9,10 +9,11 @@ import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 import { Branding } from '../core/branding';
 import { MatchStore } from './match-store';
+import { SwipeTabs } from '../ui/swipe-tabs';
 
 @Component({
   selector: 'app-match-page',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
+  imports: [SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
   providers: [MatchStore],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
@@ -78,7 +79,7 @@ import { MatchStore } from './match-store';
           </a>
         </nav>
       </header>
-      <main class="scroll-area">
+      <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
         <div class="page below-header">
           <router-outlet />
         </div>
@@ -216,6 +217,16 @@ export class MatchPage {
   /** a partita finita le schede sono Risultato, Pagelle e Chat */
   protected readonly finished = computed(() => !!this.store.t()?.ended);
   private readonly router = inject(Router);
+
+  /** scorrimento di lato: scheda accanto (Lista, Squadre, Chat; a partita finita Risultato, Pagelle, Chat) */
+  protected swipeTab(d: 1 | -1): void {
+    const m = this.store.match();
+    if (!m) return;
+    const tabs = this.finished() ? ['risultato', 'voti', 'chat'] : ['', 'squadre', 'chat'];
+    const seg = this.router.url.split('?')[0].split('/')[3] ?? '';
+    const i = tabs.indexOf(seg) + d;
+    if (i >= 0 && i < tabs.length) void this.router.navigate(['/partita', m.id, ...(tabs[i] ? [tabs[i]] : [])]);
+  }
   private readonly url = toSignal(this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
 
   // il logo è un quadrato alto quanto le scritte accanto (le misura e le segue se cambiano)

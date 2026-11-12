@@ -16,6 +16,7 @@ import { Icon } from '../ui/icon';
 import { AchievementsPanel } from '../ui/achievements-panel';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
+import { SwipeTabs } from '../ui/swipe-tabs';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
 type Tab = 'classifica' | 'record' | 'squadre' | 'punti' | 'obiettivi';
@@ -68,7 +69,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -112,7 +113,7 @@ const RECORDS: Record[] = [
       </nav>
       </div>
     </div>
-    <main class="scroll-area">
+    <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
       <div class="page stack-l in-body">
 
       <div class="tabpanel" role="tabpanel" [id]="'panel-' + tab()" [attr.aria-labelledby]="'tab-' + tab()">
@@ -688,6 +689,12 @@ export class StatsPage {
         aperte: this.folds().size ? [...this.folds()].sort().join(',') : null,
       },
     });
+  }
+
+  /** scorrimento di lato: scheda accanto, senza ricominciare dall'inizio */
+  protected swipeTab(d: 1 | -1): void {
+    const i = this.tabs.findIndex((t) => t.id === this.tab()) + d;
+    if (i >= 0 && i < this.tabs.length) this.selectTab(this.tabs[i].id);
   }
 
   /** frecce sinistra e destra per passare da una scheda all'altra (tastiera) */
