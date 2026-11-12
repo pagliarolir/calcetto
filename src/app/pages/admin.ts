@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { WeightsEditor } from '../ratings/weights-editor';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -14,10 +14,12 @@ import { Icon } from '../ui/icon';
 import { Avatar } from '../ui/avatar';
 import { scrollAppTo } from '../core/scroller';
 import { Confirm } from '../core/confirm';
+import { Sheet } from '../ui/sheet';
+import { ProfileAdmin } from '../ratings/profile-admin';
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, Icon, Avatar, RouterLink, WeightsEditor],
+  imports: [Sheet, FormsModule, Icon, Avatar, RouterLink, WeightsEditor, ProfileAdmin],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -155,49 +157,77 @@ import { Confirm } from '../core/confirm';
         </details>
       }
 
+      <!-- foglio del giocatore (Gestione → Giocatori) -->
+      <dialog #memDlg class="sheet" (click)="memBackdrop($event)" (close)="sel.set(null)" aria-labelledby="mem-h">
+        <div class="grab" aria-hidden="true"></div>
+        <button type="button" class="x-close" (click)="memDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
+        @if (sel(); as m) {
+          <header class="mem-head">
+            <app-avatar [userId]="m.id" [size]="56" />
+            <span class="grow">
+              <h2 id="mem-h">{{ session.fullName(m.id) }}</h2>
+              <a class="small" [routerLink]="['/giocatore', m.id]" (click)="memDlg.close()">Apri la scheda</a>
+            </span>
+          </header>
+          @if (!m.guest && session.isLeader() && m.role !== 'leader') {
+            <div class="mem-role">
+              <span class="small muted" id="role-l">Ruolo</span>
+              <div class="ui-seg" role="radiogroup" aria-labelledby="role-l">
+                @for (r of roleChoices; track r.value) {
+                  <button type="button" role="radio" [attr.aria-checked]="m.role === r.value" [disabled]="busy()" (click)="pickRole(m, r.value)">{{ r.label }}</button>
+                }
+              </div>
+            </div>
+          }
+          <ul class="acts">
+            @if (m.guest && session.isLeader()) {
+              <li><button type="button" [disabled]="busy()" (click)="act(m, invite)"><app-icon name="share" [size]="20" /> Invita a collegare un account</button></li>
+              <li><button type="button" (click)="act(m, startGuestEdit)"><app-icon name="user" [size]="20" /> Modifica</button></li>
+            }
+            @if (!m.guest && session.isLeader()) {
+              <li><button type="button" (click)="act(m, editProfile)"><app-icon name="user" [size]="20" /> Modifica profilo e foto</button></li>
+            }
+            @if (!m.guest && session.isLeader() && m.role !== 'leader' && m.id !== session.uid()) {
+              @if (isPunished(m.id)) {
+                <li><button type="button" [disabled]="busy()" (click)="act(m, pardonMember)"><app-icon name="whistle" [size]="20" /> Revoca la punizione</button></li>
+              } @else {
+                <li><button type="button" (click)="act(m, startPunish)"><app-icon name="whistle" [size]="20" /> Metti in punizione</button></li>
+              }
+            }
+            @if (!m.guest && session.isStaff() && m.avatar_path && m.id !== session.uid()) {
+              <li><button type="button" (click)="act(m, removePhoto)"><app-icon name="camera" [size]="20" /> Togli la foto</button></li>
+            }
+            @if (!m.guest && canRemove(m)) {
+              <li><button type="button" [disabled]="busy()" (click)="act(m, resetPassword)"><app-icon name="key" [size]="20" /> Reimposta la password</button></li>
+            }
+          </ul>
+          @if ((m.guest && session.isLeader()) || (!m.guest && canRemove(m))) {
+            <ul class="acts danger-zone">
+              <li><button type="button" class="danger" (click)="act(m, m.guest ? removeGuest : remove)"><app-icon name="x" [size]="20" /> {{ m.guest ? 'Elimina' : 'Togli dal gruppo' }}</button></li>
+            </ul>
+          }
+        }
+      </dialog>
+      <app-profile-admin #profEd />
+
       <section class="section">
         <header><h2>Giocatori</h2><span class="small muted">{{ active().length }}</span></header>
         <ul class="list">
           @for (m of active(); track m.id) {
-            <li class="list-item member" [class.stacked]="session.isLeader()">
-              <app-avatar [userId]="m.id" />
-              <span class="grow">
-                <a class="who" [routerLink]="['/giocatore', m.id]"><strong>{{ session.fullName(m.id) }}</strong></a>
-                @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
-                @if (isPunished(m.id)) { <span class="tag danger">in punizione</span> }
-                @if (m.guest) { <span class="tag">senza account</span> }<br />
-                @if (m.guest) { <span class="small muted">lo metti in lista tu</span> }
-                @else { <span class="small muted">ultimo accesso {{ m.last_seen_at ? ago(m.last_seen_at) : 'mai' }}</span> }
-              </span>
-              @if (m.guest && session.isLeader()) {
-                <div class="tools">
-                  <button class="btn small" [disabled]="busy()" (click)="invite(m)" [attr.aria-label]="'Invita ' + m.first_name + ' a collegare un account'">Invita</button>
-                  <button class="btn small ghost" (click)="startGuestEdit(m)" [attr.aria-label]="'Modifica ' + m.first_name">Modifica</button>
-                  <button class="icon-btn" (click)="removeGuest(m)" [attr.aria-label]="'Elimina ' + m.first_name" title="Elimina">✕</button>
-                </div>
-              } @else if (!m.guest && ((session.isLeader() && m.role !== 'leader') || canRemove(m))) {
-                <div class="tools">
-                @if (session.isLeader() && m.role !== 'leader') {
-                  <select class="input role" [ngModel]="m.role" (ngModelChange)="setRole(m, $event)" [attr.aria-label]="'Ruolo di ' + m.first_name">
-                    <option value="user">Giocatore</option>
-                    <option value="premier1">Primo Premier</option>
-                    <option value="premier2">Secondo Premier</option>
-                  </select>
-                }
-                @if (session.isLeader() && m.role !== 'leader' && m.id !== session.uid() && !isPunished(m.id)) {
-                  <button class="btn small ghost" (click)="startPunish(m)" [attr.aria-label]="'Metti in punizione ' + m.first_name">Punisci</button>
-                }
-                @if (session.isStaff() && m.avatar_path && m.id !== session.uid()) {
-                  <button class="btn small ghost" (click)="removePhoto(m)" [attr.aria-label]="'Togli la foto di ' + m.first_name">Togli foto</button>
-                }
-                @if (canRemove(m)) {
-                  <button class="icon-btn" (click)="resetPassword(m)" [disabled]="busy()" [attr.aria-label]="'Reimposta la password di ' + m.first_name" title="Reimposta password">
-                    <app-icon name="key" [size]="20" />
-                  </button>
-                  <button class="icon-btn" (click)="remove(m)" [attr.aria-label]="'Cancella ' + m.first_name">✕</button>
-                }
-                </div>
-              }
+            <li>
+              <!-- riga compatta: ruolo e azioni nel foglio del giocatore -->
+              <button type="button" class="list-item member" (click)="openMember(m)" aria-haspopup="dialog">
+                <app-avatar [userId]="m.id" />
+                <span class="grow">
+                  <strong>{{ session.fullName(m.id) }}</strong>
+                  @if (m.role !== 'user') { <span class="tag armband">{{ roleLabel[m.role] }}</span> }
+                  @if (isPunished(m.id)) { <span class="tag danger">in punizione</span> }
+                  @if (m.guest) { <span class="tag">senza account</span> }<br />
+                  @if (m.guest) { <span class="small muted">lo metti in lista tu</span> }
+                  @else { <span class="small muted">ultimo accesso {{ m.last_seen_at ? ago(m.last_seen_at) : 'mai' }}</span> }
+                </span>
+                <app-icon name="chevron" [size]="18" class="go" />
+              </button>
             </li>
           }
         </ul>
@@ -360,10 +390,20 @@ import { Confirm } from '../core/confirm';
     </main>
   `,
   styles: `
-    .member { flex-wrap: wrap; row-gap: 4px; }
-    .member.stacked > .grow { flex: 1 1 calc(100% - 48px); }
-    .tools { display: flex; align-items: center; gap: 2px; margin-left: auto; }
-    .member .role { width: auto; min-height: 36px; padding: 4px 8px; font-size: var(--step--1); }
+    .member { width: 100%; text-align: left; }
+    .member .go { flex: none; color: var(--muted); }
+    .mem-head { display: flex; align-items: center; gap: 12px; }
+    .mem-head h2 { margin: 0; font-size: var(--step-1); }
+    .mem-role { display: flex; flex-direction: column; gap: 6px; }
+    .mem-role .ui-seg > button { flex: 1; min-height: 44px; }
+    .acts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+    .acts button { appearance: none; width: 100%; display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 0 4px; border: 0;
+                   border-top: 1px solid var(--line); background: none; color: var(--ink); font: 500 var(--step-0)/1.2 var(--font-body); text-align: left; cursor: pointer; }
+    .acts li:first-child button { border-top: 0; }
+    .acts button:disabled { opacity: 0.5; }
+    .acts app-icon { flex: none; color: var(--muted); }
+    .danger-zone { margin-top: 8px; }
+    .acts button.danger, .acts button.danger app-icon { color: var(--danger); }
     summary { cursor: pointer; font-weight: 600; }
     .temp { border: 2px solid var(--armband); }
     .punish { border: 2px solid var(--danger); }
@@ -681,6 +721,44 @@ export class AdminPage implements OnInit {
     if (!(await this.confirmBox.ask({ title: `Revocare la punizione di ${name}?`, ok: 'Revoca' }))) return;
     await this.run(() => this.api.pardonMember(userId), `Punizione di ${name} revocata.`);
     await this.loadPunishments();
+  }
+
+  // ------------------------------------------------ foglio del giocatore
+  private readonly memDlg = viewChild<ElementRef<HTMLDialogElement>>('memDlg');
+  private readonly profEd = viewChild<ProfileAdmin>('profEd');
+  protected readonly sel = signal<Member | null>(null);
+  protected readonly roleChoices: { value: Exclude<Role, 'leader'>; label: string }[] = [
+    { value: 'user', label: 'Giocatore' }, { value: 'premier1', label: 'Primo Premier' }, { value: 'premier2', label: 'Secondo Premier' },
+  ];
+
+  protected openMember(m: Member): void {
+    this.sel.set(m);
+    const d = this.memDlg()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  protected memBackdrop(e: MouseEvent): void {
+    if (e.target === this.memDlg()?.nativeElement) this.memDlg()?.nativeElement.close();
+  }
+
+  /** le azioni chiudono il foglio e poi aprono la loro finestra (conferma, punizione, password…) */
+  protected act(m: Member, fn: (m: Member) => unknown): void {
+    this.memDlg()?.nativeElement.close();
+    void fn.call(this, m);
+  }
+
+  protected async pickRole(m: Member, role: Exclude<Role, 'leader'>): Promise<void> {
+    if (m.role === role) return;
+    await this.setRole(m, role);
+    this.sel.set(this.session.members().find((x) => x.id === m.id) ?? { ...m, role });
+  }
+
+  protected editProfile(m: Member): void {
+    this.profEd()?.open(m.id);
+  }
+
+  protected pardonMember(m: Member): Promise<void> {
+    return this.pardon(m.id);
   }
 
   protected canRemove(m: Member): boolean {
