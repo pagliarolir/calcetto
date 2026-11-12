@@ -12,6 +12,7 @@ import { ApplyDialog } from '../ui/apply-dialog';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { MatchConfigForm } from '../ui/match-config-form';
+import { InfoTip } from '../ui/info-tip';
 import { MatchStore } from './match-store';
 
 /**
@@ -20,7 +21,7 @@ import { MatchStore } from './match-store';
  */
 @Component({
   selector: 'app-leader-tools',
-  imports: [FormsModule, MatchConfigForm, ApplyDialog, Avatar, Icon],
+  imports: [FormsModule, MatchConfigForm, ApplyDialog, Avatar, Icon, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -39,33 +40,28 @@ import { MatchStore } from './match-store';
             }
 
             <details class="panel stack fold">
-              <summary><h3>Impostazioni di questa partita</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
+              <summary><h3>Impostazioni di questa partita</h3><app-info-tip label="Cosa si imposta qui" [lines]="['Ora, giocatori, colori, prenotazioni e votazioni.', 'Dopo il salvataggio puoi applicarle anche alle partite successive già create.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <div class="stack-l">
-                <p class="small muted">Ora, giocatori, colori, prenotazioni e votazioni. Dopo il salvataggio puoi applicarle anche alle partite successive già create.</p>
-                <label class="field"><span>Ora della partita</span><input class="input" type="time" [(ngModel)]="mTime" /></label>
+                <label class="field time-f"><span>Ora della partita</span><input class="input" type="time" [(ngModel)]="mTime" /></label>
                 @if (mConfig(); as c) { <app-match-config-form [config]="c" (configChange)="mConfig.set($event)" /> }
                 <button class="btn small primary" [disabled]="busy()" (click)="saveMatchSettings()">Salva le impostazioni</button>
               </div>
             </details>
 
             <details class="panel stack fold">
-              <summary><h3>Cambia la risposta di un giocatore</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-              <p class="small muted">In squadra entra nei 10 anche se la lista è piena: l'ultimo arrivato passa in testa alle riserve. «Azzera risposta» lo riporta tra chi non ha risposto. In ogni caso il giocatore riceve un avviso.</p>
+              <summary><h3>Cambia la risposta di un giocatore</h3><app-info-tip label="Come funziona" [lines]="answerInfo()" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <select class="input" [(ngModel)]="placeUser" aria-label="Giocatore">
                 <option value="">Scegli un giocatore</option>
                 @for (mb of session.activeMembers(); track mb.id) {
                   <option [value]="mb.id">{{ session.name(mb.id) }}{{ mb.guest ? ', senza account' : '' }} ({{ statusOf(mb.id) }})</option>
                 }
               </select>
-              <div class="row-wrap">
+              <div class="acts4">
                 <button class="btn small primary" [disabled]="!placeUser || busy()" (click)="place('present')">In squadra</button>
                 <button class="btn small" [disabled]="!placeUser || busy()" (click)="place('reserve')">Riserva</button>
                 <button class="btn small" [disabled]="!placeUser || busy()" (click)="place('absent')">Assente</button>
-                <button class="btn small danger" [disabled]="!placeUser || busy() || !canReset(placeUser)" (click)="resetAnswer()">Azzera risposta</button>
+                <button class="btn small danger" [disabled]="!placeUser || busy() || !canReset(placeUser)" aria-label="Azzera la risposta" (click)="resetAnswer()">Azzera</button>
               </div>
-              @if (placeUser && isTitular(placeUser)) {
-                <p class="small muted">Il Leader è sempre il numero 1: si può solo segnare presente o assente.</p>
-              }
             </details>
 
             <details class="panel stack fold">
@@ -83,13 +79,8 @@ import { MatchStore } from './match-store';
 
             @if (store.free()) {
               <details class="panel stack fold">
-                <summary><h3>Titolari e riserve</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
+                <summary><h3>Titolari e riserve</h3><app-info-tip label="Come funziona" [lines]="listsInfo()" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
                 <p class="small"><strong>Titolari {{ store.team().length }}/{{ store.size() }}</strong>, riserve {{ store.reserves().length }}, da scegliere {{ store.pending().length }}</p>
-                @if (!m.lists_confirmed_at) {
-                  <p class="small muted">Scegli tra i disponibili. Con «Conferma» chi resta da scegliere diventa riserva, le prenotazioni si chiudono e tutti ricevono un avviso.</p>
-                } @else {
-                  <p class="small muted">Comunicati {{ when(m.lists_confirmed_at) }}: ogni cambio ora avvisa solo l'interessato.</p>
-                }
                 <ul class="assign">
                   @for (r of available(); track r.user_id) {
                     <li>
@@ -113,8 +104,7 @@ import { MatchStore } from './match-store';
             }
 
             <details class="panel stack fold">
-              <summary><h3>Precedenza</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-              <p class="small muted">Apri le prenotazioni prima degli altri a chi vuoi tu. Ricevono una notifica quando si apre la loro finestra. I giocatori senza account li metti in lista tu, qui sopra.</p>
+              <summary><h3>Precedenza</h3><app-info-tip label="Come funziona la precedenza" [lines]="['Apri le prenotazioni prima degli altri a chi vuoi tu.', 'Ricevono una notifica quando si apre la loro finestra.', 'I giocatori senza account li metti in lista tu, da «Cambia la risposta di un giocatore».']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <div class="pick">
                 @for (mb of session.accountMembers(); track mb.id) {
                   <label class="chip" [attr.aria-pressed]="priorityPick().has(mb.id)">
@@ -123,7 +113,7 @@ import { MatchStore } from './match-store';
                   </label>
                 }
               </div>
-              <label class="field"><span>Possono prenotarsi da</span>
+              <label class="field dt-f"><span>Possono prenotarsi da</span>
                 <input class="input" type="datetime-local" [(ngModel)]="priorityAt" />
               </label>
               <button class="btn small primary" [disabled]="!priorityPick().size || !priorityAt" (click)="savePriority()">Apri la finestra</button>
@@ -140,8 +130,7 @@ import { MatchStore } from './match-store';
             </details>
 
             <details class="panel stack fold">
-              <summary><h3>Dove si gioca</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-              <p class="small muted">Nome, indirizzo e sito del circolo compaiono nella partita, con il collegamento alle mappe. Se cambi il campo di una partita già in programma, chi è in lista riceve un avviso.</p>
+              <summary><h3>Dove si gioca</h3><app-info-tip label="Sul campo" [lines]="['Nome, indirizzo e sito del circolo compaiono nella partita, con il collegamento alle mappe.', 'Se cambi il campo di una partita già in programma, chi è in lista riceve un avviso.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <label class="field"><span>Campo o circolo</span>
                 <input class="input" [(ngModel)]="venueName" maxlength="80" placeholder="Es. Centro Sportivo Aurora" />
               </label>
@@ -159,9 +148,8 @@ import { MatchStore } from './match-store';
             </details>
 
             <details class="panel stack fold">
-              <summary><h3>Sposta la partita</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-              <p class="small muted">Le prenotazioni seguono la nuova data: aprono sempre 3 giorni prima a mezzogiorno. Tutti ricevono un avviso.</p>
-              <input class="input" type="datetime-local" [(ngModel)]="moveAt" aria-label="Nuova data e ora" />
+              <summary><h3>Sposta la partita</h3><app-info-tip label="Spostare la partita" [lines]="['Le prenotazioni seguono la nuova data, con gli stessi orari di apertura e chiusura.', 'Tutti ricevono un avviso.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
+              <label class="field dt-f"><span>Nuova data e ora</span><input class="input" type="datetime-local" [(ngModel)]="moveAt" /></label>
               <div class="row-wrap">
                 <button class="btn small primary" [disabled]="!moveAt" (click)="move()">Sposta</button>
                 <button class="btn small danger" (click)="cancel()">Annulla la partita</button>
@@ -177,8 +165,17 @@ import { MatchStore } from './match-store';
     .tools > app-apply-dialog { padding: 10px 12px; }
     .tools details.fold { margin: 0; padding: 0 12px; border-radius: 0; box-shadow: none; border: 0; border-top: 1px solid var(--line); gap: 8px; background: none; animation: none; }
     .tools details.fold:first-of-type { border-top: 0; }
-    .tools details.fold > summary { min-height: 48px; }
-    .tools details.fold > summary > h3 { font-size: var(--step-0); }
+    /* titoli delle tendine al centro (la freccia resta a destra, la «i» accanto al titolo) e un po' più grandi */
+    .tools details.fold > summary { min-height: 52px; justify-content: center; gap: 2px; position: relative; padding: 0 28px; }
+    .tools details.fold > summary > h3 { font-size: calc(var(--step-0) * 1.12); text-align: center; }
+    .tools details.fold > summary .chev { position: absolute; right: 0; top: 50%; margin: -9px 0 0; }
+    /* campi data e ora larghi quanto serve, mai oltre lo schermo */
+    .time-f { max-width: 160px; }
+    .dt-f { max-width: 260px; }
+    .time-f .input, .dt-f .input { width: 100%; min-width: 0; }
+    /* le quattro risposte su una riga */
+    .acts4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .acts4 .btn { padding-left: 4px; padding-right: 4px; min-width: 0; white-space: nowrap; }
     .tools details.fold[open] { padding-bottom: 12px; }
     .tools details.fold[open] > summary { margin-bottom: 2px; }
     .tools details.fold > :not(summary) + :not(summary) { margin-top: 8px; }
@@ -195,6 +192,17 @@ import { MatchStore } from './match-store';
   `,
 })
 export class LeaderTools {
+  /** spiegazioni nella «i», una frase per riga */
+  protected readonly answerInfo = computed(() => [
+    `«In squadra» lo mette tra i ${this.store.size()} anche se la lista è piena.`,
+    'In quel caso l\'ultimo arrivato passa in testa alle riserve.',
+    '«Azzera» lo riporta tra chi non ha risposto.',
+    'In ogni caso il giocatore riceve un avviso.',
+    'Il Leader è sempre il numero 1: si può solo segnare presente o assente.',
+  ]);
+  protected readonly listsInfo = computed(() => this.store.match()?.lists_confirmed_at
+    ? [`Comunicati ${this.when(this.store.match()!.lists_confirmed_at!)}.`, 'Ogni cambio ora avvisa solo l\'interessato.']
+    : ['Scegli tra i disponibili.', 'Con «Conferma» chi resta da scegliere diventa riserva.', 'Le prenotazioni si chiudono e tutti ricevono un avviso.']);
   private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);

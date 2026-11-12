@@ -503,6 +503,10 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 }
 .input:focus { border-color: var(--turf); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--turf) 25%, transparent); }
 textarea.input { min-height: 90px; resize: vertical; }
+/* data e ora: su iPhone il campo nativo ha una larghezza minima propria e un'altezza diversa dagli altri;
+   così resta alto come gli altri campi e non esce dallo schermo */
+.input:is([type='time'], [type='date'], [type='datetime-local']) { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; }
+.input:is([type='time'], [type='date'], [type='datetime-local'])::-webkit-date-and-time-value { text-align: left; margin: 0; }
 
 .switch {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;

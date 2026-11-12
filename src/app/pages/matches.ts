@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { diffText, fmtDayLong, fmtDayNum, fmtMonthShort, fmtTime, fmtWeekday } from '../core/format';
 import { kit, teamNames } from '../core/kits';
@@ -16,29 +16,53 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { ApplyDialog } from '../ui/apply-dialog';
 import { MatchConfigForm } from '../ui/match-config-form';
-import { Back } from '../ui/back';
 import { Cache } from '../core/cache';
 
 type Panel = 'none' | 'create' | 'defaults';
+type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
 
 @Component({
   selector: 'app-matches',
-  imports: [Back, RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
+  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main class="page stack-l">
-      <div class="detail-bar"><app-back /></div>
-      <header class="titlebar">
-        <h1>Partite</h1>
+    <!-- parte alta fissa: titolo, periodo e la prossima partita; sotto scorrono le altre -->
+    <div class="page-head">
+      <div class="head-in">
+        <header class="titlebar">
+          <h1>Partite</h1>
+          <label class="period">
+            <span class="sr-only">Periodo</span>
+            <select class="input" [ngModel]="period()" (ngModelChange)="setPeriod($event)" aria-label="Periodo">
+              @for (p of periods; track p.id) { <option [value]="p.id">{{ p.label }}</option> }
+            </select>
+          </label>
+        </header>
         @if (session.isLeader() && panel() === 'none' && !apply()) {
-          <button class="btn small primary" (click)="openCreate()">Nuova partita</button>
+          <div class="lead-acts">
+            <button class="btn small primary" (click)="openCreate()">Nuova partita</button>
+            <button class="btn small ghost" (click)="openDefaults()">Configurazione predefinita</button>
+          </div>
         }
-      </header>
-
-      @if (session.isLeader() && panel() === 'none' && !apply()) {
-        <button class="btn small ghost settings-link" (click)="openDefaults()">Configurazione predefinita</button>
-      }
-
+        @if (loaded() && next(); as m) {
+          <section aria-label="Prossima partita">
+            <ol class="list pinned">
+              <li>
+                <a class="list-item" [routerLink]="['/partita', m.id]">
+                  <span class="cal next" aria-hidden="true"><b>{{ dnum(m.starts_at) }}</b><small>{{ mon(m.starts_at) }}</small></span>
+                  <span class="grow"><span class="small muted">Prossima partita</span><br /><span class="day">{{ weekdayName(m.starts_at) }} alle {{ time2(m.starts_at) }}</span><br />
+                    <span class="small muted">@if (m.venue_name) {{{ m.venue_name }}, }{{ m.players_per_team }} contro {{ m.players_per_team }}@if (m.booking_mode === 'free') {, sceglie il Leader}@if (m.moved) {, spostata}</span>
+                    <span class="kits" aria-hidden="true"><i [style.background]="kitColor(m.team_a_kit)"></i><i [style.background]="kitColor(m.team_b_kit)"></i></span>
+                  </span>
+                </a>
+              </li>
+            </ol>
+          </section>
+        }
+      </div>
+    </div>
+    <main class="scroll-area">
+    <div class="page stack-l in-body">
       <!-- Applica alle partite già create -->
       @if (apply(); as a) {
         <app-apply-dialog [matches]="a.matches" [fields]="a.fields" [busy]="busy()"
@@ -116,7 +140,7 @@ type Panel = 'none' | 'create' | 'defaults';
         <app-skeleton kind="lines" />
       } @else {
       <ol class="list">
-        @for (m of items(); track m.id) {
+        @for (m of shown(); track m.id) {
           <li>
             <a class="list-item" [routerLink]="['/partita', m.id]">
               <span class="cal" [class.next]="m.status === 'scheduled'" [class.off]="m.status === 'cancelled'" aria-hidden="true">
@@ -130,9 +154,10 @@ type Panel = 'none' | 'create' | 'defaults';
               @else if (m.status === 'scheduled') { <span class="tag turf">in programma</span> }
             </a>
           </li>
-        } @empty { <li class="empty"><app-empty icon="calendar" text="Ancora nessuna partita." /></li> }
+        } @empty { <li class="empty"><app-empty icon="calendar" [text]="items().length ? 'Nessuna partita in questo periodo.' : 'Ancora nessuna partita.'" /></li> }
       </ol>
       }
+    </div>
     </main>
   `,
   styles: `
@@ -147,7 +172,11 @@ type Panel = 'none' | 'create' | 'defaults';
     .cal.next { background: var(--turf); color: var(--turf-ink); }
     .cal.off { background: var(--danger-soft); color: var(--danger); text-decoration: line-through; }
     .score { font-size: var(--step-1); font-weight: 700; }
-    .settings-link { align-self: flex-start; margin-top: -16px; padding-left: 0; }
+    :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+    .period { position: relative; flex: 0 1 auto; }
+    .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 170px; }
+    .lead-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -6px; }
+    .pinned .list-item { padding-top: 10px; padding-bottom: 10px; }
     .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
     .kits { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
     .kits i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); }
@@ -159,6 +188,37 @@ export class MatchesPage implements OnInit {
   private readonly toasts = inject(Toasts);
 
   protected readonly items = signal<(Match & { results: Result | null })[]>([]);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  /** periodo dell'elenco (nell'indirizzo, così «Indietro» lo ritrova) */
+  protected readonly periods: { id: Period; label: string }[] = [
+    { id: 'all', label: 'Tutte' }, { id: 'next', label: 'In programma' }, { id: 'month', label: 'Ultimo mese' },
+    { id: 'quarter', label: 'Ultimi 3 mesi' }, { id: 'year', label: "Quest'anno" },
+  ];
+  protected readonly period = signal<Period>('all');
+  /** la prossima partita (la prima in programma non ancora finita): fissa in alto */
+  protected readonly next = computed(() => {
+    const now = Date.now();
+    return [...this.items()].filter((m) => m.status === 'scheduled' && new Date(m.starts_at).getTime() + (m.duration_min ?? 60) * 60000 > now)
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] ?? null;
+  });
+  /** le altre, filtrate per periodo */
+  protected readonly shown = computed(() => {
+    const nx = this.next()?.id, p = this.period(), now = new Date();
+    const since = p === 'month' ? new Date(now.getTime() - 31 * 864e5) : p === 'quarter' ? new Date(now.getTime() - 92 * 864e5)
+      : p === 'year' ? new Date(`${now.getFullYear()}-01-01T00:00:00`) : null;
+    return this.items().filter((m) => {
+      if (m.id === nx) return false;
+      const t = new Date(m.starts_at);
+      if (p === 'next') return t >= now && m.status !== 'cancelled';
+      return !since || t >= since;
+    });
+  });
+
+  protected setPeriod(p: Period): void {
+    this.period.set(p);
+    void this.router.navigate([], { queryParams: { periodo: p === 'all' ? null : p }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
   /** vero quando l'elenco è arrivato: prima si vede lo scheletro, non «Ancora nessuna partita» */
   protected readonly loaded = signal(false);
   private readonly cache = inject(Cache);
@@ -201,6 +261,8 @@ export class MatchesPage implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    const q = this.route.snapshot.queryParamMap.get('periodo') as Period | null;
+    if (q && this.periods.some((x) => x.id === q)) this.period.set(q);
     await this.load();
   }
 
@@ -209,7 +271,7 @@ export class MatchesPage implements OnInit {
     const seen = this.cache.get<{ items: Awaited<ReturnType<Api['matches']>>; settings: Awaited<ReturnType<Api['settings']>> }>('matches-list');
     if (seen) { this.items.set(seen.items); this.settings.set(seen.settings); this.loaded.set(true); }
     try {
-      const [items, settings] = await Promise.all([this.api.matches(), this.api.settings()]);
+      const [items, settings] = await Promise.all([this.api.matches(200), this.api.settings()]);
       this.items.set(items);
       this.settings.set(settings);
       this.cache.set('matches-list', { items, settings });
