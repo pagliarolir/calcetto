@@ -60,12 +60,6 @@ import { haptic } from '../core/haptics';
               </div>
               <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
             </div>
-            @if (!finished()) {
-            <div class="strip" [class.played]="!!scoreboard()">
-              <span class="team" [class.lose]="scoreboard()?.win === -1"><span class="kit sm" [style.background]="kitA().color" aria-hidden="true"></span>{{ store.teamNames().white }}</span>
-              <span class="team right" [class.lose]="scoreboard()?.win === 1">{{ store.teamNames().black }}<span class="kit sm" [style.background]="kitB().color" aria-hidden="true"></span></span>
-            </div>
-            }
           </div>
         <nav class="tabs" [class.off]="tools()" aria-label="Sezioni della partita">
           @if (finished()) {
@@ -107,14 +101,7 @@ import { haptic } from '../core/haptics';
       /* fissa in cima: scorre solo il contenuto sotto (.scroll-area) */
       flex: none; z-index: 2;
     }
-    .hero-in { max-width: 640px; margin: 0 auto; padding: 10px 16px 6px; display: flex; flex-direction: column; gap: 2px; }
-    .sk-hero { display: flex; flex-direction: column; gap: 14px; padding-bottom: 12px; }
-    .skw { display: block; height: 12px; border-radius: 6px; background: rgb(255 255 255 / 16%); }
-    .sk-top { display: flex; justify-content: space-between; } .sk-top .w20 { width: 22%; } .sk-top .w30 { width: 34%; }
-    .sk-ticket { display: flex; gap: 14px; align-items: center; } .skw.box { width: 84px; height: 92px; border-radius: 16px; flex: none; }
-    .sk-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; } .skw.w70 { width: 75%; } .skw.w50 { width: 50%; } .skw.w60 { width: 60%; } .skw.h22 { height: 22px; }
-    .skw.strip { height: 40px; border-radius: 12px; }
-    .sk-tabs { display: flex; gap: 22px; } .sk-tabs .w15 { width: 48px; }
+    .hero-in { max-width: 640px; margin: 0 auto; padding: 8px 16px 4px; display: flex; flex-direction: column; gap: 2px; }
     /* icona calendario: porta all'elenco delle partite */
     /* in alto a destra, fuori dalla colonna: le righe sotto (indirizzo) usano tutta la larghezza */
     .ticket.with-cal { position: relative; }
@@ -153,13 +140,6 @@ import { haptic } from '../core/haptics';
     .link-line app-icon { margin-top: 5px; }
     .link-line .ellipsis { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; padding: 4px 0; }
     .mini { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(255 255 255 / 14%); color: inherit; flex: none; }
-    /* striscia delle squadre: diventa il punteggio a fine partita */
-    .strip { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 10px; margin-top: 8px; padding: 6px 10px; border-radius: 14px; background: rgb(0 0 0 / 16%); }
-    .strip .team { display: inline-flex; align-items: center; gap: 10px; font: 600 1.35rem/1 var(--font-display); min-width: 0; }
-    .strip .team.right { justify-content: flex-end; }
-    .strip .lose { opacity: 0.55; }
-    .kit { flex: none; border-radius: 50%; display: grid; place-items: center; }
-    .kit.sm { width: 14px; height: 14px; box-shadow: 0 0 0 2px rgb(255 255 255 / 30%); }
     .tabs {
       max-width: 640px; margin: 0 auto; display: flex; gap: 4px; overflow-x: auto; padding: 0 12px;
       scrollbar-width: none;
@@ -217,18 +197,6 @@ export class MatchPage {
 
   protected readonly kickoff = computed(() => (this.store.match() ? fmtTime(this.store.match()!.starts_at) : ''));
   protected readonly until = computed(() => (this.store.match() ? fmtTime(this.store.match()!.ends_at) : ''));
-
-  /** punteggio per il tabellone: gol esatti se ci sono, altrimenti lo scarto per chi ha vinto */
-  protected readonly scoreboard = computed(() => {
-    const r = this.store.result();
-    if (!r) return null;
-    const n = this.store.teamNames();
-    const win = Math.sign(r.diff);
-    const final = r.status === 'pending' ? 'da omologare' : 'finale';
-    if (r.white_goals !== null && r.black_goals !== null) return { big: `${r.white_goals} – ${r.black_goals}`, sub: final, win };
-    if (r.diff === 0) return { big: 'Pari', sub: final, win };
-    return { big: `+${Math.abs(r.diff)}`, sub: `per i ${r.diff > 0 ? n.white : n.black}`, win };
-  });
 
   protected readonly status = computed(() => {
     const m = this.store.match();

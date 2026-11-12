@@ -6,7 +6,7 @@ import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { fmtWeekday, fmtWhen } from '../core/format';
-import { BoardRow, Choice } from '../core/models';
+import { BoardRow, Choice, Team } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -120,7 +120,7 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board fill">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [team]="kitOf(r.user_id)" [teamLabel]="kitLabel(r.user_id)" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
@@ -129,7 +129,7 @@ interface SlotView {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
                       @if (s.row; as r) {
                         <app-figurina [class.arriving]="!!r.provisional" [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
-                                      />
+                                      [team]="kitOf(r.user_id)" [teamLabel]="kitLabel(r.user_id)" />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />
@@ -405,6 +405,15 @@ export class BookingTab {
     else if (this.store.teamOf().size) out.push({ id: 'team', label: 'Squadra (bianchi a sinistra, neri a destra)' });
     return out;
   });
+  /** squadra del titolare, solo con le formazioni ufficiali (prima non si colora nulla) */
+  protected kitOf(id: string): Team | null {
+    return this.store.match()?.lineup_status === 'official' ? this.store.teamOf().get(id) ?? null : null;
+  }
+  protected kitLabel(id: string): string | null {
+    const t = this.kitOf(id);
+    return t ? `squadra ${this.store.teamNames()[t]}` : null;
+  }
+
   /** nome di transizione di una figurina (per farla scivolare quando cambia l'ordine) */
   protected vt(id: string): string { return 'f-' + id; }
   /** cambia ordine con una transizione: le figurine scivolano nella nuova posizione */
