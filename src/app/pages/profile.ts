@@ -269,7 +269,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                   <span class="ends small muted"><span>normale</span><span>ampia</span></span>
                 </label>
                 <p class="sample">Giovedì alle 21:00 al Centro Sportivo Aurora: rispondi entro mercoledì.</p>
-                @if (theme.textScale() !== theme.defaultScale() || theme.textSpacing() !== 0) {
+                @if (theme.textScale() !== 100 || theme.textSpacing() !== 0) {
                   <button type="button" class="btn ghost small" (click)="theme.resetText()">Ripristina</button>
                 }
               </div>

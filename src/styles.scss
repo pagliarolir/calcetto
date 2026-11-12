@@ -191,7 +191,9 @@
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 
 /* dimensione del testo scelta nel Profilo → Aspetto (85%-130%): tutto ciò che usa rem si adatta */
-html { font-size: calc(100% * var(--text-scale, 1)); }
+html { font-size: calc(100% * var(--text-scale, 1) * var(--theme-scale, 1)); }
+/* tema «Automatico»: tutto il testo più piccolo del 10%, sopra la dimensione scelta nel Profilo */
+:root[data-auto] { --theme-scale: 0.9; }
 body {
   margin: 0;
   background: var(--bg);
