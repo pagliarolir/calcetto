@@ -1,5 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FORM_RANK, overallOf, Ratings } from '../core/ratings';
 import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
@@ -18,6 +18,7 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { Confirm } from '../core/confirm';
 
 interface SlotView {
   slot: number;
@@ -335,14 +336,6 @@ interface SlotView {
           </section>
         }
       </div>
-      <!-- conferma del ritiro -->
-      <dialog #wdDlg class="ask" (click)="wdBackdrop($event)" aria-labelledby="wd-q">
-        <p id="wd-q" class="ask-q">Sicuro di volerti ritirare?</p>
-        <div class="row">
-          <button type="button" class="btn ghost grow" (click)="closeWd()">Annulla</button>
-          <button type="button" class="btn danger grow" [disabled]="busy()" (click)="confirmWd()">Mi ritiro</button>
-        </div>
-      </dialog>
     }
   `,
   styles: `
@@ -381,9 +374,6 @@ interface SlotView {
     .wd::after { content: ''; position: absolute; inset: -9px; }
     .wd { position: absolute; top: -4px; right: -4px; z-index: 2; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 0; cursor: pointer;
           display: grid; place-items: center; background: var(--danger); color: var(--danger-ink); box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
-    dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
-    dialog.ask::backdrop { background: var(--backdrop); }
-    .ask-q { margin: 0 0 16px; text-align: center; font: 700 var(--step-1)/1.25 var(--font-body); }
     .who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-decoration: none; color: inherit; font-weight: 600; }
     .who .tag { font-weight: 600; }
     summary { cursor: pointer; font-weight: 600; min-height: 28px; }
@@ -409,6 +399,7 @@ interface SlotView {
   `,
 })
 export class BookingTab {
+  private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
@@ -508,8 +499,6 @@ export class BookingTab {
   }
 
   // ------------------------------------------------ ritiro dopo la chiusura: X rossa sulla propria figurina
-  private readonly wdDlg = viewChild<ElementRef<HTMLDialogElement>>('wdDlg');
-
   /** la X compare sulla propria figurina (titolare o riserva) dopo la chiusura e prima dell'inizio */
   protected canWithdraw(userId: string): boolean {
     const mine = this.store.mine();
@@ -517,22 +506,8 @@ export class BookingTab {
       && this.store.match()?.status === 'scheduled' && !this.amLeaderTitular() && (mine?.list === 'team' || mine?.list === 'reserve');
   }
 
-  protected askWithdraw(): void {
-    const d = this.wdDlg()?.nativeElement;
-    if (d && !d.open) d.showModal();
-  }
-
-  protected closeWd(): void {
-    this.wdDlg()?.nativeElement.close();
-  }
-
-  protected wdBackdrop(e: MouseEvent): void {
-    if (e.target === this.wdDlg()?.nativeElement) this.closeWd();
-  }
-
-  protected async confirmWd(): Promise<void> {
-    this.closeWd();
-    await this.book('absent');
+  protected async askWithdraw(): Promise<void> {
+    if (await this.confirmBox.ask({ title: 'Sicuro di volerti ritirare?', ok: 'Mi ritiro', danger: true })) await this.book('absent');
   }
 
   /** la propria figurina «cade» al suo posto solo subito dopo essersi prenotati, non a ogni apertura della pagina */
@@ -743,8 +718,8 @@ export class BookingTab {
 
   protected async confirmLists(): Promise<void> {
     const n = this.store.pending().length;
-    const extra = n ? ` I ${n} ancora da scegliere diventeranno riserve.` : '';
-    if (!confirm(`Confermare titolari e riserve e avvisare tutti? Le prenotazioni si chiudono.${extra}`)) return;
+    const title = n ? `Confermare le liste? I ${n} ancora da scegliere vanno in riserva.` : 'Confermare le liste e avvisare tutti?';
+    if (!(await this.confirmBox.ask({ title: title, ok: 'Conferma le liste' }))) return;
     await this.run(async () => {
       const r = await this.api.leaderConfirmLists(this.store.match()!.id);
       await Promise.all([this.store.reload('bookings'), this.store.reload('matches')]);
@@ -753,7 +728,7 @@ export class BookingTab {
   }
 
   protected async closeBookings(): Promise<void> {
-    if (!confirm('Chiudere adesso le prenotazioni? I giocatori non potranno più cambiare la risposta.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Chiudere adesso le prenotazioni?', ok: 'Chiudi le prenotazioni' }))) return;
     await this.run(async () => {
       await this.api.closeBookings(this.store.match()!.id);
       await this.store.reload('matches');
@@ -784,7 +759,7 @@ export class BookingTab {
   protected async resetAnswer(): Promise<void> {
     const id = this.placeUser;
     const name = this.session.name(id);
-    if (!confirm(`Azzerare la risposta di ${name}? Tornerà tra chi non ha risposto e riceverà un avviso per rispondere di nuovo.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Azzerare la risposta di ${name}?`, ok: 'Azzera' }))) return;
     await this.run(async () => {
       const res = await this.api.leaderResetBooking(this.store.match()!.id, id);
       await this.store.reload('bookings');
@@ -863,7 +838,7 @@ export class BookingTab {
   }
 
   protected async cancel(): Promise<void> {
-    if (!confirm('Annullare la partita? Chi si era prenotato riceve un avviso.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Annullare la partita?', ok: 'Annulla la partita', danger: true }))) return;
     await this.run(async () => {
       await this.api.cancelMatch(this.store.match()!.id);
       await this.store.reload('matches');

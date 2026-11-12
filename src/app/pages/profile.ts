@@ -14,6 +14,7 @@ import { Push } from '../core/push';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
+import { Confirm } from '../core/confirm';
 
 interface Form {
   first_name: string;
@@ -364,6 +365,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
   `,
 })
 export class ProfilePage {
+  private readonly confirmBox = inject(Confirm);
   protected readonly session = inject(Session);
   protected readonly push = inject(Push);
   private readonly api = inject(Api);
@@ -565,7 +567,7 @@ export class ProfilePage {
   protected async removePhoto(): Promise<void> {
     const uid = this.session.uid();
     const path = this.session.profile()?.avatar_path;
-    if (!uid || !path || !confirm('Rimuovere la foto profilo?')) return;
+    if (!uid || !path || !(await this.confirmBox.ask({ title: 'Rimuovere la foto profilo?', ok: 'Rimuovi', danger: true }))) return;
     this.photoBusy.set(true);
     try {
       await this.api.removeAvatar(uid, path);

@@ -10,6 +10,7 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from './avatar';
 import { Icon } from './icon';
+import { Confirm } from '../core/confirm';
 
 /** Scheda «Obiettivi»: album degli sticker, dettaglio, classifica e strumenti del Leader. */
 @Component({
@@ -202,6 +203,7 @@ import { Icon } from './icon';
   `,
 })
 export class AchievementsPanel implements OnInit {
+  private readonly confirmBox = inject(Confirm);
   protected readonly ach = inject(Achievements);
   protected readonly session = inject(Session);
   private readonly toasts = inject(Toasts);
@@ -291,7 +293,7 @@ export class AchievementsPanel implements OnInit {
   }
 
   protected async revoke(a: Achievement, userId: string): Promise<void> {
-    if (!confirm(`Togliere «${a.name}» a ${this.session.name(userId)}?`)) return;
+    if (!(await this.confirmBox.ask({ title: `Togliere «${a.name}» a ${this.session.name(userId)}?`, ok: 'Togli' }))) return;
     await this.run(() => this.ach.revoke(a.id, userId), 'Sticker tolto.');
   }
 
@@ -307,7 +309,7 @@ export class AchievementsPanel implements OnInit {
   }
 
   protected async remove(a: Achievement): Promise<void> {
-    if (!confirm(`Eliminare l'obiettivo «${a.name}»? Sparisce anche dagli album di chi l'aveva sbloccato.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Eliminare «${a.name}» anche dagli album?`, ok: 'Elimina', danger: true }))) return;
     await this.run(async () => {
       await this.ach.remove(a.id);
       this.close();

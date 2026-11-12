@@ -339,6 +339,8 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn.primary { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
 .btn.danger { color: var(--danger); border-color: currentColor; background: transparent; }
+/* azione che non si può annullare (finestra di conferma) */
+.btn.danger-fill { background: var(--danger); border-color: var(--danger); color: var(--danger-ink); }
 .btn.ghost { border-color: transparent; background: transparent; }
 .btn.small { min-height: 36px; padding: 0 14px; font-size: var(--step--1); }
 .btn.block { width: 100%; }

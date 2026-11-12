@@ -17,6 +17,7 @@ import { Location } from '@angular/common';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { StickerStrip } from '../ui/sticker-strip';
+import { Confirm } from '../core/confirm';
 
 @Component({
   selector: 'app-player',
@@ -154,6 +155,7 @@ import { StickerStrip } from '../ui/sticker-strip';
   `,
 })
 export class PlayerPage {
+  private readonly confirmBox = inject(Confirm);
   private readonly routerNav = inject(Router);
   private readonly location = inject(Location);
 
@@ -230,7 +232,7 @@ export class PlayerPage {
 
   protected async reset(): Promise<void> {
     const name = this.session.name(this.id());
-    if (!confirm(`Azzerare le statistiche di ${name}? Da adesso riparte da zero; potrai ripristinarle.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Azzerare le statistiche di ${name}?`, ok: 'Azzera' }))) return;
     await this.run(() => this.api.resetStats(this.id()), `Statistiche di ${name} azzerate.`);
   }
 
@@ -240,7 +242,7 @@ export class PlayerPage {
 
   protected async erase(): Promise<void> {
     const name = this.session.name(this.id());
-    if (!confirm(`Eliminare definitivamente le statistiche di ${name}? Non si può annullare.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Eliminare per sempre le statistiche di ${name}?`, ok: 'Elimina', danger: true }))) return;
     await this.run(() => this.api.deletePlayerStats(this.id(), this.confirmText), `Statistiche di ${name} eliminate.`);
     this.confirmText = '';
   }

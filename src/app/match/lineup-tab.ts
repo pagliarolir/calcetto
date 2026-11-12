@@ -12,6 +12,7 @@ import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { Confirm } from '../core/confirm';
 
 interface Spot { team: Team; slot: number; x: number; y: number; label: string; short: string; kind: SlotKind }
 interface Place { team: Team; slot: number | null }
@@ -293,6 +294,7 @@ interface Place { team: Team; slot: number | null }
   `,
 })
 export class LineupTab {
+  private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
@@ -586,7 +588,7 @@ export class LineupTab {
   protected async save(publish: boolean): Promise<void> {
     if (this.reprimand.guard()) return;
     const entries = [...this.draft()].map(([user_id, p]) => ({ user_id, team: p.team, field_slot: p.slot }));
-    if (publish && this.bench().length && !confirm(`${this.bench().length} giocatori non hanno un posto in campo. Procedo lo stesso?`)) return;
+    if (publish && this.bench().length && !(await this.confirmBox.ask({ title: `${this.bench().length} giocatori senza posto in campo: pubblico lo stesso?`, ok: 'Pubblica' }))) return;
     await this.run(async () => {
       const status = await this.api.saveLineup(this.store.match()!.id, entries, publish);
       await Promise.all([this.store.reload('matches'), this.store.reload('lineup')]);

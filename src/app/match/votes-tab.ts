@@ -12,6 +12,7 @@ import { Avatar } from '../ui/avatar';
 import { VoteSlider } from '../ui/vote-slider';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
+import { Confirm } from '../core/confirm';
 
 @Component({
   selector: 'app-votes-tab',
@@ -273,6 +274,7 @@ import { kit } from '../core/kits';
   `,
 })
 export class VotesTab {
+  private readonly confirmBox = inject(Confirm);
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
@@ -466,7 +468,7 @@ export class VotesTab {
     haptic();
     if (this.reprimand.guard()) return;
     const id = this.store.match()!.id;
-    if (!confirm('Confermare i voti? Una volta inviati non si possono più cambiare.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Inviare i voti? Poi non si cambiano più.', ok: 'Invia i voti', danger: true }))) return;
     this.busy.set(true);
     try {
       // tutti i compagni: chi non è stato toccato prende 6

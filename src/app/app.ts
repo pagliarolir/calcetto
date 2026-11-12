@@ -15,10 +15,11 @@ import { Theme } from './core/theme';
 import { FantaLeader } from './core/fantaleader';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
+import { ConfirmView } from './ui/confirm';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
@@ -49,6 +50,7 @@ import { AchievementBanner } from './ui/achievement-banner';
     }
 
     <app-reprimand />
+    <app-confirm />
 
     <div class="toasts" role="status" aria-live="polite">
       @for (t of toasts.items(); track t.id) {

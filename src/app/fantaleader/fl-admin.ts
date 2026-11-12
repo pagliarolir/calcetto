@@ -7,6 +7,7 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { Confirm } from '../core/confirm';
 
 /** Area del Leader: mercato, schede del documento, giocatori, skill, ricalcoli e registro. */
 @Component({
@@ -168,6 +169,7 @@ import { Icon } from '../ui/icon';
   `,
 })
 export class FlAdmin implements OnInit {
+  private readonly confirmBox = inject(Confirm);
   protected readonly fl = inject(FantaLeader);
   protected readonly session = inject(Session);
   private readonly toasts = inject(Toasts);
@@ -208,9 +210,9 @@ export class FlAdmin implements OnInit {
     }
   }
 
-  protected setPublic(v: boolean): void {
+  protected async setPublic(v: boolean): Promise<void> {
     const st = this.fl.settings()!;
-    if (v && !confirm('Rendere FantaLeader visibile a tutti i giocatori?')) { this.fl.settings.set({ ...st }); return; }
+    if (v && !(await this.confirmBox.ask({ title: 'Rendere FantaLeader visibile a tutti?', ok: 'Rendi visibile' }))) { this.fl.settings.set({ ...st }); return; }
     void this.run(() => this.fl.setVisibility(v, st.preview_users), v ? 'FantaLeader ora è visibile a tutti.' : 'FantaLeader torna in anteprima.');
   }
 
@@ -225,12 +227,12 @@ export class FlAdmin implements OnInit {
     void this.run(() => this.fl.setVisibility(st.public, st.preview_users.filter((u) => u !== id)), `${this.session.name(id)} non vede più FantaLeader.`);
   }
 
-  protected toggleMarket(): void {
+  protected async toggleMarket(): Promise<void> {
     const open = this.fl.settings()!.market_open;
-    const msg = open
-      ? 'Chiudere il mercato? Le fantasquadre si bloccano e le quotazioni attuali diventano le nuove quotazioni iniziali.'
-      : 'Aprire il mercato? Tutti potranno creare o cambiare la fantasquadra, pagando i giocatori alla quotazione attuale.';
-    if (!confirm(msg)) return;
+    const ok = await this.confirmBox.ask(open
+      ? { title: 'Chiudere il mercato e bloccare le fantasquadre?', ok: 'Chiudi il mercato' }
+      : { title: 'Aprire il mercato a tutti?', ok: 'Apri il mercato' });
+    if (!ok) return;
     void this.run(() => this.fl.setMarket(!open), open ? 'Mercato chiuso.' : 'Mercato aperto.');
   }
 

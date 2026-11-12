@@ -14,6 +14,7 @@ import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
 import { AchievementsPanel } from '../ui/achievements-panel';
+import { Confirm } from '../core/confirm';
 
 type Period = 'last' | 'month' | 'year' | 'all' | 'custom';
 type Tab = 'classifica' | 'record' | 'squadre' | 'punti' | 'obiettivi';
@@ -457,6 +458,7 @@ const RECORDS: Record[] = [
   `,
 })
 export class StatsPage {
+  private readonly confirmBox = inject(Confirm);
   private readonly api = inject(Api);
   protected readonly session = inject(Session);
   private readonly toasts = inject(Toasts);
@@ -783,7 +785,7 @@ export class StatsPage {
   }
 
   protected async undoPoints(e: LeaderPointsEntry): Promise<void> {
-    if (!confirm(`Annullare ${this.signed(e.points)} a ${this.session.name(e.user_id)} («${e.reason}»)?`)) return;
+    if (!(await this.confirmBox.ask({ title: `Togliere ${this.signed(e.points)} a ${this.session.name(e.user_id)} («${e.reason}»)?`, ok: 'Togli i punti' }))) return;
     this.busy.set(true);
     try {
       await this.api.deleteLeaderPoints(e.id);

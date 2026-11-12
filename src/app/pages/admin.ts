@@ -13,6 +13,7 @@ import { Toasts } from '../core/toast';
 import { Icon } from '../ui/icon';
 import { Avatar } from '../ui/avatar';
 import { scrollAppTo } from '../core/scroller';
+import { Confirm } from '../core/confirm';
 
 @Component({
   selector: 'app-admin',
@@ -384,6 +385,7 @@ import { scrollAppTo } from '../core/scroller';
   `,
 })
 export class AdminPage implements OnInit {
+  private readonly confirmBox = inject(Confirm);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
@@ -519,7 +521,7 @@ export class AdminPage implements OnInit {
   }
 
   protected async removeGuest(m: Member): Promise<void> {
-    if (!confirm(`Eliminare ${m.first_name}? Spariscono anche le sue presenze, i gol e i voti ricevuti. Per conservarli, invitalo a collegare un account.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Eliminare ${m.first_name} con presenze, gol e voti ricevuti?`, ok: 'Elimina', danger: true }))) return;
     await this.run(() => this.api.deleteGuest(m.id), `${m.first_name} eliminato.`);
   }
 
@@ -589,7 +591,7 @@ export class AdminPage implements OnInit {
   }
 
   protected async removeHeader(): Promise<void> {
-    if (confirm('Togliere il logo del tabellone? Torna il calendario.')) await this.run2(() => this.branding.removeHeader(), 'Logo rimosso.');
+    if (await this.confirmBox.ask({ title: 'Togliere il logo del tabellone?', ok: 'Togli' })) await this.run2(() => this.branding.removeHeader(), 'Logo rimosso.');
   }
 
   protected async pickIcon(e: Event): Promise<void> {
@@ -637,13 +639,13 @@ export class AdminPage implements OnInit {
   }
 
   protected async removeIcon(): Promise<void> {
-    if (confirm("Togliere l'icona? Torna quella predefinita.")) await this.run2(() => this.branding.removeIcon(), 'Icona rimossa.');
+    if (await this.confirmBox.ask({ title: "Togliere l'icona dell'app?", ok: 'Togli' })) await this.run2(() => this.branding.removeIcon(), 'Icona rimossa.');
   }
 
   /** il Leader elimina definitivamente un ex giocatore, con i suoi dati */
   protected async deleteFormer(m: Member): Promise<void> {
     const name = this.session.fullName(m.id);
-    if (!confirm(`Eliminare definitivamente ${name}? Spariscono il suo account e tutti i suoi dati: presenze, gol, voti dati e ricevuti. Anche alcune medie degli altri possono cambiare un poco. Non si torna indietro.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Eliminare per sempre ${name} e tutti i suoi dati?`, ok: 'Elimina', danger: true }))) return;
     await this.run(async () => {
       const avatar = await this.api.deleteFormerMember(m.id);
       if (avatar) await this.api.removeAvatarFile(avatar).catch(() => undefined);
@@ -654,7 +656,7 @@ export class AdminPage implements OnInit {
   protected deleteAllText = '';
 
   protected async resetAll(): Promise<void> {
-    if (!confirm('Azzerare la classifica di tutti? Da adesso si riparte da zero; potrai ripristinarla.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Azzerare la classifica di tutti?', ok: 'Azzera' }))) return;
     await this.run(() => this.api.resetStats(null), 'Classifica azzerata.');
     this.settings.set(await this.api.settings());
   }
@@ -665,7 +667,7 @@ export class AdminPage implements OnInit {
   }
 
   protected async deleteAll(): Promise<void> {
-    if (!confirm('Eliminare definitivamente tutto lo storico delle partite giocate? Non si può annullare.')) return;
+    if (!(await this.confirmBox.ask({ title: 'Eliminare per sempre lo storico delle partite?', ok: 'Elimina', danger: true }))) return;
     await this.run(async () => {
       const n = await this.api.deleteAllStats(this.deleteAllText);
       this.deleteAllText = '';
@@ -676,7 +678,7 @@ export class AdminPage implements OnInit {
 
   protected async pardon(userId: string): Promise<void> {
     const name = this.session.name(userId);
-    if (!confirm(`Revocare la punizione di ${name}?`)) return;
+    if (!(await this.confirmBox.ask({ title: `Revocare la punizione di ${name}?`, ok: 'Revoca' }))) return;
     await this.run(() => this.api.pardonMember(userId), `Punizione di ${name} revocata.`);
     await this.loadPunishments();
   }
@@ -695,13 +697,13 @@ export class AdminPage implements OnInit {
   }
 
   protected async remove(m: Member): Promise<void> {
-    if (!confirm(`Cancellare ${m.first_name} dal gruppo? Le sue statistiche restano nello storico.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Togliere ${m.first_name} dal gruppo?`, ok: 'Togli dal gruppo' }))) return;
     await this.run(() => this.api.deactivate(m.id), `${m.first_name} è stato cancellato.`);
   }
 
   /** Password temporanea per chi l'ha dimenticata (funziona anche senza email). */
   protected async resetPassword(m: Member): Promise<void> {
-    if (!confirm(`Reimpostare la password di ${m.first_name}? Riceverà una password temporanea da cambiare al primo accesso, e un avviso.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Reimpostare la password di ${m.first_name}?`, ok: 'Reimposta' }))) return;
     this.busy.set(true);
     try {
       const password = await this.api.resetMemberPassword(m.id);
@@ -715,7 +717,7 @@ export class AdminPage implements OnInit {
   }
 
   protected async removePhoto(m: Member): Promise<void> {
-    if (!confirm(`Togliere la foto profilo di ${m.first_name}? Riceverà un avviso e potrà caricarne un'altra.`)) return;
+    if (!(await this.confirmBox.ask({ title: `Togliere la foto profilo di ${m.first_name}?`, ok: 'Togli la foto', danger: true }))) return;
     await this.run(() => this.api.removeMemberAvatar(m.id), 'Foto rimossa.');
   }
 
@@ -741,7 +743,7 @@ export class AdminPage implements OnInit {
   }
 
   protected async transfer(): Promise<void> {
-    if (!confirm(`Passare il ruolo di Leader a ${this.session.name(this.newLeader)}?`)) return;
+    if (!(await this.confirmBox.ask({ title: `Passare il ruolo di Leader a ${this.session.name(this.newLeader)}?`, ok: 'Passa il ruolo', danger: true }))) return;
     await this.run(() => this.api.transferLeadership(this.newLeader), 'Hai passato il ruolo di Leader.');
   }
 
