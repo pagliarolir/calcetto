@@ -103,7 +103,7 @@ import { AchievementBanner } from './ui/achievement-banner';
     .ico { position: relative; display: grid; place-items: center; width: 52px; height: 30px; border-radius: 999px; transition: background 180ms; }
     .badge {
       position: absolute; top: -4px; right: 6px; min-width: 18px; height: 18px; padding: 0 5px;
-      border-radius: 999px; background: var(--danger); color: #fff;
+      border-radius: 999px; background: var(--danger); color: var(--danger-ink);
       font: 700 0.68rem/18px var(--font-body); text-align: center;
     }
     .toasts {
@@ -117,7 +117,7 @@ import { AchievementBanner } from './ui/achievement-banner';
       background: var(--ink); color: var(--bg); font: 500 var(--step--1)/1.35 var(--font-body);
       box-shadow: 0 8px 24px rgb(0 0 0 / 20%); text-align: left;
     }
-    .toast.error { background: var(--danger); color: #fff; }
+    .toast.error { background: var(--danger); color: var(--danger-ink); }
   `,
 })
 export class App {

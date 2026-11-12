@@ -246,7 +246,7 @@ import { kit } from '../core/kits';
       box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
     }
     .sheet[open] { display: flex; flex-direction: column; gap: 10px; animation: rise 260ms var(--ease-out); }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .sheet::backdrop { background: var(--backdrop); }
     .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .sheet-title { font-size: var(--step-1); }
     .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }

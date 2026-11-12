@@ -380,9 +380,9 @@ interface SlotView {
     /* pallino del ritiro piccolo; l'area di tocco resta comoda grazie al margine invisibile */
     .wd::after { content: ''; position: absolute; inset: -9px; }
     .wd { position: absolute; top: -4px; right: -4px; z-index: 2; width: 18px; height: 18px; padding: 0; border-radius: 50%; border: 0; cursor: pointer;
-          display: grid; place-items: center; background: var(--danger); color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
+          display: grid; place-items: center; background: var(--danger); color: var(--danger-ink); box-shadow: 0 0 0 2px var(--bg), 0 2px 5px rgb(0 0 0 / 25%); }
     dialog.ask { border: 0; border-radius: 18px; padding: 20px; width: min(320px, 90vw); background: var(--surface); color: var(--ink); box-shadow: 0 12px 40px rgb(0 0 0 / 30%); }
-    dialog.ask::backdrop { background: rgb(10 20 14 / 45%); }
+    dialog.ask::backdrop { background: var(--backdrop); }
     .ask-q { margin: 0 0 16px; text-align: center; font: 700 var(--step-1)/1.25 var(--font-body); }
     .who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-decoration: none; color: inherit; font-weight: 600; }
     .who .tag { font-weight: 600; }
@@ -403,7 +403,7 @@ interface SlotView {
     .assign li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
     .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
     .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); padding: 0 12px; min-height: 36px; cursor: pointer; }
-    .seg button[aria-pressed='true'] { background: var(--turf); color: var(--on-turf, #fff); }
+    .seg button[aria-pressed='true'] { background: var(--turf); color: var(--turf-ink); }
     .pick .chip { display: inline-flex; align-items: center; }
     @media (max-width: 360px) { .board { grid-template-columns: 1fr; } }
   `,

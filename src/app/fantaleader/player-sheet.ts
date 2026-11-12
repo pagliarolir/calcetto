@@ -101,7 +101,7 @@ import { Skeleton } from '../ui/skeleton';
     .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88dvh; overflow-y: auto; border: 0; color: var(--ink);
              background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
     .sheet[open] { display: flex; flex-direction: column; gap: 14px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .sheet::backdrop { background: var(--backdrop); }
     .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; flex: none; }
     .head { display: flex; align-items: center; gap: 12px; padding-right: 40px; }
     .head h2 { font-size: var(--step-1); }
@@ -118,7 +118,7 @@ import { Skeleton } from '../ui/skeleton';
     .skill.off { opacity: 0.6; }
     .skill p { margin: 2px 0 0; }
     .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
-    .skill.neg .sign { background: var(--danger); color: #fff; }
+    .skill.neg .sign { background: var(--danger); color: var(--danger-ink); }
     .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .grid div { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px; background: var(--surface-2); text-align: center; }
     .grid strong { font: 800 var(--step-1)/1.1 var(--font-display); }

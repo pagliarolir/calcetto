@@ -39,8 +39,12 @@
   --kit-black: #1a1c20;
   --kit-black-ink: #f4f4f1;
   --danger: #b93a26;
+  --danger-ink: #ffffff;
   --danger-soft: #f6dcd6;
   --focus: #1f6b45;
+  --backdrop: rgb(10 20 14 / 45%);
+  --hero-bg: linear-gradient(var(--turf), var(--turf));
+  --hero-ink: var(--chalk);
   /* divise delle due squadre: la pagina della partita le sostituisce con quelle scelte */
   --team-a: var(--kit-white);
   --team-a-ink: var(--kit-white-ink);
@@ -85,8 +89,12 @@
     --kit-black: #050607;
     --kit-black-ink: #eceee9;
     --danger: #ef7a62;
+    --danger-ink: #1a0805;
     --danger-soft: #3a1b15;
     --focus: #7fd1a3;
+    --backdrop: rgb(0 0 0 / 60%);
+    --hero-bg: #14482f;
+    --hero-ink: #eef5ef;
   }
 }
 
@@ -100,7 +108,7 @@
   --bg: #f3f5f0; --surface: #ffffff; --surface-2: #e6ece4; --ink: #13201a; --muted: #4f5f55; --line: #cfdace;
   --turf: #1b6a43; --turf-ink: #ffffff; --turf-soft: #dcefe3; --chalk: #f3f7f1; --armband: #f2b705; --armband-ink: #2b2000;
   --kit-white: #fafaf7; --kit-white-ink: #13201a; --kit-black: #1a1c20; --kit-black-ink: #f4f4f1;
-  --danger: #b92f27; --danger-soft: #fbe4e2; --focus: #1d57c2;
+  --danger: #b92f27; --danger-ink: #ffffff; --danger-soft: #fbe4e2; --focus: #1d57c2; --backdrop: rgb(10 20 14 / 45%);
   --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
   --r-s: 8px; --r-m: 14px; --r-l: 20px;
@@ -111,7 +119,7 @@
   --bg: #0a120e; --surface: #121c17; --surface-2: #1b2721; --ink: #e9f1eb; --muted: #a1b4a8; --line: #2c3b33;
   --turf: #8be26a; --turf-ink: #0a120e; --turf-soft: #1f3a22; --chalk: #f2f8f3; --armband: #ffb547; --armband-ink: #1e1400;
   --kit-white: #eceee9; --kit-white-ink: #13201a; --kit-black: #050607; --kit-black-ink: #eceee9;
-  --danger: #ff7a6e; --danger-soft: #3a1714; --focus: #8be26a;
+  --danger: #ff7a6e; --danger-ink: #1a0605; --danger-soft: #3a1714; --focus: #8be26a; --backdrop: rgb(0 0 0 / 60%);
   --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
   --r-s: 10px; --r-m: 16px; --r-l: 22px;
@@ -125,7 +133,7 @@
   --bg: #f5ecd7; --surface: #fff9ec; --surface-2: #ebdfc2; --ink: #1d2d50; --muted: #4e4d62; --line: #1d2d50;
   --turf: #c81e36; --turf-ink: #ffffff; --turf-soft: #f8d9dc; --chalk: #fff9ec; --armband: #e9b44c; --armband-ink: #1d2d50;
   --kit-white: #fff9ec; --kit-white-ink: #1d2d50; --kit-black: #1d2d50; --kit-black-ink: #fff9ec;
-  --danger: #a3122a; --danger-soft: #f8d9dc; --focus: #1b4f9c;
+  --danger: #a3122a; --danger-ink: #ffffff; --danger-soft: #f8d9dc; --focus: #1b4f9c; --backdrop: rgb(29 45 80 / 45%);
   --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Bebas Neue', 'Oswald', 'Arial Narrow', sans-serif;
   --r-s: 6px; --r-m: 10px; --r-l: 14px;
@@ -137,7 +145,7 @@
   --bg: #ffffff; --surface: #ffffff; --surface-2: #f0f0f0; --ink: #000000; --muted: #2e2e2e; --line: #000000;
   --turf: #003d24; --turf-ink: #ffffff; --turf-soft: #e0f0e8; --chalk: #ffffff; --armband: #ffd400; --armband-ink: #000000;
   --kit-white: #ffffff; --kit-white-ink: #000000; --kit-black: #000000; --kit-black-ink: #ffffff;
-  --danger: #9b0000; --danger-soft: #ffe5e5; --focus: #000000;
+  --danger: #9b0000; --danger-ink: #ffffff; --danger-soft: #ffe5e5; --focus: #000000; --backdrop: rgb(0 0 0 / 55%);
   --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --r-s: 6px; --r-m: 10px; --r-l: 12px;
@@ -148,7 +156,7 @@
   --bg: #f2f5fa; --surface: #ffffff; --surface-2: #e3eaf5; --ink: #0d1b33; --muted: #4a5872; --line: #c9d4e6;
   --turf: #0b4ea2; --turf-ink: #ffffff; --turf-soft: #dce7f7; --chalk: #ffffff; --armband: #c9a227; --armband-ink: #1a1400;
   --kit-white: #fafbfd; --kit-white-ink: #0d1b33; --kit-black: #111827; --kit-black-ink: #f4f6fa;
-  --danger: #b3261e; --danger-soft: #f9dedc; --focus: #0b4ea2;
+  --danger: #b3261e; --danger-ink: #ffffff; --danger-soft: #f9dedc; --focus: #0b4ea2; --backdrop: rgb(13 27 51 / 45%);
   --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
   --r-s: 8px; --r-m: 12px; --r-l: 16px;
@@ -159,7 +167,7 @@
   --bg: #170f14; --surface: #22161d; --surface-2: #2d1e27; --ink: #f7ece8; --muted: #c2a9a8; --line: #4a3340;
   --turf: #ff8a5b; --turf-ink: #1a0d08; --turf-soft: #4a2618; --chalk: #fff4ee; --armband: #ffd166; --armband-ink: #1a1300;
   --kit-white: #f7ece8; --kit-white-ink: #170f14; --kit-black: #0b0709; --kit-black-ink: #f7ece8;
-  --danger: #ff6b81; --danger-soft: #3d1520; --focus: #ff8a5b;
+  --danger: #ff6b81; --danger-ink: #1a0810; --danger-soft: #3d1520; --focus: #ff8a5b; --backdrop: rgb(0 0 0 / 60%);
   --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
   --r-s: 10px; --r-m: 16px; --r-l: 22px;
@@ -572,7 +580,7 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
   display: grid; place-items: center;
 }
 .x-close > span {
-  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: #fff;
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--danger); color: var(--danger-ink);
   box-shadow: 0 0 0 3px var(--surface), 0 3px 8px rgb(0 0 0 / 25%);
 }
 .x-close:focus-visible > span { outline: 3px solid var(--focus); outline-offset: 2px; }

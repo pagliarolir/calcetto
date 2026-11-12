@@ -7,7 +7,7 @@ const ts = createRequire(import.meta.url)('typescript');
 const src = readFileSync(new URL('../src/app/core/color.ts', import.meta.url), 'utf8');
 const js = ts.transpileModule(src, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS } }).outputText;
 const m = {}; new Function('exports', js)(m);
-const need = { 'Testo': 7, 'Testo secondario': 4.5, 'Pulsanti': 4.5, 'Collegamenti': 4.5, 'Secondario': 4.5, 'Intestazione': 4.5 };
+const need = { 'Testo': 7, 'Testo secondario': 4.5, 'Pulsanti': 4.5, 'Collegamenti': 4.5, 'Secondario': 4.5, 'Intestazione': 4.5, 'Pulsanti rossi': 4.5 };
 let total = 0; const fails = []; const worst = {};
 const run = (base, primary, accent) => {
   const d = m.deriveTheme({ base, primary, accent }); total++;

@@ -402,7 +402,7 @@ const RECORDS: Record[] = [
       background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%);
     }
     .sheet[open] { display: flex; flex-direction: column; gap: 10px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .sheet::backdrop { background: var(--backdrop); }
     .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .cols li { border-top: 1px solid var(--line); }

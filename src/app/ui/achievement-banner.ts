@@ -47,12 +47,12 @@ const LP_SEEN_KEY = 'gdl-punti-leader-visti';
     @keyframes drop { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .win { animation: none; } }
     .win { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 10px; border-radius: 16px; min-width: 0;
-           background: linear-gradient(120deg, #fff6cf, #ffe58a); color: #3b2f00; box-shadow: 0 4px 14px rgb(0 0 0 / 12%), inset 0 0 0 1px rgb(0 0 0 / 6%); }
-    .pic { width: 44px; height: 44px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; background: #fff; box-shadow: 0 0 0 2px #e0b400; }
+           background: var(--armband); color: var(--armband-ink); box-shadow: 0 4px 14px rgb(0 0 0 / 22%), inset 0 0 0 1px rgb(0 0 0 / 8%); }
+    .pic { width: 44px; height: 44px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; background: #fff; box-shadow: 0 0 0 2px var(--armband-ink); }
     .pic img { width: 100%; height: 100%; object-fit: contain; }
-    .pic i { font-style: normal; font-size: 1.3rem; color: #b38600; font-weight: 800; }
+    .pic i { font-style: normal; font-size: 1.3rem; color: #3b2f00; font-weight: 800; }
     .txt { color: inherit; text-decoration: none; font-size: var(--step--1); line-height: 1.3; min-width: 0; }
-    .x { appearance: none; border: 0; background: rgb(0 0 0 / 6%); color: inherit; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex: none; }
+    .x { appearance: none; border: 0; background: color-mix(in srgb, var(--armband-ink) 12%, transparent); color: inherit; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex: none; }
   `,
 })
 export class AchievementBanner implements OnDestroy {

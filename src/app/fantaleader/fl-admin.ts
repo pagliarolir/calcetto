@@ -155,7 +155,7 @@ import { Icon } from '../ui/icon';
     .skill summary { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; list-style: none; }
     .skill summary::-webkit-details-marker { display: none; }
     .sign { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
-    .sign.neg { background: var(--danger); color: #fff; }
+    .sign.neg { background: var(--danger); color: var(--danger-ink); }
     .edit { padding: 0 0 12px 32px; }
     .nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
     .check { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
@@ -163,7 +163,7 @@ import { Icon } from '../ui/icon';
     .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 88dvh; overflow-y: auto; border: 0; color: var(--ink);
              background: var(--surface); border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
     .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .sheet::backdrop { background: var(--backdrop); }
     .skills { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; max-height: 240px; overflow-y: auto; }
   `,
 })

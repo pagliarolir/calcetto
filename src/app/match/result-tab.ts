@@ -245,7 +245,7 @@ type Field = keyof Line;
     .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; border: 0; color: var(--ink);
              background: var(--surface); border-radius: 22px 22px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
     .sheet[open] { display: flex; flex-direction: column; gap: 12px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .sheet::backdrop { background: var(--backdrop); }
     .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
     .sc-head { display: flex; align-items: center; gap: 12px; }
     .sc-row { display: flex; align-items: center; gap: 12px; min-height: 48px; border-top: 1px solid var(--line); }

@@ -48,7 +48,7 @@ type Field = 'first_name' | 'last_name' | 'nickname' | 'field_role' | 'birth_dat
     .sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 90dvh; overflow-y: auto; border: 0; color: var(--ink);
              background: var(--surface); border-radius: 22px 22px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 40px rgb(0 0 0 / 25%); }
     .sheet[open] { display: flex; flex-direction: column; gap: 10px; }
-    .sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    .sheet::backdrop { background: var(--backdrop); }
     .photo { display: flex; align-items: center; gap: 12px; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   `,

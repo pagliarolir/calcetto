@@ -116,13 +116,16 @@ export function deriveTheme(t: CustomTheme): Derived {
   }
   const heroInk = '#FFFFFF';
   const danger = ensureContrast(dark ? '#FF7A6E' : '#B92F27', surface, 4.5).hex;
+  // testo sui pulsanti rossi: bianco sul rosso scuro, quasi nero sul rosso chiaro dei temi scuri
+  const dangerInk = contrast('#FFFFFF', danger) >= contrast('#1A0805', danger) ? '#FFFFFF' : '#1A0805';
   const vars: Record<string, string> = {
     'color-scheme': dark ? 'dark' : 'light',
     '--bg': bg, '--surface': surface, '--surface-2': surface2, '--ink': ink, '--muted': muted, '--line': line,
     '--turf': primary, '--turf-ink': primaryInk, '--turf-soft': primarySoft, '--chalk': dark ? ink : '#FFFFFF',
     '--armband': accent, '--armband-ink': accentInk,
     '--kit-white': dark ? '#ECEEE9' : '#FAFAF7', '--kit-white-ink': '#13201A', '--kit-black': dark ? '#050607' : '#1A1C20', '--kit-black-ink': '#F4F4F1',
-    '--danger': danger, '--danger-soft': mix(surface, danger, dark ? 0.2 : 0.12), '--focus': primary,
+    '--danger': danger, '--danger-ink': dangerInk, '--danger-soft': mix(surface, danger, dark ? 0.2 : 0.12), '--focus': primary,
+    '--backdrop': dark ? 'rgb(0 0 0 / 60%)' : 'rgb(10 20 14 / 45%)',
     '--hero-bg': heroBg, '--hero-ink': heroInk,
   };
   const checks = [
@@ -131,6 +134,7 @@ export function deriveTheme(t: CustomTheme): Derived {
     { label: 'Pulsanti', ratio: contrast(primaryInk, primary) },
     { label: 'Collegamenti', ratio: contrast(primary, surface) },
     { label: 'Secondario', ratio: contrast(accentInk, accent) },
+    { label: 'Pulsanti rossi', ratio: contrast(dangerInk, danger) },
     { label: 'Intestazione', ratio: Math.min(contrast(heroInk, heroA), contrast(heroInk, heroB)) },
   ];
   return { vars, adjusted: { primary: p1.changed || primary !== p1.hex, accent: accentChanged }, checks };

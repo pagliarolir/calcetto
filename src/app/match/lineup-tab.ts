@@ -250,7 +250,7 @@ interface Place { team: Team; slot: number | null }
     .pick button:hover { background: var(--surface-2); }
     dialog.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 560px; max-height: 80dvh; overflow-y: auto; border: 0; color: var(--ink);
                    background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
-    dialog.sheet::backdrop { background: rgb(10 20 14 / 45%); }
+    dialog.sheet::backdrop { background: var(--backdrop); }
     dialog.sheet h3 { margin: 4px 48px 4px 0; }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
