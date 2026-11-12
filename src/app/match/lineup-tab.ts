@@ -128,19 +128,6 @@ interface Place { team: Team; slot: number | null }
                 <button class="btn block" [disabled]="busy()" (click)="save(false)">Salva bozza</button>
               }
             </div>
-          } @else if (m.lineup_status === 'official') {
-            <div class="teams">
-              @for (t of teams; track t) {
-                <div class="panel">
-                  <h3>{{ teamLabel()[t] }}</h3>
-                  <ul>
-                    @for (l of byTeam(t); track l.user_id) {
-                      <li>{{ session.name(l.user_id) }} <span class="muted small">{{ slotLabel(l.field_slot) }}</span></li>
-                    }
-                  </ul>
-                </div>
-              }
-            </div>
           }
         } @else {
           <p class="empty">
@@ -287,8 +274,6 @@ interface Place { team: Team; slot: number | null }
     .spot.sel .pitch-photo { transform: scale(1.15); box-shadow: 0 0 0 4px var(--armband), 0 3px 8px rgb(0 0 0 / 35%); }
     .name { font-size: 0.72rem; font-weight: 600; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       text-shadow: 0 1px 2px rgb(0 0 0 / 60%); }
-    .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .teams ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   `,
 })
 export class LineupTab {
@@ -502,14 +487,6 @@ export class LineupTab {
 
   protected placeOf(id: string): Place | undefined {
     return this.draft().get(id);
-  }
-
-  protected byTeam(t: Team) {
-    return this.store.lineup().filter((l) => l.team === t).sort((a, b) => (a.field_slot ?? 9) - (b.field_slot ?? 9));
-  }
-
-  protected slotLabel(slot: number | null): string {
-    return formation(this.perTeam()).find((f) => f.slot === slot)?.label ?? '';
   }
 
   protected select(id: string): void {
