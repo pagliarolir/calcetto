@@ -85,6 +85,10 @@ import { Network } from './core/network';
       overflow: clip;
     }
 
+    @media (prefers-reduced-motion: no-preference) {
+      .app-scroller.page-in > :not(app-achievement-banner) { animation: page-in 150ms ease-out; }
+      @keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+    }
     .app-scroller {
       /* contenitore di riferimento per gli elementi posizionati (anche quelli nascosti, come le caselle dei chip) */
       position: relative;
@@ -192,8 +196,21 @@ export class App {
     host.addEventListener('scroll', () => {
       if (host.scrollTop || host.scrollLeft) host.scrollTo(0, 0);
     });
-    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
-      this.scroller()?.nativeElement.scrollTo({ top: 0 });
+    let lastPath = '';
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe((e) => {
+      const el = this.scroller()?.nativeElement;
+      el?.scrollTo({ top: 0 });
+      // dissolvenza breve della pagina nuova (punto 18 dell'analisi UX): solo opacità, niente movimento
+      // (vedi CLAUDE.md); non al primo avvio, non per le scelte nell'indirizzo, non tra le schede della stessa partita
+      const path = (e as NavigationEnd).urlAfterRedirects.split('?')[0];
+      const prev = lastPath;
+      lastPath = path;
+      const sameMatch = prev.startsWith('/partita/') && prev.split('/')[2] === path.split('/')[2];
+      if (!el || !prev || prev === path || sameMatch) return;
+      el.classList.remove('page-in');
+      void el.offsetWidth;
+      el.classList.add('page-in');
+      setTimeout(() => el.classList.remove('page-in'), 250);
     });
 
     // nuova versione dell'app pronta: si ricarica alla prossima apertura senza chiedere nulla
