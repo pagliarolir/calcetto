@@ -257,8 +257,6 @@ export class BookingTab {
   private readonly reprimand = inject(Reprimand);
 
   protected readonly busy = signal(false);
-  /** finestre di precedenza: chi le ha può prenotarsi prima dell'apertura */
-  protected readonly windows = signal<{ user_id: string; opens_at: string }[]>([]);
   protected readonly when = fmtWhen;
 
   protected readonly amLeaderTitular = computed(() => this.session.me()?.titular_leader === this.session.uid());
@@ -267,7 +265,7 @@ export class BookingTab {
     const t = this.store.t();
     if (!t) return false;
     if (t.bookingOpen || this.amLeaderTitular()) return true;
-    const mine = this.windows().find((w) => w.user_id === this.session.uid());
+    const mine = this.store.windows().find((w) => w.user_id === this.session.uid());
     return !!mine && new Date(mine.opens_at).getTime() <= this.store.now() && !t.bookingClosed;
   });
 
@@ -313,11 +311,6 @@ export class BookingTab {
       this.fitList();
     });
     inject(DestroyRef).onDestroy(() => { this.fitObs?.disconnect(); if (this.pagePad) this.pagePad.style.paddingBottom = ''; });
-    const matchId = computed(() => this.store.match()?.id ?? null);
-    effect(() => {
-      const id = matchId();
-      if (id) void this.api.priorityWindows(id).then((w) => this.windows.set(w)).catch(() => undefined);
-    });
   }
 
   // ------------------------------------------------ ritiro dopo la chiusura: X rossa sulla propria figurina

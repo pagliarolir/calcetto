@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { MatchSkeleton } from '../ui/match-skeleton';
 import { Router, RouterLink } from '@angular/router';
-import { Api } from '../core/api';
+import { NextMatch } from '../core/next-match';
 
 /** Porta direttamente alla prossima partita. */
 @Component({
@@ -23,13 +23,17 @@ import { Api } from '../core/api';
   `,
 })
 export class HomePage implements OnInit {
-  private readonly api = inject(Api);
+  private readonly next = inject(NextMatch);
   private readonly router = inject(Router);
   protected readonly none = signal(false);
 
   async ngOnInit(): Promise<void> {
-    const m = await this.api.nextMatch().catch(() => null);
-    if (m) await this.router.navigate(['/partita', m.id], { replaceUrl: true });
-    else this.none.set(true);
+    // già nota: si apre subito, e se nel frattempo la prossima partita è cambiata si passa a quella nuova
+    const known = this.next.id();
+    if (known) void this.router.navigate(['/partita', known], { replaceUrl: true });
+    const id = await this.next.refresh();
+    if (id && id !== known && (!known || this.router.url.startsWith(`/partita/${known}`) || this.router.url === '/')) {
+      await this.router.navigate(['/partita', id], { replaceUrl: true });
+    } else if (!id && !known) this.none.set(true);
   }
 }

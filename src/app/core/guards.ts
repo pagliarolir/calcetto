@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { FantaLeader } from './fantaleader';
+import { NextMatch } from './next-match';
 import { Session } from './session';
 
 export const authGuard: CanActivateFn = async () => {
@@ -34,4 +35,21 @@ export const fantaLeaderGuard: CanActivateFn = async () => {
   const router = inject(Router);
   await s.whenReady();
   return (await fl.checkVisible()) ? true : router.parseUrl('/');
+};
+
+/**
+ * Pagina principale: se la prossima partita è già nota (salvata sul telefono) si va subito lì, senza disegnare la home;
+ * intanto si controlla in sottofondo e, se nel frattempo è cambiata, si passa a quella nuova.
+ */
+export const homeGuard: CanActivateFn = async () => {
+  const s = inject(Session);
+  const next = inject(NextMatch);
+  const router = inject(Router);
+  await s.whenReady();
+  const known = next.id();
+  if (!known) return true;   // la cerca la home, con il suo scheletro
+  void next.refresh().then((id) => {
+    if (id && id !== known && router.url.startsWith(`/partita/${known}`)) void router.navigate(['/partita', id], { replaceUrl: true });
+  });
+  return router.parseUrl(`/partita/${known}`);
 };

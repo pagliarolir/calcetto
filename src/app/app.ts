@@ -17,6 +17,8 @@ import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
 import { ConfirmView } from './ui/confirm';
 import { Network } from './core/network';
+import { NextMatch } from './core/next-match';
+import { Prefetch } from './core/prefetch';
 
 @Component({
   selector: 'app-root',
@@ -36,8 +38,8 @@ import { Network } from './core/network';
 
     @if (showTabs()) {
       <nav class="tabbar" aria-label="Sezioni">
-        @for (t of tabs(); track t.path) {
-          <a [routerLink]="t.path" [attr.aria-current]="isActive(t.path) ? 'page' : null">
+        @for (t of tabs(); track t.key) {
+          <a [routerLink]="t.path" [attr.aria-current]="isActive(t.key) ? 'page' : null">
             <span class="ico">
               <app-icon [name]="t.icon" />
               @if (t.path === '/avvisi' && unread.count() > 0) {
@@ -163,6 +165,8 @@ export class App {
   private readonly fl = inject(FantaLeader);
   protected readonly toasts = inject(Toasts);
   protected readonly network = inject(Network);
+  private readonly next = inject(NextMatch);
+  private readonly prefetch = inject(Prefetch);
   protected readonly unread = inject(Unread);
 
   private readonly url = toSignal(
@@ -177,16 +181,18 @@ export class App {
 
   protected readonly tabs = computed(() => [
     // al massimo 5 voci (linee guida Apple e Google): Gestione è nel Profilo («Area Leader»)
-    { path: '/', label: 'Partita', icon: 'pitch' },
-    { path: '/classifica', label: 'Classifica', icon: 'table' },
-    ...(this.fl.visible() ? [{ path: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
-    { path: '/avvisi', label: 'Avvisi', icon: 'bell' },
-    { path: '/profilo', label: 'Profilo', icon: 'user' },
+    { path: this.next.id() ? `/partita/${this.next.id()}` : '/', key: '/', label: 'Partita', icon: 'pitch' },
+    { path: '/classifica', key: '/classifica', label: 'Classifica', icon: 'table' },
+    ...(this.fl.visible() ? [{ path: '/fantaleader', key: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
+    { path: '/avvisi', key: '/avvisi', label: 'Avvisi', icon: 'bell' },
+    { path: '/profilo', key: '/profilo', label: 'Profilo', icon: 'user' },
   ]);
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   constructor() {
+    // dopo il primo disegno, quando l'app è libera: dati delle altre sezioni in anticipo
+    this.prefetch.schedule();
     // chi può vedere FantaLeader: si chiede a ogni accesso (e a ogni «trascina per aggiornare»)
     effect(() => { if (this.session.uid()) void this.fl.checkVisible(); else this.fl.visible.set(false); });
     // logo dell'app (icona e manifest): anche prima dell'accesso

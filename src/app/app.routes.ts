@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, fantaLeaderGuard, guestGuard, staffGuard } from './core/guards';
+import { authGuard, homeGuard, fantaLeaderGuard, guestGuard, staffGuard } from './core/guards';
 
 export const routes: Routes = [
   { path: 'invito/:token', loadComponent: () => import('./pages/invite').then((m) => m.InvitePage), title: 'Invito' },
@@ -10,7 +10,7 @@ export const routes: Routes = [
     path: '',
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', loadComponent: () => import('./pages/home').then((m) => m.HomePage), title: 'G.d.L.' },
+      { path: '', pathMatch: 'full', canActivate: [homeGuard], loadComponent: () => import('./pages/home').then((m) => m.HomePage), title: 'G.d.L.' },
       {
         path: 'partita/:id',
         loadComponent: () => import('./match/match-page').then((m) => m.MatchPage),

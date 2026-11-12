@@ -1,5 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Supabase } from './supabase';
+import { Cache } from './cache';
 
 function must<T>(res: { data: T | null; error: unknown }): T {
   if (res.error) throw res.error;
@@ -92,8 +93,14 @@ export function valueAt(c: RatingCard | undefined, kind: SlotKind): number | nul
 @Injectable({ providedIn: 'root' })
 export class Ratings {
   private readonly sb = inject(Supabase).client;
-  /** schede già caricate */
-  readonly cards = signal<Map<string, RatingCard>>(new Map());
+  private readonly cache = inject(Cache);
+  /** schede già caricate (riprese dal telefono e aggiornate subito in sottofondo, vedi core/cache.ts) */
+  readonly cards = signal<Map<string, RatingCard>>(new Map(this.cache.get<[string, RatingCard][]>('cards') ?? []));
+
+  constructor() {
+    const saved = [...this.cards().keys()];
+    if (saved.length) queueMicrotask(() => void this.load(saved, true).catch(() => undefined));
+  }
 
   async load(ids: string[], force = false): Promise<void> {
     const need = force ? ids : ids.filter((id) => !this.cards().has(id));
@@ -102,6 +109,7 @@ export class Ratings {
     const next = new Map(this.cards());
     for (const r of rows) next.set(r.user_id, r);
     this.cards.set(next);
+    this.cache.set('cards', [...next], true);
   }
 
   private pending = new Set<string>();
@@ -123,6 +131,7 @@ export class Ratings {
   /** dopo un cambio dei coefficienti le schede si ricalcolano */
   clear(): void {
     this.cards.set(new Map());
+    this.cache.set('cards', [], true);
   }
 
   card(id: string): RatingCard | undefined {

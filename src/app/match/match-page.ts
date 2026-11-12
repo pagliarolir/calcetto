@@ -16,7 +16,6 @@ import { haptic } from '../core/haptics';
 @Component({
   selector: 'app-match-page',
   imports: [SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
-  providers: [MatchStore],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
     '[style.--team-b]': 'kitB().color', '[style.--team-b-ink]': 'kitB().ink',
