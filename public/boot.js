@@ -15,10 +15,10 @@
     }
     if (bar) document.querySelector('meta[name="theme-color"]').setAttribute('content', bar);
     /* dimensione e spaziatura del testo scelte nel Profilo → Aspetto */
+    /* senza una scelta: 90% con «Automatico», 100% con gli altri temi (come core/theme.ts) */
     var tx = JSON.parse(localStorage.getItem('gdl-text') || 'null');
-    if (tx) {
-      document.documentElement.style.setProperty('--text-scale', String((tx.scale || 100) / 100));
-      document.documentElement.style.setProperty('--text-spacing', String((tx.spacing || 0) / 100));
-    }
+    var scale = tx && tx.scale ? tx.scale : (c === 'auto' ? 90 : 100);
+    document.documentElement.style.setProperty('--text-scale', String(scale / 100));
+    if (tx) document.documentElement.style.setProperty('--text-spacing', String((tx.spacing || 0) / 100));
   } catch (e) {}
 })();

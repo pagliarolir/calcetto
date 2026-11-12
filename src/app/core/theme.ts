@@ -28,13 +28,16 @@ export class Theme {
   readonly derived = computed(() => deriveTheme(this.custom()));
   private applied: string[] = [];
   /** testo: dimensione in percentuale (85-130) e spaziatura (0 = normale, 100 = valori WCAG 1.4.12) */
-  readonly textScale = signal(100);
+  private readonly savedScale = signal<number | null>(null);
+  /** dimensione predefinita: 90% con «Automatico», 100% con gli altri temi (vale finché non si sceglie nel Profilo) */
+  readonly defaultScale = computed(() => (this.choice() === 'auto' ? 90 : 100));
+  readonly textScale = computed(() => this.savedScale() ?? this.defaultScale());
   readonly textSpacing = signal(0);
 
   constructor() {
     try {
       const t = JSON.parse(localStorage.getItem(KEY_TEXT) ?? 'null') as { scale?: number; spacing?: number } | null;
-      if (t?.scale) this.textScale.set(Math.min(130, Math.max(85, t.scale)));
+      if (t?.scale) this.savedScale.set(Math.min(130, Math.max(85, t.scale)));
       if (t?.spacing) this.textSpacing.set(Math.min(100, Math.max(0, t.spacing)));
     } catch { /* valori predefiniti */ }
     effect(() => {
@@ -73,9 +76,16 @@ export class Theme {
   }
 
   setText(scale: number, spacing: number): void {
-    this.textScale.set(Math.min(130, Math.max(85, Math.round(scale))));
+    this.savedScale.set(Math.min(130, Math.max(85, Math.round(scale))));
     this.textSpacing.set(Math.min(100, Math.max(0, Math.round(spacing))));
-    this.save(KEY_TEXT, JSON.stringify({ scale: this.textScale(), spacing: this.textSpacing() }));
+    this.save(KEY_TEXT, JSON.stringify({ scale: this.savedScale(), spacing: this.textSpacing() }));
+  }
+
+  /** «Ripristina»: torna alla dimensione predefinita del tema e alla spaziatura normale */
+  resetText(): void {
+    this.savedScale.set(null);
+    this.textSpacing.set(0);
+    try { localStorage.removeItem(KEY_TEXT); } catch { /* niente memoria: resta per questa volta */ }
   }
 
   setCustom(patch: Partial<CustomTheme>): void {
