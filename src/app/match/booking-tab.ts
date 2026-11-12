@@ -290,14 +290,11 @@ export class BookingTab {
   protected readonly myHeadline = computed(() => {
     const me = this.store.mine();
     if (!me) return `Ci sei ${fmtWeekday(this.store.match()!.starts_at)}?`;
-    if (this.store.free()) {
-      if (me.list === 'team') return 'Sei titolare';
-      if (me.list === 'reserve') return 'Sei tra le riserve';
-      if (me.list === 'pending') return 'Sei disponibile';
-    }
-    if (me.list === 'team') return `Sei dentro con il numero ${me.slot}`;
-    if (me.list === 'reserve') return `Sei riserva numero ${me.slot}`;
-    return 'Hai detto che non ci sei';
+    // titolo breve; il numero di posto si vede sulla propria figurina
+    if (me.list === 'team') return 'Sei titolare';
+    if (me.list === 'reserve') return 'Sei riserva';
+    if (me.list === 'pending') return 'Ci sei';
+    return 'Non ci sei';
   });
 
   protected readonly presentHint = computed(() => {
