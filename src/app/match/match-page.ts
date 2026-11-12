@@ -140,28 +140,25 @@ import { haptic } from '../core/haptics';
     .link-line app-icon { margin-top: 5px; }
     .link-line .ellipsis { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; padding: 4px 0; }
     .mini { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(255 255 255 / 14%); color: inherit; flex: none; }
-    /* schede a pillola: contorno chiaro, quella attiva piena (gesso) con testo scuro; stessa dimensione del testo di prima */
+    /* schede con la lineetta sotto quella attiva; testo un po' più grande per vederle bene sul campo */
     .tabs {
-      max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 0 12px 5px;
+      max-width: 640px; margin: 0 auto; display: flex; align-items: flex-end; gap: 4px; overflow-x: auto; padding: 0 12px;
       scrollbar-width: none;
     }
     .tabs::-webkit-scrollbar { display: none; }
     .tabs a {
-      flex: none; position: relative; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px;
-      color: inherit; text-decoration: none; font-weight: 700; font-size: var(--step--1); line-height: 1;
-      box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--hero-ink) 45%, transparent);
-      transition: background 160ms, color 160ms, box-shadow 160ms;
+      flex: none; position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px 10px; color: inherit; text-decoration: none;
+      font-weight: 500; font-size: var(--step-0); line-height: 1.2;
     }
-    /* area di tocco di 44 px anche se la pillola è più bassa */
-    .tabs a::after { content: ''; position: absolute; inset: -6px -3px; }
-    /* attiva: il gesso è chiaro in tutti i temi, il testo delle maglie bianche è sempre scuro */
-    .tabs a.on { background: var(--chalk); color: var(--kit-white-ink); box-shadow: none; }
+    /* testo sempre pieno (leggibile su ogni intestazione): la scheda attiva si riconosce dal grassetto e dalla lineetta */
+    .tabs a.on { font-weight: 700; }
+    .tabs a.on::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--chalk); }
     /* messaggi nuovi in chat: pallino allineato alla parola */
-    .tabs .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); box-shadow: 0 0 0 1.5px currentColor; }
+    .tabs .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); }
     .tabs.off a { opacity: 0.4; pointer-events: none; }
-    .tabs.off a.on { background: transparent; color: inherit; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--hero-ink) 45%, transparent); }
+    .tabs.off a.on::after { opacity: 0; }
     /* interruttore degli strumenti: spento trasparente, acceso pieno */
-    .tools-btn { position: relative; flex: none; margin: 0 4px 0 auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    .tools-btn { position: relative; flex: none; margin: 0 4px 6px auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
                  color: inherit; background: rgb(255 255 255 / 14%); transition: background 200ms, color 200ms; }
     .tools-btn[aria-pressed='true'] { background: var(--chalk); color: var(--turf); }
     .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }

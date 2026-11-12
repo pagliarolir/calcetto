@@ -39,7 +39,7 @@ import { Skeleton } from './skeleton';
     .sk-ticket { display: flex; gap: 14px; align-items: center; height: 111px; margin-top: 2px; }
     .skw.circ { flex: none; align-self: flex-start; margin-left: auto; width: 32px; height: 32px; border-radius: 50%; } .skw.box { width: 84px; height: 92px; border-radius: 16px; flex: none; }
     .sk-lines { flex: 1; display: flex; flex-direction: column; gap: 10px; } .skw.w70 { width: 75%; } .skw.w50 { width: 50%; } .skw.w60 { width: 60%; } .skw.h22 { height: 22px; }
-    .sk-tabs { display: flex; gap: 6px; align-items: flex-start; height: 37px; margin: 4px 0 0 -4px; } .sk-tabs .w15 { width: 64px; height: 32px; border-radius: 16px; }
+    .sk-tabs { display: flex; gap: 22px; align-items: center; height: 37px; margin-top: 4px; } .sk-tabs .w15 { width: 52px; height: 14px; }
   `,
 })
 export class MatchSkeleton {}
