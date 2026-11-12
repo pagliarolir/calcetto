@@ -120,7 +120,7 @@ interface SlotView {
               @if (store.free()) {
                 <ul class="people board fill">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [team]="store.teamOf().get(r.user_id) ?? null" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
@@ -129,7 +129,7 @@ interface SlotView {
                     <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
                       @if (s.row; as r) {
                         <app-figurina [class.arriving]="!!r.provisional" [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
-                                      [team]="store.teamOf().get(r.user_id) ?? null" />
+                                      />
                         @if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }
                       } @else {
                         <app-figurina variant="empty" [number]="s.slot" [emptyLabel]="s.slot === 1 ? 'Leader assente' : 'Posto libero'" />

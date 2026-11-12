@@ -29,9 +29,8 @@ export class Theme {
   private applied: string[] = [];
   /** testo: dimensione in percentuale (85-130) e spaziatura (0 = normale, 100 = valori WCAG 1.4.12) */
   private readonly savedScale = signal<number | null>(null);
-  /** dimensione predefinita: 90% con «Automatico», 100% con gli altri temi (vale finché non si sceglie nel Profilo) */
-  readonly defaultScale = computed(() => (this.choice() === 'auto' ? 90 : 100));
-  readonly textScale = computed(() => this.savedScale() ?? this.defaultScale());
+  /** dimensione scelta nel Profilo (100 = normale); «Automatico» riduce comunque tutto del 10% (data-auto) */
+  readonly textScale = computed(() => this.savedScale() ?? 100);
   readonly textSpacing = signal(0);
 
   constructor() {
@@ -60,6 +59,7 @@ export class Theme {
         bar = BAR[t];
       }
       root.setAttribute('data-theme', t);
+      root.toggleAttribute('data-auto', this.choice() === 'auto');
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar);
     });
   }
@@ -81,7 +81,7 @@ export class Theme {
     this.save(KEY_TEXT, JSON.stringify({ scale: this.savedScale(), spacing: this.textSpacing() }));
   }
 
-  /** «Ripristina»: torna alla dimensione predefinita del tema e alla spaziatura normale */
+  /** «Ripristina»: torna alla dimensione e alla spaziatura normali */
   resetText(): void {
     this.savedScale.set(null);
     this.textSpacing.set(0);

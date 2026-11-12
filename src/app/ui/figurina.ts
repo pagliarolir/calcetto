@@ -17,8 +17,6 @@ import { Avatar } from './avatar';
     '[class.me]': 'mine()',
     '[class.reserve]': "variant() === 'reserve'",
     '[class.empty]': "variant() === 'empty'",
-    '[class.ta]': "team() === 'white'",
-    '[class.tb]': "team() === 'black'",
   },
   template: `
     <span class="pic">
@@ -97,27 +95,6 @@ import { Avatar } from './avatar';
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
     .form.idle { display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 0.72rem/1 var(--font-body); }
     .sub.turf { color: var(--turf); font-weight: 600; }
-    /* squadra assegnata: la card prende il colore della divisa. Il «filo» mescola la divisa con il suo contrasto,
-       così anche il bianco su fondo chiaro e il nero su fondo scuro restano riconoscibili */
-    :host(.ta) { --tc: var(--team-a); --tc-ink: var(--team-a-ink); }
-    :host(.tb) { --tc: var(--team-b); --tc-ink: var(--team-b-ink); }
-    :host(.ta), :host(.tb) {
-      --edge: color-mix(in srgb, var(--tc) 62%, var(--tc-ink));
-      position: relative; overflow: hidden; isolation: isolate; padding-left: 12px;
-      border: 1.5px solid var(--edge);
-      background: linear-gradient(135deg, color-mix(in srgb, var(--tc) 16%, var(--surface)) 0%, var(--surface) 55%);
-      box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--edge) 90%, black), 0 1px 3px rgb(0 0 0 / 8%);
-    }
-    /* striscia della divisa sul bordo sinistro */
-    :host(.ta)::before, :host(.tb)::before {
-      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; z-index: -1;
-      background: var(--tc); box-shadow: inset -1.5px 0 0 var(--edge);
-    }
-    :host(.ta) .pic app-avatar, :host(.tb) .pic app-avatar { box-shadow: 0 0 0 2px var(--tc), 0 0 0 3.5px var(--edge); }
-    /* numero come sulla maglia: colore della divisa e scritta in contrasto */
-    :host(.ta) .num, :host(.tb) .num { background: var(--tc); color: var(--tc-ink); box-shadow: 0 0 0 1.5px var(--edge), 0 0 0 3px var(--surface); }
-    /* la propria card resta riconoscibile: anello del colore del tema attorno a quello della squadra */
-    :host(.me.ta), :host(.me.tb) { outline: 2px solid var(--turf); outline-offset: 2px; }
   `,
 })
 export class Figurina {
@@ -130,8 +107,6 @@ export class Figurina {
   readonly note = input<string | null>(null);
   readonly noteTone = input<'muted' | 'turf'>('muted');
   readonly emptyLabel = input('Posto libero');
-  /** squadra assegnata nella formazione: colora la card con la divisa */
-  readonly team = input<'white' | 'black' | null>(null);
 
   private readonly ratings = inject(Ratings);
   /** ruolo semplificato sotto il nome (se la pagina non passa una scritta); se non è nel profilo, quello dedotto dai valori */
