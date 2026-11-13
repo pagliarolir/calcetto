@@ -245,6 +245,9 @@ export class Api {
     return must(await this.sb.rpc('vote_summary', { p_match: matchId })) as VoteSummary;
   }
 
+  async grantVotes(matchId: string, users: string[]) {
+    return must(await this.sb.rpc('grant_vote_visibility', { p_match: matchId, p_users: users }));
+  }
 
   // -------------------------------------------------------------------- chat
   async chat(matchId: string): Promise<ChatMessage[]> {
