@@ -146,18 +146,6 @@ import { Sheet } from '../ui/sheet';
                   </details>
                 } @empty { <p class="empty">Nessun voto ancora.</p> }
 
-                @if (session.isLeader() && canGrant()) {
-                  <div class="panel stack">
-                    <h3>Mostra i voti a qualcuno</h3>
-                    <p class="small muted">Potranno vedere tutti i voti di questa partita fino a 24 ore prima della prossima.</p>
-                    <div class="row-wrap">
-                      @for (id of participantsWithAccount(); track id) {
-                        <button class="chip" [attr.aria-pressed]="grantPick().has(id)" (click)="toggleGrant(id)">{{ session.name(id) }}</button>
-                      }
-                    </div>
-                    <button class="btn small primary" [disabled]="!grantPick().size || busy()" (click)="grant()">Mostra i voti</button>
-                  </div>
-                }
               </section>
             }
           }
@@ -291,7 +279,6 @@ export class VotesTab {
   private readonly mvpDialog = viewChild<ElementRef<HTMLDialogElement>>('mvpDialog');
   protected readonly all = signal<{ votes: PlayerVote[]; mvp: MvpVote[] } | null>(null);
   protected readonly canSeeAll = signal(false);
-  protected readonly grantPick = signal(new Set<string>());
   protected readonly busy = signal(false);
 
   protected readonly participants = computed(() => this.store.team().map((b) => b.user_id).filter((id) => id !== this.session.uid()));
@@ -351,17 +338,11 @@ export class VotesTab {
   private readonly matchId = computed(() => this.store.match()?.id ?? null);
   private readonly resultOpen = computed(() => !(this.store.t()?.votesBefore ?? true));
   /** solo chi ha un account può vedere i voti */
-  protected readonly participantsWithAccount = computed(() => this.participants().filter((id) => !this.session.memberMap().get(id)?.guest));
   protected readonly unassigned = computed(() => this.participants().filter((id) => !this.store.teamOf().has(id)));
   protected readonly voters = computed(() => {
     const a = this.all();
     if (!a) return [];
     return [...new Set([...a.votes.map((v) => v.voter_id), ...a.mvp.map((v) => v.voter_id)])];
-  });
-
-  protected readonly canGrant = computed(() => {
-    const m = this.store.match();
-    return !!m && this.store.now() <= new Date(m.ends_at).getTime() + 24 * 3600_000;
   });
 
   constructor() {
@@ -449,15 +430,6 @@ export class VotesTab {
     return [m.white_pick && `★ ${this.session.name(m.white_pick)}`, m.black_pick && `★ ${this.session.name(m.black_pick)}`].filter(Boolean).join(', ');
   }
 
-  protected toggleGrant(id: string): void {
-    this.grantPick.update((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
-  }
-
   protected async submit(): Promise<void> {
     haptic();
     if (this.reprimand.guard()) return;
@@ -470,19 +442,6 @@ export class VotesTab {
       await this.api.submitVotes(id, votes, this.mvpPick(), null);
       this.toasts.show('Voti inviati. Restano segreti.');
       await this.load(id, this.session.uid()!);
-    } catch (e) {
-      this.toasts.error(errorMessage(e));
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  protected async grant(): Promise<void> {
-    this.busy.set(true);
-    try {
-      await this.api.grantVotes(this.store.match()!.id, [...this.grantPick()]);
-      this.toasts.show('Fatto: ora possono vedere i voti di questa partita.');
-      this.grantPick.set(new Set());
     } catch (e) {
       this.toasts.error(errorMessage(e));
     } finally {
