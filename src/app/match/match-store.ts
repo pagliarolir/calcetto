@@ -72,6 +72,8 @@ export class MatchStore {
       lineupOpen: now >= at(m.lineup_opens_at),
       resultOpen: now >= at(m.result_opens_at),
       locked: m.locked || now >= at(m.lock_at),
+      /** gol, assist e autogol: ognuno i propri fino alle 12 del giorno dopo (scorers_close_at in SQL) */
+      scorersOpen: now < at(m.lock_at) + 12 * 3600_000,
       votesOpen: now >= at(m.votes_opens_at) && now <= at(m.votes_closes_at),
       votesBefore: now < at(m.votes_opens_at),
       votesClosed: now > at(m.votes_closes_at),
