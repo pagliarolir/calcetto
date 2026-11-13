@@ -316,7 +316,7 @@ export class ResultTab {
   protected readonly canEditScorers = computed(() => {
     const t = this.store.t();
     if (!t?.resultOpen) return false;
-    if (t.locked) return this.session.isLeader();
+    if (!t.scorersOpen) return this.session.isLeader();
     return this.store.amParticipant() || this.session.isLeader();
   });
 
