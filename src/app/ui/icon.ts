@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 /** Icone a tratto, disegnate per l'app. */
 const PATHS: Record<string, string> = {
   pitch: 'M3 5h18v14H3z M12 5v14 M12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0 M3 9h3v6H3 M21 9h-3v6h3',
+  compare: 'M4 8h14 M14 4l4 4-4 4 M20 16H6 M10 12l-4 4 4 4',
   table: 'M4 5h16 M4 10h16 M4 15h16 M4 20h16 M9 5v15',
   bell: 'M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z M10 20a2 2 0 0 0 4 0',
   user: 'M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8z M4 21c1-4 4.5-6 8-6s7 2 8 6',

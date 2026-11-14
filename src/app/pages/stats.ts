@@ -1,6 +1,5 @@
+import { Compare } from '../ratings/compare';
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { Ratings } from '../core/ratings';
-import { HexChart, HexSeries } from '../ratings/charts';
 import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -72,7 +71,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, HexChart],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, Compare],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -271,26 +270,9 @@ const RECORDS: Record[] = [
           }
           @case ('squadre') {
             <!-- confronto tra più giocatori: esagoni sovrapposti, colore e medie per ruolo -->
-            <details class="panel fold" (toggle)="cmpOpen($event)">
+            <details class="panel fold" [open]="folds().has('confronto')" (toggle)="foldToggled('confronto', $event)">
               <summary><h3>Confronto</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-              @if (cmpSeries().length) {
-                <div class="cmp-chart"><app-hex-chart [series]="cmpSeries()" [size]="230" /></div>
-              }
-              <ul class="cmp-list">
-                @for (x of cmpRows(); track x.id) {
-                  <li><i class="dot" [style.background]="x.color"></i>
-                    <span class="grow"><strong>{{ x.name }}</strong><span class="small muted num">DC {{ x.dc }} · ED {{ x.ed }} · EO {{ x.eo }} · PU {{ x.pu }}</span></span>
-                    <button type="button" class="rm" [attr.aria-label]="'Togli ' + x.name" (click)="cmpRemove(x.id)"><app-icon name="x" [size]="16" /></button></li>
-                }
-              </ul>
-              @if (cmpIds().length < 5) {
-                <label class="cmp-add"><app-icon name="plus" [size]="18" />
-                  <select class="input" (change)="cmpAdd($any($event.target).value); $any($event.target).value = ''" aria-label="Aggiungi un giocatore al confronto">
-                    <option value="">Aggiungi un giocatore…</option>
-                    @for (m of cmpMembers(); track m.id) { @if (!cmpIds().includes(m.id)) { <option [value]="m.id">{{ session.name(m.id) }}</option> } }
-                  </select>
-                </label>
-              }
+              @if (folds().has('confronto')) { <app-compare /> }
             </details>
 
             <!-- ======================================================= Squadre e coppie -->
@@ -623,22 +605,6 @@ export class StatsPage {
 
 
 
-  // ------------------------------------------------ Confronto (esagoni di più giocatori, fino a 5)
-  private readonly ratings = inject(Ratings);
-  private static readonly CMP_COLORS = ['var(--turf)', 'hsl(28 90% 52%)', 'hsl(212 80% 55%)', 'hsl(285 55% 58%)', 'hsl(48 90% 42%)'];
-  protected readonly cmpIds = signal<string[]>([]);
-  protected readonly cmpMembers = computed(() => [...this.session.members()].filter((m) => this.ratings.cards().get(m.id)?.has)
-    .sort((a, b) => this.session.name(a.id).localeCompare(this.session.name(b.id))));
-  protected readonly cmpRows = computed(() => this.cmpIds().map((id, i) => {
-    const c = this.ratings.cards().get(id);
-    return { id, name: this.session.name(id), color: StatsPage.CMP_COLORS[i % 5], dc: c?.dc ?? '–', ed: c?.ed ?? '–', eo: c?.eo ?? '–', pu: c?.pu ?? '–', hex: c?.hex };
-  }));
-  protected readonly cmpSeries = computed<HexSeries[]>(() => this.cmpRows().filter((r) => r.hex).map((r) => ({ hex: r.hex!, color: r.color, name: r.name })));
-  protected cmpAdd(id: string): void { if (id && !this.cmpIds().includes(id)) this.cmpIds.update((l) => [...l, id].slice(0, 5)); }
-  protected cmpRemove(id: string): void { this.cmpIds.update((l) => l.filter((x) => x !== id)); }
-  protected cmpOpen(e: Event): void {
-    if ((e.target as HTMLDetailsElement).open) void this.ratings.load(this.session.members().map((m) => m.id)).catch(() => undefined);
-  }
 
   /** tendine aperte in «Squadre e coppie» (anche loro nell'indirizzo: si torna indietro con le stesse aperte) */
   protected readonly folds = signal<Set<string>>(new Set());
@@ -707,6 +673,8 @@ export class StatsPage {
         al: custom ? this.customTo : null,
         giocatore: this.focus() && this.focus() !== this.session.uid() ? this.focus() : null,
         aperte: this.folds().size ? [...this.folds()].sort().join(',') : null,
+        // giocatori del confronto (li scrive app-compare): restano finché il confronto è aperto
+        con: this.folds().has('confronto') ? new URLSearchParams(location.search).get('con') : null,
       },
     });
   }

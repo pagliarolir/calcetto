@@ -1,3 +1,6 @@
+import { scrollAppTo } from '../core/scroller';
+import { Ratings } from '../core/ratings';
+import { Compare } from '../ratings/compare';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Empty } from '../ui/empty';
 import { PlayerCard } from '../ratings/player-card';
@@ -7,7 +10,7 @@ import { Skeleton } from '../ui/skeleton';
 import { FormsModule } from '@angular/forms';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Api } from '../core/api';
 import { age, fmtDate, fmtWhen } from '../core/format';
 import { FIELD_ROLE_LABEL, MatchFact, ROLE_LABEL, StatsRow } from '../core/models';
@@ -31,7 +34,7 @@ interface PlayerSeen {
 
 @Component({
   selector: 'app-player',
-  imports: [Back, Sheet, RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty],
+  imports: [Back, Sheet, RouterLink, Avatar, FormsModule, StickerStrip, Icon, Skeleton, PlayerCard, RatingsEditor, ProfileAdmin, Empty, Compare],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (member(); as m) {
@@ -74,7 +77,20 @@ interface PlayerSeen {
         </header>
       }
       <!-- il resto scorre: è lo stesso blocco della scheda Stats del Profilo -->
-      <main class="scroll-area" [class.embedded]="embedded()"><div class="page stack-l">
+      <main class="scroll-area" [class.embedded]="embedded()"><div class="page stack-l flip" [class.flip-out]="flipping() === 'out'" [class.flip-in]="flipping() === 'in'">
+        <!-- «Confronta»: la pagina si gira (come gli strumenti del Leader) e mostra il confronto; ritoccando si torna alla scheda -->
+        @if (hasCard()) {
+          <div class="vhead">
+            <h2>{{ cmp() ? 'Confronto' : 'Valori' }}</h2>
+            <button type="button" class="cmp-btn" [attr.aria-pressed]="cmp()" (click)="toggleCmp()"
+                    [attr.aria-label]="cmp() ? 'Chiudi il confronto e torna alla scheda' : 'Confronta con altri giocatori'">
+              <app-icon name="compare" [size]="16" /><span>{{ cmp() ? 'Chiudi' : 'Confronta' }}</span>
+            </button>
+          </div>
+        }
+        @if (cmp()) {
+          <section class="panel"><app-compare [fixed]="id()" /></section>
+        } @else {
         @if (since(); as d) { <p class="note">Statistiche dal {{ when(d) }}: le partite precedenti non contano.</p> }
         <!-- valori del giocatore: tutti vedono la scheda, il Leader inserisce i valori e modifica profilo e foto -->
         <app-player-card [userId]="id()" />
@@ -132,6 +148,7 @@ interface PlayerSeen {
         </section>
       }
       }
+        }
       </div></main>
     }
   `,
@@ -143,6 +160,24 @@ interface PlayerSeen {
     main.scroll-area > .page { padding-left: 10px; padding-right: 10px; }
     .phead { position: relative; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
     .scroll-area.embedded { overflow: visible; }
+    /* titolo dei valori con l'interruttore del confronto a destra */
+    .vhead { display: flex; align-items: center; gap: 8px; margin-bottom: -6px; }
+    .vhead h2 { margin: 0; font-size: var(--step-1); }
+    .cmp-btn { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 14px; border-radius: 999px;
+               border: 1.5px solid var(--line); background: var(--surface); color: var(--turf); font: 700 var(--step--1)/1 var(--font-body); cursor: pointer;
+               transition: background 200ms, color 200ms; }
+    .cmp-btn::after { content: ''; position: absolute; inset: -6px -2px; }
+    .cmp-btn[aria-pressed='true'] { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
+    .cmp-btn app-icon { display: grid; place-items: center; transition: transform 300ms var(--ease-spring); }
+    .cmp-btn[aria-pressed='true'] app-icon { transform: rotate(180deg); }
+    /* «flip» come gli strumenti del Leader: solo il contenuto che scorre, spento con «riduci movimento» */
+    @media (prefers-reduced-motion: no-preference) {
+      .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
+      .flip.flip-out { animation: flip-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+      .flip.flip-in { animation: flip-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+      @keyframes flip-out { from { transform: perspective(1400px) rotateY(0); } to { transform: perspective(1400px) rotateY(90deg); opacity: 0.6; } }
+      @keyframes flip-in { from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.6; } to { transform: perspective(1400px) rotateY(0); opacity: 1; } }
+    }
     .phead .id app-avatar { flex: none; }
     .lead-menu { position: absolute; top: 8px; right: 8px; z-index: 5; }
     .more { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; }
@@ -164,6 +199,22 @@ export class PlayerPage {
 
   /** torna alla pagina da cui si è arrivati (lista, chat, classifica...); se si è entrati da un link, alla Classifica */
   readonly id = input.required<string>();
+  private readonly cards = inject(Ratings);
+  protected readonly hasCard = computed(() => !!this.cards.cards().get(this.id())?.has);
+  /** confronto aperto (nell'indirizzo: «Indietro» lo ritrova) */
+  protected readonly cmp = signal(new URLSearchParams(location.search).get('confronto') === '1');
+  protected readonly flipping = signal<'out' | 'in' | null>(null);
+  private readonly cmpRouter = inject(Router);
+  protected async toggleCmp(): Promise<void> {
+    if (this.flipping()) return;
+    const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (motion) { this.flipping.set('out'); await new Promise((r) => setTimeout(r, 180)); }
+    this.cmp.update((v) => !v);
+    void this.cmpRouter.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { confronto: this.cmp() ? '1' : null, con: null } });
+    scrollAppTo('start', 'auto');
+    if (motion) { this.flipping.set('in'); setTimeout(() => this.flipping.set(null), 270); }
+    else this.flipping.set(null);
+  }
   /** nel Profilo (scheda Stats): solo la parte sotto l'intestazione */
   readonly embedded = input(false);
   protected readonly session = inject(Session);
