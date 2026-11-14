@@ -138,19 +138,24 @@ interface Row { id: string; name: string; color: string; vals: Record<Key, numbe
     .duel tr.total strong { font-size: 1.2rem; }
     /* tabelle: il migliore di ogni ruolo è evidenziato */
     .mx { font-size: var(--step--1); }
-    .mx th, .mx td { padding: 8px 4px; border-bottom: 1px solid var(--line); }
+    .mx th, .mx td { padding: 7px 5px; border-bottom: 1px solid var(--line); }
     .mx thead th { color: var(--muted); font-weight: 600; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mx td { text-align: center; color: var(--muted); font-weight: 600; font-size: 1rem; }
-    .mx .v { display: inline-block; min-width: 2.4em; padding: 4px 0; border-radius: 999px; }
+    /* pillola del migliore: sempre dentro la cella, staccata dalle linee (anche con il testo grande) */
+    .mx .v { display: inline-block; min-width: 2.1em; max-width: 100%; padding: 2px 4px; border-radius: 999px; line-height: 1.4; }
     .mx .v.win { color: var(--ink); font-weight: 800; background: var(--turf-soft); }
     .mx tbody tr:last-child th, .mx tbody tr:last-child td { border-bottom: 0; }
     .mx .dot { margin-right: 6px; }
     .cols thead th:first-child, .cols tbody th { width: 46px; text-align: left; color: var(--muted); font-weight: 700; }
     .cols thead th { color: var(--ink); }
     .cols tr.total th, .cols tr.total td { border-top: 1px solid var(--line); }
-    .grid thead th:first-child { width: 34%; }
+    .grid thead th:first-child { width: 30%; }
     .grid tbody th { text-align: left; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .grid .total { border-left: 1px solid var(--line); }
+    .grid td.total { padding-left: 7px; }
+    /* colonne strette: la pillola prende la cella (meno i margini), non di più */
+    .grid td { padding-left: 3px; padding-right: 3px; }
+    .grid .v { min-width: 0; width: 100%; padding: 2px 0; }
   `,
 })
 export class Compare implements OnDestroy {
