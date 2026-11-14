@@ -178,8 +178,8 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
                 <div class="panel stack silent">
                   <h3>Non hanno risposto <span class="count num">{{ silent().length }}</span></h3>
                   <ul class="people board">
-                    @for (id of silent(); track id) {
-                      <li><app-figurina variant="free" [userId]="id" [mine]="id === session.uid()" /></li>
+                    @for (r of byName(silentRows()); track r.user_id) {
+                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                     }
                   </ul>
                 </div>
@@ -465,6 +465,8 @@ export class BookingTab {
     }
     return [...rows].sort(alpha);
   }
+  /** chi non ha risposto, nella forma che serve all'ordinamento (con «Ordine di inserimento» resta alfabetico) */
+  protected readonly silentRows = computed(() => this.silent().map((user_id) => ({ user_id })));
   /** titolari con i posti numerati: si ordinano gli occupati, i posti liberi restano in fondo */
   protected readonly sortedSlots = computed(() => {
     const full = this.slots().filter((s) => s.row), empty = this.slots().filter((s) => !s.row);
