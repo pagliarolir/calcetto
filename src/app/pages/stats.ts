@@ -1,3 +1,4 @@
+import { InfoTip } from '../ui/info-tip';
 import { Compare } from '../ratings/compare';
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { Skeleton } from '../ui/skeleton';
@@ -71,7 +72,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, Compare],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, Compare, InfoTip],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -270,7 +271,7 @@ const RECORDS: Record[] = [
           }
           @case ('squadre') {
             <!-- confronto tra più giocatori: esagoni sovrapposti, colore e medie per ruolo -->
-            <details class="panel fold" [open]="folds().has('confronto')" (toggle)="foldToggled('confronto', $event)">
+            <details class="panel fold cfold" [open]="folds().has('confronto')" (toggle)="foldToggled('confronto', $event)">
               <summary><h3>Confronto</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               @if (folds().has('confronto')) { <app-compare /> }
             </details>
@@ -291,8 +292,8 @@ const RECORDS: Record[] = [
               </div>
             </section>
 
-            <details class="panel fold" [open]="folds().has('coppie')" (toggle)="foldToggled('coppie', $event)">
-              <summary><span class="grow"><strong>Coppie più affiatate</strong><br /><span class="small muted">più partite da compagni</span></span><app-icon name="chevron" [size]="18" /></summary>
+            <details class="panel fold cfold" [open]="folds().has('coppie')" (toggle)="foldToggled('coppie', $event)">
+              <summary><h3>Coppie più affiatate</h3><app-info-tip label="Cosa conta" [lines]="['Le coppie che hanno giocato più partite nella stessa squadra.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <ol class="pairs">
                 @for (x of topTogether(); track x.a_id + x.b_id) {
                   <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
@@ -301,8 +302,8 @@ const RECORDS: Record[] = [
                 }
               </ol>
             </details>
-            <details class="panel fold" [open]="folds().has('rivalita')" (toggle)="foldToggled('rivalita', $event)">
-              <summary><span class="grow"><strong>Grandi rivalità</strong><br /><span class="small muted">più partite da avversari</span></span><app-icon name="chevron" [size]="18" /></summary>
+            <details class="panel fold cfold" [open]="folds().has('rivalita')" (toggle)="foldToggled('rivalita', $event)">
+              <summary><h3>Grandi rivalità</h3><app-info-tip label="Cosa conta" [lines]="['Le coppie che si sono affrontate più volte da avversari.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <ol class="pairs">
                 @for (x of topAgainst(); track x.a_id + x.b_id) {
                   <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
@@ -393,10 +394,13 @@ const RECORDS: Record[] = [
     .check input { width: 20px; height: 20px; accent-color: var(--turf); flex: none; }
     .cl { width: 52px; font-weight: 700; flex: none; }
     /* tendine delle coppie */
-    .fold summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 44px; }
-    .fold summary::-webkit-details-marker { display: none; }
-    .fold summary app-icon { transition: transform 200ms; transform: rotate(90deg); }
-    .fold[open] summary app-icon { transform: rotate(-90deg); }
+    /* tendine compatte come gli Strumenti del Leader: titolo al centro, freccia a destra, la «i» accanto al titolo */
+    details.cfold { padding: 0 12px; }
+    details.cfold > summary { min-height: 52px; justify-content: center; gap: 2px; position: relative; padding: 0 28px; }
+    details.cfold > summary > h3 { font-size: calc(var(--step-0) * 1.12); text-align: center; }
+    details.cfold > summary .chev { position: absolute; right: 0; top: 50%; margin: -9px 0 0; }
+    details.cfold[open] { padding-bottom: 12px; }
+    details.cfold[open] > summary { margin-bottom: 2px; }
     .fold .pairs { margin-top: 10px; }
     .cmp-chart { display: grid; place-items: center; }
     .cmp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
