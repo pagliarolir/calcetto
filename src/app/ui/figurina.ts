@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
-import { formLabel, formOf, overallOf, Ratings } from '../core/ratings';
+import { formAngle, formLabel, formOf, overallOf, Ratings } from '../core/ratings';
 import { RouterLink } from '@angular/router';
 import { Session } from '../core/session';
 import { Avatar } from './avatar';
@@ -148,7 +148,7 @@ export class Figurina {
     return id ? overallOf(this.ratings.cards().get(id)) : null;
   });
   protected readonly hue = computed(() => 130 * Math.max(0, Math.min(1, ((this.overall() ?? 50) - 50) / 35)));
-  /** forma provvisoria (da -3 a +3): freccia che sale o scende di 30° per punto, colore dal verde al rosso, e il numero */
+  /** forma provvisoria (da -3 a +3): freccia obliqua a 45° per ±1 e ±2, dritta per ±3, colore dal verde al rosso, e il numero */
   protected readonly form = computed(() => {
     const id = this.userId();
     const c = id ? this.ratings.cards().get(id) : undefined;
@@ -159,7 +159,7 @@ export class Figurina {
       return { sym: none ? '–' : '=', rot: 0, color: '', text: '', label: none ? 'Forma: non ha giocato l\'ultima, nessun bonus' : 'Forma: nessun bonus' };
     }
     const color = n > 0 ? `hsl(${[95, 112, 130][n - 1]} 62% 36%)` : `hsl(${[28, 14, 0][-n - 1]} 78% 45%)`;
-    return { sym: null, rot: -30 * n, color, text: formLabel(n), label: `Forma: ${formLabel(n)} provvisorio` };
+    return { sym: null, rot: formAngle(n), color, text: formLabel(n), label: `Forma: ${formLabel(n)} provvisorio` };
   });
 
   constructor() {

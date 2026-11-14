@@ -242,3 +242,9 @@ export function suggestTeams(players: string[], kinds: SlotKind[], value: (id: s
     avgA: r.avgA, avgB: r.avgB,
   };
 }
+
+/** inclinazione della freccia di forma: ±1 e ±2 in obliquo a 45°, ±3 dritta in su o in giù */
+export function formAngle(n: number): number {
+  if (!n) return 0;
+  return -Math.sign(n) * (Math.abs(n) >= 3 ? 90 : 45);
+}
