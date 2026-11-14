@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, si
 import { Icon } from '../ui/icon';
 import { Session } from '../core/session';
 import { FIELD_ROLE_LABEL, FieldRole } from '../core/models';
-import { formLabel, formOf, Ratings, ROLE_SHORT } from '../core/ratings';
+import { formAngle, formLabel, formOf, Ratings, ROLE_SHORT } from '../core/ratings';
 import { HexChart, PitchChart, RatingRing } from './charts';
 
 /** La scheda dei valori che vedono tutti: cerchio con il valore nel ruolo, esagono e campo. */
@@ -25,7 +25,7 @@ import { HexChart, PitchChart, RatingRing } from './charts';
             @let f = formInfo();
             <span class="tag fchip" [class.turf]="f.n > 0" [class.danger]="f.n < 0" role="img" [attr.aria-label]="f.label" [title]="f.label">
               @if (f.n !== 0) {
-                <svg viewBox="3 3 18 18" aria-hidden="true" [style.transform]="'rotate(' + (-30 * f.n) + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                <svg viewBox="3 3 18 18" aria-hidden="true" [style.transform]="'rotate(' + angle(f.n) + 'deg)'"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
               }
               Forma {{ f.text }}
             </span>
@@ -78,6 +78,7 @@ export class PlayerCard {
   private readonly ratings = inject(Ratings);
   protected readonly session = inject(Session);
   protected readonly tip = signal(false);
+  protected readonly angle = formAngle;
   /** medie per ruolo, evidenziato il ruolo del giocatore (o il migliore) */
   protected readonly roles = computed(() => {
     const c = this.card();
