@@ -6,6 +6,7 @@ const FLICK = 0.6;
 /**
  * Comportamento comune di tutti i fogli dal basso (`<dialog class="sheet">`):
  * - chiusura animata (scende invece di sparire) per X, Esc, tocco sul velo e `close()` chiamato dal codice;
+ * - all'apertura il fuoco va sul foglio, non sulla X di chiusura;
  * - trascinamento in giù da qualsiasi punto quando il contenuto è all'inizio: oltre un terzo dell'altezza
  *   o con un colpo veloce si chiude, altrimenti torna su.
  * Lo stile è in `styles.scss` (dialog.sheet). Con «riduci movimento» il foglio segue il dito ma si chiude senza animazione.
@@ -23,6 +24,11 @@ export class Sheet {
 
   constructor() {
     const el = this.el;
+    // all'apertura il fuoco va sul foglio stesso, non sulla X: niente anello di fuoco sulla X
+    // (Esc, Tab e i lettori di schermo funzionano uguale; il primo Tab porta alla X)
+    el.tabIndex = -1;
+    const nativeShow = HTMLDialogElement.prototype.showModal;
+    el.showModal = () => { nativeShow.call(el); el.focus({ preventScroll: true }); };
     const nativeClose = HTMLDialogElement.prototype.close;
     el.close = (rv?: string) => this.animateClose(() => nativeClose.call(el, rv));
 
