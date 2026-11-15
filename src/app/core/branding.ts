@@ -2,6 +2,9 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { toIconPng, toLogoPng } from './image';
 import { Supabase } from './supabase';
 
+/** loghi dell'ultima volta (uguali per tutti: non sono dati personali) */
+const STORE = 'gdl-branding';
+
 export type IconMode = 'cover' | 'contain';
 
 /**
@@ -18,17 +21,41 @@ export class Branding {
   readonly icon512 = computed(() => (this.iconId() ? this.url(`${this.iconId()}-512.png`) : null));
   readonly headerUrl = computed(() => (this.headerId() ? this.url(`${this.headerId()}-header.png`) : null));
   private readonly defaults = new Map<Element, string>();
+  /** si sa quali loghi usare (dall'ultima volta, salvato sul telefono, o dal server): prima nessuno dei due si mostra */
+  readonly ready = signal(false);
+
+  constructor() {
+    // i loghi dell'ultima volta subito, senza aspettare il server: niente calendario che diventa logo all'apertura
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) ?? 'null') as { icon: string | null; header: string | null } | null;
+      if (saved) {
+        this.iconId.set(saved.icon);
+        this.headerId.set(saved.header);
+        this.ready.set(true);
+        void this.apply().catch(() => undefined);
+      }
+    } catch { /* memoria del telefono non disponibile */ }
+  }
 
   async load(): Promise<void> {
     try {
-      const { data } = await this.sb.rpc('app_branding');
+      const { data, error } = await this.sb.rpc('app_branding');
+      if (error) throw error;
       const b = (data ?? {}) as { logo_id?: string | null; header_logo_id?: string | null };
+      const changedIcon = (b.logo_id ?? null) !== this.iconId();
       this.iconId.set(b.logo_id ?? null);
       this.headerId.set(b.header_logo_id ?? null);
-      await this.apply();
+      this.save();
+      if (changedIcon || !this.applied) await this.apply();
     } catch {
       /* senza loghi restano le icone predefinite */
+    } finally {
+      this.ready.set(true);
     }
+  }
+
+  private save(): void {
+    try { localStorage.setItem(STORE, JSON.stringify({ icon: this.iconId(), header: this.headerId() })); } catch { /* niente */ }
   }
 
   async uploadHeader(file: File): Promise<void> {
@@ -36,11 +63,13 @@ export class Branding {
     await this.put([[`${id}-header.png`, await toLogoPng(file)]]);
     await this.swap('set_header_logo', id, this.headerId(), (old) => [`${old}-header.png`], [`${id}-header.png`]);
     this.headerId.set(id);
+    this.save();
   }
 
   async removeHeader(): Promise<void> {
     await this.swap('set_header_logo', null, this.headerId(), (old) => [`${old}-header.png`], []);
     this.headerId.set(null);
+    this.save();
   }
 
   async uploadIcon(file: File, mode: IconMode, background: string): Promise<void> {
@@ -49,12 +78,14 @@ export class Branding {
     await this.put([[`${id}-512.png`, big], [`${id}-180.png`, small]]);
     await this.swap('set_app_logo', id, this.iconId(), (old) => [`${old}-512.png`, `${old}-180.png`], [`${id}-512.png`, `${id}-180.png`]);
     this.iconId.set(id);
+    this.save();
     await this.apply();
   }
 
   async removeIcon(): Promise<void> {
     await this.swap('set_app_logo', null, this.iconId(), (old) => [`${old}-512.png`, `${old}-180.png`], []);
     this.iconId.set(null);
+    this.save();
     await this.apply();
   }
 
@@ -81,7 +112,9 @@ export class Branding {
   }
 
   /** aggiorna icone e manifest della pagina (o rimette quelli predefiniti) */
+  private applied = false;
   private async apply(): Promise<void> {
+    this.applied = true;
     const id = this.iconId();
     this.setLink('link[rel="icon"]', id ? this.url(`${id}-512.png`) : null);
     this.setLink('link[rel="apple-touch-icon"]', id ? this.url(`${id}-180.png`) : null);

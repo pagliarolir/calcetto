@@ -34,6 +34,8 @@ import { haptic } from '../core/haptics';
             <div class="ticket with-cal">
               @if (branding.headerUrl(); as logo) {
                 <span class="logo-box" #logoBox><img [src]="logo" alt="" /></span>
+              } @else if (!branding.ready()) {
+                <span class="logo-box" aria-hidden="true"></span>
               } @else {
               <div class="calbig" aria-hidden="true"><small>{{ weekdayShort() }}</small><b>{{ dayNum() }}</b><small>{{ monthShort() }}</small></div>
               }
