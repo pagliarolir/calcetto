@@ -267,16 +267,34 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
             </select>
           </label>
         </div>
-        <div class="field">
-          <div class="spread"><span>Tra chi dividere ({{ eUsers().size }})</span>
-            <button type="button" class="btn small ghost" (click)="toggleAll()">{{ eUsers().size === session.activeMembers().length ? 'Nessuno' : 'Tutti' }}</button></div>
-          <div class="row-wrap">
+        <fieldset class="field split">
+          <legend>Tra chi dividere</legend>
+          <ul class="who" role="list">
+            <li>
+              <label class="who-row all">
+                <input type="checkbox" [checked]="allPicked()" [indeterminate]="eUsers().size > 0 && !allPicked()" (change)="toggleAll()" />
+                <span class="grow">Tutti</span>
+                <span class="small muted">{{ eUsers().size }} su {{ session.activeMembers().length }}</span>
+              </label>
+            </li>
             @for (m of session.activeMembers(); track m.id) {
-              <button type="button" class="chip" [attr.aria-pressed]="eUsers().has(m.id)" (click)="toggleUser(m.id)">{{ session.name(m.id) }}</button>
+              <li>
+                <label class="who-row">
+                  <input type="checkbox" [checked]="eUsers().has(m.id)" (change)="toggleUser(m.id)" />
+                  <app-avatar [userId]="m.id" [size]="32" />
+                  <span class="grow">{{ session.name(m.id) }}</span>
+                </label>
+              </li>
             }
-          </div>
+          </ul>
+        </fieldset>
+        <div class="each" aria-live="polite">
+          <span>A testa</span>
+          <span class="each-val">
+            <b class="num">{{ each()?.main ?? '—' }}</b>
+            @if (each()?.note; as note) { <small class="muted">{{ note }}</small> }
+          </span>
         </div>
-        @if (eachText(); as q) { <p class="small each">A testa: <b>{{ q }}</b></p> }
         <button class="btn primary block" [disabled]="busy() || !canSaveExpense()">Aggiungi la spesa</button>
       </form>
     </dialog>
@@ -310,7 +328,18 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
     .iban { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--surface-2); border-color: transparent; }
     .hint { margin: -4px 0 0; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .each { margin: 0; }
+    fieldset.split { border: 0; margin: 0; padding: 0; min-width: 0; }
+    fieldset.split legend { padding: 0; margin-bottom: 6px; }
+    .who { list-style: none; margin: 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .who li + li { border-top: 1px solid var(--line); }
+    .who-row { display: flex; align-items: center; gap: 12px; min-height: 52px; cursor: pointer; }
+    .who-row input { width: 22px; height: 22px; accent-color: var(--turf); flex: none; margin: 0; }
+    .who-row.all { font-weight: 700; }
+    .each { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--surface-2); }
+    .each > span:first-child { font-weight: 600; }
+    .each-val { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .each-val small { font-size: var(--step--1); }
+    .each b { font-size: calc(var(--step-2) * 1.2); color: var(--ink); line-height: 1.1; }
     dialog.sheet h2 { margin: 0; padding-right: 40px; }
   `,
 })
@@ -364,9 +393,13 @@ export class PaymentsPage implements OnInit {
   protected readonly eAmount = signal('');
   protected readonly ePayer = signal<string>('');
   protected readonly eUsers = signal(new Set<string>());
-  protected readonly eachText = computed(() => {
+  protected readonly allPicked = computed(() => { const n = this.session.activeMembers().length; return n > 0 && this.eUsers().size === n; });
+  /** quota a testa: se non si divide in parti uguali, in grande la più alta e sotto quanti pagano un centesimo in meno */
+  protected readonly each = computed(() => {
     const c = parseEuro(this.eAmount()), n = this.eUsers().size;
-    return c && n ? (c % n === 0 ? eur(c / n) : `${eur(Math.floor(c / n))}–${eur(Math.ceil(c / n))}`) : null;
+    if (!c || !n) return null;
+    const lo = Math.floor(c / n), extra = c - lo * n;
+    return extra ? { main: eur(lo + 1), note: `${n - extra} su ${n} pagano ${eur(lo)}` } : { main: eur(lo), note: null };
   });
 
   async ngOnInit(): Promise<void> {
