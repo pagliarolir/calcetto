@@ -260,8 +260,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     <dialog #methodsDlg class="sheet" (click)="backdrop($event)" aria-labelledby="dati-h">
       <div class="grab" aria-hidden="true"></div>
       <button type="button" class="x-close" (click)="methodsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
-      <div class="dati-head"><h2 id="dati-h" appFitText>I miei dati di pagamento</h2>
-        <app-info-tip label="Chi li vede" [lines]="['Li vede solo chi ti deve dei soldi, e il Leader.', 'Il nome PayPal.me è quello dopo paypal.me/ nel tuo link.', 'Ne basta uno: PayPal oppure IBAN.']" /></div>
+      <div class="dati-head"><h2 id="dati-h" appFitText>I miei dati di pagamento</h2></div>
       <form class="stack" (ngSubmit)="saveMethods()">
         <label class="field"><span>Nome PayPal.me</span>
           <div class="pre"><span class="muted">paypal.me/</span><input class="input" name="pp" [(ngModel)]="fPaypal" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" /></div>
@@ -340,11 +339,10 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .data-btn { position: relative; color: var(--ink); }
     .data-btn .dot { position: absolute; top: 9px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg); }
     .add-data { gap: 6px; white-space: normal; text-align: left; line-height: 1.2; min-height: 44px; }
-    /* titolo su una riga, con la «i» subito dopo «pagamento» */
+    /* titolo su una riga */
     .dati-head { display: flex; align-items: center; gap: 2px; padding-right: 48px; min-width: 0; }
     .dati-head h2 { padding-right: 0; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       font-size: var(--step-2); }
-    .dati-head app-info-tip { flex: none; margin-left: -8px; } /* il tocco resta di 44 px, il simbolo sta attaccato alla parola */
     .balance { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; }
     .balance b { font-size: calc(var(--step-2) * 1.25); color: var(--ink); }
     .balance.owe b { color: var(--danger); }
