@@ -285,7 +285,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
           </label>
           <label class="field"><span>Ha pagato</span>
             <select class="input" name="payer" [ngModel]="ePayer()" (ngModelChange)="ePayer.set($event)">
-              @for (m of session.activeMembers(); track m.id) { <option [ngValue]="m.id">{{ session.name(m.id) }}</option> }
+              @for (m of payerOptions(); track m.id) { <option [ngValue]="m.id">{{ session.name(m.id) }}</option> }
             </select>
           </label>
         </div>
@@ -463,6 +463,11 @@ export class PaymentsPage implements OnInit {
   protected readonly whoOpen = signal(false);
   /** formazione della partita scelta: finché la scelta è quella, il riassunto dice «Chi ha giocato il giorno …» */
   protected readonly matchLineup = signal<{ ids: Set<string>; day: string } | null>(null);
+  /** chi può aver pagato: con una partita scelta, solo chi era in campo */
+  protected readonly payerOptions = computed(() => {
+    const ml = this.matchLineup();
+    return ml ? this.session.activeMembers().filter((m) => ml.ids.has(m.id)) : this.session.activeMembers();
+  });
   /** riassunto chiuso: «10 su 14: Alberto, Checco e altri 8» */
   protected readonly pickedText = computed(() => {
     const ids = this.session.activeMembers().filter((m) => this.eUsers().has(m.id)).map((m) => this.session.name(m.id));
@@ -594,7 +599,7 @@ export class PaymentsPage implements OnInit {
   protected async pickMatch(id: string | null): Promise<void> {
     this.eMatch.set(id);
     this.matchLineup.set(null);
-    if (!id) return;
+    if (!id) { if (!this.ePayer()) this.ePayer.set(this.me() ?? ''); return; }
     const m = this.pastMatches().find((x) => x.id === id);
     if (m && (!this.eTitle || this.eTitle.startsWith('Campo'))) this.eTitle = `Campo ${fmtDate(m.starts_at)}`;
     // il campo di solito costa 30 €: si propone, si può cambiare
@@ -605,6 +610,8 @@ export class PaymentsPage implements OnInit {
         const ids = new Set(rows.map((r) => r.user_id));
         this.eUsers.set(new Set(ids));
         this.matchLineup.set({ ids, day: fmtDate(m?.starts_at ?? '') });
+        // chi ha pagato il campo è tra chi ha giocato: se non c'era, si propone il primo dell'elenco
+        if (!ids.has(this.ePayer())) this.ePayer.set(this.payerOptions()[0]?.id ?? this.ePayer());
       }
     } catch { /* si scelgono a mano */ }
   }
