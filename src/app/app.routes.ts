@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, homeGuard, fantaLeaderGuard, guestGuard, staffGuard } from './core/guards';
+import { authGuard, homeGuard, fantaLeaderGuard, guestGuard, paymentsGuard, staffGuard } from './core/guards';
 
 export const routes: Routes = [
   { path: 'invito/:token', loadComponent: () => import('./pages/invite').then((m) => m.InvitePage), title: 'Invito' },
@@ -30,6 +30,7 @@ export const routes: Routes = [
       { path: 'profilo', loadComponent: () => import('./pages/profile').then((m) => m.ProfilePage), title: 'Profilo' },
       { path: 'gestione', canActivate: [staffGuard], loadComponent: () => import('./pages/admin').then((m) => m.AdminPage), title: 'Gestione' },
       { path: 'fantaleader', canActivate: [fantaLeaderGuard], loadComponent: () => import('./pages/fantaleader').then((m) => m.FantaLeaderPage), title: 'FantaLeader' },
+      { path: 'pagamenti', canActivate: [paymentsGuard], loadComponent: () => import('./pages/payments').then((m) => m.PaymentsPage), title: 'Pagamenti' },
     ],
   },
   { path: '**', redirectTo: '' },
