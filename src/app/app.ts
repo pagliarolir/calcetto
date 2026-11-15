@@ -13,6 +13,7 @@ import { ScrollMemory } from './core/scroll-memory';
 import { Refresher } from './core/refresher';
 import { Theme } from './core/theme';
 import { FantaLeader } from './core/fantaleader';
+import { Payments } from './core/payments';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
 import { ConfirmView } from './ui/confirm';
@@ -163,6 +164,7 @@ export class App {
   private readonly theme = inject(Theme);
   /** la voce «Fanta» compare solo a chi può vedere FantaLeader */
   private readonly fl = inject(FantaLeader);
+  private readonly pay = inject(Payments);
   protected readonly toasts = inject(Toasts);
   protected readonly network = inject(Network);
   private readonly next = inject(NextMatch);
@@ -180,10 +182,11 @@ export class App {
   });
 
   protected readonly tabs = computed(() => [
-    // al massimo 5 voci (linee guida Apple e Google): Gestione è nel Profilo («Area Leader»)
+    // di norma 5 voci (linee guida Apple e Google); Fanta e Conti solo per chi è in anteprima. Gestione è nel Profilo
     { path: this.next.id() ? `/partita/${this.next.id()}` : '/', key: '/', label: 'Partita', icon: 'pitch' },
     { path: '/classifica', key: '/classifica', label: 'Classifica', icon: 'table' },
     ...(this.fl.visible() ? [{ path: '/fantaleader', key: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
+    ...(this.pay.visible() ? [{ path: '/pagamenti', key: '/pagamenti', label: 'Conti', icon: 'wallet' }] : []),
     { path: '/avvisi', key: '/avvisi', label: 'Avvisi', icon: 'bell' },
     { path: '/profilo', key: '/profilo', label: 'Profilo', icon: 'user' },
   ]);
@@ -195,6 +198,7 @@ export class App {
     this.prefetch.schedule();
     // chi può vedere FantaLeader: si chiede a ogni accesso (e a ogni «trascina per aggiornare»)
     effect(() => { if (this.session.uid()) void this.fl.checkVisible(); else this.fl.visible.set(false); });
+    effect(() => { if (this.session.uid()) void this.pay.checkVisible(); else this.pay.visible.set(false); });
     // logo dell'app (icona e manifest): anche prima dell'accesso
     void this.branding.load();
     // rete di sicurezza: se un browser facesse comunque scorrere la colonna, torna subito a posto

@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { FantaLeader } from './fantaleader';
+import { Payments } from './payments';
 import { NextMatch } from './next-match';
 import { Session } from './session';
 
@@ -35,6 +36,15 @@ export const fantaLeaderGuard: CanActivateFn = async () => {
   const router = inject(Router);
   await s.whenReady();
   return (await fl.checkVisible()) ? true : router.parseUrl('/');
+};
+
+/** Pagamenti in anteprima: come FantaLeader, solo chi è ammesso. */
+export const paymentsGuard: CanActivateFn = async () => {
+  const s = inject(Session);
+  const pay = inject(Payments);
+  const router = inject(Router);
+  await s.whenReady();
+  return (await pay.checkVisible()) ? true : router.parseUrl('/');
 };
 
 /**

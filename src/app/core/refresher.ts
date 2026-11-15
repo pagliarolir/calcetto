@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
 import { Achievements } from './achievements';
 import { FantaLeader } from './fantaleader';
+import { Payments } from './payments';
 import { Session } from './session';
 import { Unread } from './unread';
 
@@ -17,6 +18,7 @@ export class Refresher {
   private readonly achievements = inject(Achievements);
   private readonly sw = inject(SwUpdate);
   private readonly fantaLeader = inject(FantaLeader);
+  private readonly payments = inject(Payments);
   /** cambia a ogni aggiornamento: la pagina corrente viene ricreata */
   readonly key = signal(0);
   readonly busy = signal(false);
@@ -39,6 +41,7 @@ export class Refresher {
           this.unread.refresh().catch(() => undefined),
           this.achievements.load().catch(() => undefined),
           this.fantaLeader.checkVisible().catch(() => false),
+          this.payments.checkVisible().catch(() => false),
         ]);
       }
       this.key.update((k) => k + 1);
