@@ -120,14 +120,33 @@ export class Ratings {
     if (saved.length) queueMicrotask(() => void this.load(saved, true).catch(() => undefined));
   }
 
+  /** schede in arrivo (chiamata già partita) e ora dell'ultimo aggiornamento di ciascuna: niente doppioni */
+  private inFlight = new Map<string, Promise<void>>();
+  private fetchedAt = new Map<string, number>();
+
   async load(ids: string[], force = false): Promise<void> {
-    const need = force ? ids : ids.filter((id) => !this.cards().has(id));
-    if (!need.length) return;
-    const rows = must(await this.sb.rpc('player_cards', { p_users: need })) as RatingCard[];
-    const next = new Map(this.cards());
-    for (const r of rows) next.set(r.user_id, r);
-    this.cards.set(next);
-    this.cache.set('cards', [...next], true);
+    const now = Date.now();
+    // con force si riaggiorna, ma non ciò che è appena arrivato (ultimi 30 s) o è già in arrivo
+    const need = [...new Set(ids)].filter((id) => !this.inFlight.has(id)
+      && (force ? now - (this.fetchedAt.get(id) ?? 0) > 30_000 : !this.cards().has(id)));
+    const waiting = ids.map((id) => this.inFlight.get(id)).filter((p): p is Promise<void> => !!p);
+    if (need.length) {
+      const p = (async () => {
+        try {
+          const rows = must(await this.sb.rpc('player_cards', { p_users: need })) as RatingCard[];
+          const next = new Map(this.cards());
+          const t = Date.now();
+          for (const r of rows) { next.set(r.user_id, r); this.fetchedAt.set(r.user_id, t); }
+          this.cards.set(next);
+          this.cache.set('cards', [...next], true);
+        } finally {
+          for (const id of need) this.inFlight.delete(id);
+        }
+      })();
+      for (const id of need) this.inFlight.set(id, p);
+      waiting.push(p);
+    }
+    await Promise.all(waiting);
   }
 
   private pending = new Set<string>();
@@ -149,6 +168,7 @@ export class Ratings {
   /** dopo un cambio dei coefficienti le schede si ricalcolano */
   clear(): void {
     this.cards.set(new Map());
+    this.fetchedAt.clear();
     this.cache.set('cards', [], true);
   }
 

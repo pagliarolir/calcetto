@@ -104,15 +104,59 @@ export class FantaLeader {
     return this.skills().filter((s) => ids.has(s.id)).sort((a, b) => (a.kind === b.kind ? a.id - b.id : a.kind === 'pos' ? -1 : 1));
   }
 
+  private visCheck: { uid: string; at: number; p: Promise<boolean> } | null = null;
+  /** se l'utente vede il FantaLeader; più richieste ravvicinate (barra, scaricamento in anticipo, guardia) fanno una sola chiamata */
   async checkVisible(): Promise<boolean> {
-    if (!this.session.uid()) { this.visible.set(false); return false; }
-    const res = await this.sb.rpc('fl_visible');
-    const v = !res.error && res.data === true;
-    this.visible.set(v);
-    return v;
+    const uid = this.session.uid();
+    if (!uid) { this.visible.set(false); this.visCheck = null; return false; }
+    if (this.visCheck && this.visCheck.uid === uid && Date.now() - this.visCheck.at < 30_000) return this.visCheck.p;
+    const p = (async () => {
+      const res = await this.sb.rpc('fl_visible');
+      const v = !res.error && res.data === true;
+      this.visible.set(v);
+      if (res.error) this.visCheck = null;
+      return v;
+    })();
+    this.visCheck = { uid, at: Date.now(), p };
+    return p;
   }
 
+  private bundleMissing = false;
+  /** tutto il FantaLeader in una chiamata (fl_bundle, migrazione 53); finché la migrazione non c'è, le letture separate */
   async load(): Promise<void> {
+    if (!this.bundleMissing) {
+      const { data, error } = await this.sb.rpc('fl_bundle');
+      if (!error) {
+        const b = (data ?? {}) as Record<string, unknown>;
+        this.apply({
+          st: b['settings'] ?? null, pl: b['players'] ?? [], rk: b['ranking'] ?? [], pr: b['presets'] ?? [], sk: b['skills'] ?? [],
+          ps: b['player_skills'] ?? [], tr: b['teams'] ?? [], tm: b['team_matches'] ?? [],
+          ver: (b['my_version'] as FlTeamVersion | null) ?? null, lr: b['last_round'] ?? null,
+        });
+        return;
+      }
+      const code = (error as { code?: string }).code;
+      if (code !== 'PGRST202' && code !== '42883') throw error;
+      this.bundleMissing = true;
+    }
+    await this.loadSeparately();
+  }
+
+  private apply(d: { st: unknown; pl: unknown; rk: unknown; pr: unknown; sk: unknown; ps: unknown; tr: unknown; tm: unknown; ver: FlTeamVersion | null; lr: unknown }): void {
+    this.settings.set(d.st as FlSettings);
+    this.players.set(d.pl as FlPlayer[]);
+    this.ranking.set((d.rk as FlRank[]).map((r) => ({ ...r, total: +r.total, provisional: +r.provisional, last_points: r.last_points === null ? null : +r.last_points, next_coef: +r.next_coef })));
+    this.presets.set(d.pr as FlPreset[]);
+    this.skills.set(d.sk as FlSkill[]);
+    this.playerSkills.set(d.ps as { user_id: string; skill_id: number }[]);
+    this.teams.set((d.tr as FlTeamRank[]).map((t) => ({ ...t, total: +t.total, last_points: t.last_points === null ? null : +t.last_points })));
+    this.teamMatches.set((d.tm as FlTeamMatch[]).map((t) => ({ ...t, points: +t.points })));
+    this.myVersion.set(d.ver);
+    this.lastRound.set((d.lr as { match_id: string; starts_at: string } | null) ?? null);
+    this.loaded.set(true);
+  }
+
+  private async loadSeparately(): Promise<void> {
     const uid = this.session.uid();
     const [st, pl, rk, pr, sk, ps, tr, tm, mine, lr] = await Promise.all([
       this.sb.from('fl_settings').select('*').eq('id', 1).single(),
@@ -126,18 +170,12 @@ export class FantaLeader {
       uid ? this.sb.from('fl_teams').select('id, fl_team_versions(team_id, captain_id, members, prices, spent, valid_from, valid_to)').eq('owner_id', uid).maybeSingle() : Promise.resolve({ data: null, error: null }),
       this.sb.rpc('fl_last_round'),
     ]);
-    this.settings.set(must(st) as FlSettings);
-    this.players.set(must(pl) as FlPlayer[]);
-    this.ranking.set((must(rk) as FlRank[]).map((r) => ({ ...r, total: +r.total, provisional: +r.provisional, last_points: r.last_points === null ? null : +r.last_points, next_coef: +r.next_coef })));
-    this.presets.set(must(pr) as FlPreset[]);
-    this.skills.set(must(sk) as FlSkill[]);
-    this.playerSkills.set(must(ps) as { user_id: string; skill_id: number }[]);
-    this.teams.set((must(tr) as FlTeamRank[]).map((t) => ({ ...t, total: +t.total, last_points: t.last_points === null ? null : +t.last_points })));
-    this.teamMatches.set((must(tm) as FlTeamMatch[]).map((t) => ({ ...t, points: +t.points })));
     const team = must(mine as { data: unknown; error: unknown }) as { fl_team_versions: (FlTeamVersion & { valid_to: string | null })[] } | null;
-    this.myVersion.set(team?.fl_team_versions.find((v) => v.valid_to === null) ?? null);
-    this.lastRound.set(((must(lr) as { match_id: string; starts_at: string }[]) ?? [])[0] ?? null);
-    this.loaded.set(true);
+    this.apply({
+      st: must(st), pl: must(pl), rk: must(rk), pr: must(pr), sk: must(sk), ps: must(ps), tr: must(tr), tm: must(tm),
+      ver: team?.fl_team_versions.find((v) => v.valid_to === null) ?? null,
+      lr: ((must(lr) as { match_id: string; starts_at: string }[]) ?? [])[0] ?? null,
+    });
   }
 
   async pointsOf(userId: string): Promise<FlPoints[]> {
