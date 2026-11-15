@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
@@ -16,7 +16,29 @@ import { Sheet } from '../ui/sheet';
 import { Skeleton } from '../ui/skeleton';
 
 const METHOD_LABEL: Record<PayMethod, string> = { paypal: 'PayPal', iban: 'Bonifico', cash: 'Contanti' };
-const METHOD_ICON: Record<PayMethod, string> = { paypal: 'send', iban: 'bank', cash: 'cash' };
+
+/** simbolo del metodo: per PayPal il suo marchio (file fornito dal proprietario, su un tondino chiaro perché si legga in ogni tema), per gli altri un'icona */
+@Component({
+  selector: 'app-pay-mark',
+  imports: [Icon],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    @if (method() === 'paypal') {
+      <span class="tile" [style.width.px]="size() + 8" [style.height.px]="size() + 8"><img src="/pay/paypal.png" alt="" [width]="size()" [height]="size()" /></span>
+    } @else {
+      <app-icon [name]="method() === 'iban' ? 'bank' : 'cash'" [size]="size()" />
+    }
+  `,
+  styles: `
+    :host { display: inline-grid; place-items: center; }
+    .tile { display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 8%); }
+    img { display: block; object-fit: contain; }
+  `,
+})
+export class PayMark {
+  readonly method = input.required<PayMethod>();
+  readonly size = input(20);
+}
 type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
 
 /**
@@ -26,7 +48,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
  */
 @Component({
   selector: 'app-payments-page',
-  imports: [FormsModule, Avatar, Icon, InfoTip, Sheet, Skeleton],
+  imports: [FormsModule, Avatar, Icon, InfoTip, PayMark, Sheet, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page stack-l">
@@ -57,7 +79,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
                 <li class="list-item confirm">
                   <div class="row"><app-avatar [userId]="s.from_id" [size]="36" />
                     <span class="grow"><b>{{ session.name(s.from_id) }}</b> dice di {{ s.to_id === me() ? 'averti' : 'aver dato a ' + session.name(s.to_id) }}
-                      dato <b>{{ eur(s.amount_cents) }}</b> <span class="how sym" role="img" [attr.aria-label]="'con ' + methodLabel(s.method)" [title]="methodLabel(s.method)"><app-icon [name]="methodIcon(s.method)" [size]="18" /></span></span></div>
+                      dato <b>{{ eur(s.amount_cents) }}</b> <span class="how sym" role="img" [attr.aria-label]="'con ' + methodLabel(s.method)" [title]="methodLabel(s.method)"><app-pay-mark [method]="s.method" [size]="18" /></span></span></div>
                   <div class="row acts">
                     <button type="button" class="btn danger" [disabled]="busy()" (click)="decide(s, false)"><app-icon name="x" [size]="16" /> Non ricevuto</button>
                     <button type="button" class="btn primary" [disabled]="busy()" (click)="decide(s, true)"><app-icon name="check" [size]="16" /> Ricevuto</button>
@@ -150,7 +172,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
                 @for (s of d.history; track s.id) {
                   <li class="list-item tight hist">
                     <span class="grow"><span>{{ session.name(s.from_id) }} <app-icon name="back" [size]="14" class="to" /> {{ session.name(s.to_id) }}</span>
-                      <span class="small muted how"><span class="sym" role="img" [attr.aria-label]="methodLabel(s.method)" [title]="methodLabel(s.method)"><app-icon [name]="methodIcon(s.method)" [size]="16" /></span> {{ when(s.decided_at ?? s.created_at) }}</span></span>
+                      <span class="small muted how"><span class="sym" role="img" [attr.aria-label]="methodLabel(s.method)" [title]="methodLabel(s.method)"><app-pay-mark [method]="s.method" [size]="16" /></span> {{ when(s.decided_at ?? s.created_at) }}</span></span>
                     <b class="num" [class.struck]="s.status === 'rejected'">{{ eur(s.amount_cents) }}</b>
                     @if (s.status === 'rejected') { <span class="tag danger">Non ricevuto</span> }
                   </li>
@@ -211,7 +233,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
         @if (!onBehalf() && !receiving()) {
           @if (m?.paypal) {
             <a class="btn block paypal" [href]="paypalUrl(m!.paypal!)" target="_blank" rel="noopener" (click)="method.set('paypal')">
-              <app-icon name="send" [size]="16" /> Apri PayPal con {{ amountText() }}
+              <app-pay-mark method="paypal" [size]="18" /> Apri PayPal con {{ amountText() }}
             </a>
             <p class="small muted hint">Scegli «Amici e familiari»: tra amici in Italia è gratis con saldo PayPal o conto collegato.</p>
           }
@@ -231,7 +253,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
         <div class="field"><span>{{ onBehalf() || receiving() ? 'Come ha pagato' : 'Come hai pagato' }}</span>
           <div class="choice">
             @for (k of methods; track k) {
-              <button type="button" class="sym-btn" [attr.aria-pressed]="method() === k" (click)="method.set(k)" [attr.aria-label]="methodLabel(k)" [title]="methodLabel(k)"><app-icon [name]="methodIcon(k)" [size]="28" /></button>
+              <button type="button" class="sym-btn" [attr.aria-pressed]="method() === k" (click)="method.set(k)" [attr.aria-label]="methodLabel(k)" [title]="methodLabel(k)"><app-pay-mark [method]="k" [size]="28" /></button>
             }
           </div>
         </div>
@@ -467,7 +489,6 @@ export class PaymentsPage implements OnInit {
   }
 
   protected methodLabel(m: PayMethod): string { return METHOD_LABEL[m]; }
-  protected methodIcon(m: PayMethod): string { return METHOD_ICON[m]; }
   protected when(iso: string): string { return fmtDate(iso); }
   protected day(iso: string): string { return fmtDayShort(iso); }
   protected methodsOf(uid: string): PayMethods | undefined { return this.pay.data()?.methods.find((m) => m.user_id === uid); }
