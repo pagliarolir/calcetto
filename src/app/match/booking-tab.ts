@@ -1,5 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { formOf, overallOf, Ratings } from '../core/ratings';
 import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
@@ -120,13 +120,13 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
               @if (store.free()) {
                 <ul class="people board">
                   @for (r of byName(store.team()); track r.user_id) {
-                    <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [team]="kitOf(r.user_id)" [teamLabel]="kitLabel(r.user_id)" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                    <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" [team]="kitOf(r.user_id)" [teamLabel]="kitLabel(r.user_id)" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                   } @empty { <li class="empty"><app-empty icon="user" text="Ancora nessun titolare." /></li> }
                 </ul>
               } @else {
                 <ol class="board">
                   @for (s of sortedSlots(); track s.slot) {
-                    <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [style.view-transition-name]="s.row ? vt(s.row.user_id) : null">
+                    <li [class.enter-drop]="!!s.row && dropFor() === s.row.user_id" [attr.data-flip]="s.row?.user_id ?? null">
                       @if (s.row; as r) {
                         <app-figurina [class.arriving]="!!r.provisional" [userId]="r.user_id" [number]="s.slot" [mine]="r.user_id === session.uid()"
                                       [team]="kitOf(r.user_id)" [teamLabel]="kitLabel(r.user_id)" />
@@ -142,7 +142,7 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
             @case ('pending') {
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
+                  <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun disponibile." /></li> }
               </ul>
             }
@@ -151,13 +151,13 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
                 @if (store.free()) {
                   <ul class="people board">
                     @for (r of byName(store.reserves()); track r.user_id) {
-                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
+                      <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="riserva" />@if (canWithdraw(r.user_id)) { <button type="button" class="wd" (click)="askWithdraw()" aria-label="Ritirati da questa partita"><app-icon name="x" [size]="11" /></button> }</li>
                     }
                   </ul>
                 } @else {
                   <ol class="board">
                     @for (r of byName(store.reserves()); track r.user_id + ':' + r.slot) {
-                      <li [class.enter-drop]="dropFor() === r.user_id" [style.view-transition-name]="vt(r.user_id)">
+                      <li [class.enter-drop]="dropFor() === r.user_id" [attr.data-flip]="r.user_id">
                         <app-figurina variant="reserve" [userId]="r.user_id" [number]="r.slot" [mine]="r.user_id === session.uid()"
                                      
                                       />
@@ -171,7 +171,7 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
             @case ('out') {
               <ul class="people board">
                 @for (r of byName(store.absents()); track r.user_id) {
-                  <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
+                  <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun assente." /></li> }
               </ul>
               @if (silent().length) {
@@ -179,7 +179,7 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
                   <h3>Non hanno risposto <span class="count num">{{ silent().length }}</span></h3>
                   <ul class="people board">
                     @for (r of byName(silentRows()); track r.user_id) {
-                      <li [style.view-transition-name]="vt(r.user_id)"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
+                      <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                     }
                   </ul>
                 </div>
@@ -430,16 +430,34 @@ export class BookingTab {
     return t ? `squadra ${this.store.teamNames()[t]}` : null;
   }
 
-  /** nome di transizione di una figurina (per farla scivolare quando cambia l'ordine) */
-  protected vt(id: string): string { return 'f-' + id; }
-  /** cambia ordine con una transizione: le figurine scivolano nella nuova posizione */
+  /**
+   * Cambia ordine: le figurine scivolano nella nuova posizione (tecnica FLIP: si misura prima e dopo e si anima lo
+   * spostamento). Niente View Transitions: le loro copie stanno sopra tutta la pagina e finivano sopra l'intestazione
+   * della partita invece di restare dentro l'area che scorre. Toccare il modo già attivo non fa nulla.
+   */
   protected setSort(id: SortMode): void {
     this.sortOpen.set(false);
+    if (id === this.effSort()) return;
     try { localStorage.setItem(BookingTab.SORT_KEY, id); } catch { /* resta solo per questa visita */ }
     void this.listRouter.navigate([], { relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge', queryParams: { ordine: id === 'alpha' ? null : id } });
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (doc.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) doc.startViewTransition(() => this.sortMode.set(id));
-    else this.sortMode.set(id);
+    const before = this.flipRects();
+    this.sortMode.set(id);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    afterNextRender(() => this.flipPlay(before), { injector: this.injector });
+  }
+  private flipRects(): Map<string, DOMRect> {
+    const out = new Map<string, DOMRect>();
+    (this.hostEl.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flip]').forEach((el) => out.set(el.dataset['flip']!, el.getBoundingClientRect()));
+    return out;
+  }
+  private flipPlay(before: Map<string, DOMRect>): void {
+    (this.hostEl.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flip]').forEach((el) => {
+      const a = before.get(el.dataset['flip']!);
+      if (!a) return;
+      const b = el.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.2, 0.9, 0.25, 1)' });
+    });
   }
   protected readonly effSort = computed(() => (this.sortOptions().some((o) => o.id === this.sortMode()) ? this.sortMode() : 'alpha'));
   /** ordina una lista secondo il modo scelto (predefinito: alfabetico) */
@@ -538,6 +556,7 @@ export class BookingTab {
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
   protected readonly infoOpen = signal(false);
   private readonly hostEl = inject(ElementRef);
+  private readonly injector = inject(Injector);
   protected readonly infoLines = computed(() => {
     const m = this.store.match();
     if (!m || m.status !== 'scheduled' || this.store.t()?.started) return [];
