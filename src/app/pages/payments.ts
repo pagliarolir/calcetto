@@ -284,7 +284,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
             <div class="pre amount"><input class="input num" name="amount" inputmode="decimal" [ngModel]="eAmount()" (ngModelChange)="eAmount.set($event)" /><span class="muted">€</span></div>
           </label>
           <label class="field"><span>Ha pagato</span>
-            <select class="input" name="payer" [ngModel]="ePayer()" (ngModelChange)="ePayer.set($event)" [disabled]="!pay.data()?.boss">
+            <select class="input" name="payer" [ngModel]="ePayer()" (ngModelChange)="ePayer.set($event)">
               @for (m of session.activeMembers(); track m.id) { <option [ngValue]="m.id">{{ session.name(m.id) }}</option> }
             </select>
           </label>
@@ -314,11 +314,9 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
           </ul>
         </details>
         <div class="each" aria-live="polite">
-          <span>A testa</span>
-          <span class="each-val">
-            <b class="num">{{ each()?.main ?? '—' }}</b>
-            @if (each()?.note; as note) { <small class="muted">{{ note }}</small> }
-          </span>
+          <span class="each-lbl">A testa</span>
+          <b class="num">{{ each()?.main ?? '—' }}</b>
+          @if (each()?.note; as note) { <small class="muted">{{ note }}</small> }
         </div>
         <button class="btn primary block" [disabled]="busy() || !canSaveExpense()">Aggiungi la spesa</button>
       </form>
@@ -393,10 +391,21 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
     .who-row { display: flex; align-items: center; gap: 12px; min-height: 52px; cursor: pointer; }
     .who-row input { width: 22px; height: 22px; accent-color: var(--turf); flex: none; margin: 0; }
     .who-row.all { font-weight: 700; }
-    .each { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--surface-2); }
-    .each > span:first-child { font-weight: 600; }
-    .each-val { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-    .each-val small { font-size: var(--step--1); }
+    .each { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 12px 16px; border-radius: 14px; background: var(--surface-2); }
+    .each-lbl { font-weight: 600; }
+    .each small { font-size: var(--step--1); }
+    /* tutti i campi del modulo alti come la tendina «Ha pagato» */
+    form .input { height: 48px; box-sizing: border-box; }
+    /* apertura della tendina dei giocatori: scende con l'altezza dove si può, altrimenti compare con una dissolvenza */
+    @media (prefers-reduced-motion: no-preference) {
+      @supports (interpolate-size: allow-keywords) {
+        .who-fold { interpolate-size: allow-keywords; }
+        .who-fold::details-content { block-size: 0; overflow: clip; transition: block-size 260ms var(--ease-out, ease-out), content-visibility 260ms allow-discrete; }
+        .who-fold[open]::details-content { block-size: auto; }
+      }
+      .who-fold[open] .who { animation: who-in 260ms var(--ease-out, ease-out); }
+      @keyframes who-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    }
     .each b { font-size: calc(var(--step-2) * 1.2); color: var(--ink); line-height: 1.1; }
     dialog.sheet h2 { margin: 0; padding-right: 40px; }
   `,
@@ -452,11 +461,15 @@ export class PaymentsPage implements OnInit {
   protected readonly ePayer = signal<string>('');
   protected readonly eUsers = signal(new Set<string>());
   protected readonly whoOpen = signal(false);
+  /** formazione della partita scelta: finché la scelta è quella, il riassunto dice «Chi ha giocato il giorno …» */
+  protected readonly matchLineup = signal<{ ids: Set<string>; day: string } | null>(null);
   /** riassunto chiuso: «10 su 14: Alberto, Checco e altri 8» */
   protected readonly pickedText = computed(() => {
     const ids = this.session.activeMembers().filter((m) => this.eUsers().has(m.id)).map((m) => this.session.name(m.id));
     const n = this.session.activeMembers().length;
     if (!ids.length) return 'Nessuno: tocca per scegliere';
+    const ml = this.matchLineup(), picked = this.eUsers();
+    if (ml && ml.ids.size === picked.size && [...ml.ids].every((x) => picked.has(x))) return `Chi ha giocato il giorno ${ml.day} (${picked.size})`;
     if (ids.length === n) return `Tutti (${n})`;
     const head = ids.slice(0, 2).join(', ');
     return `${ids.length} su ${n}: ${head}${ids.length > 2 ? ` e altri ${ids.length - 2}` : ''}`;
@@ -565,6 +578,7 @@ export class PaymentsPage implements OnInit {
     this.ePayer.set(this.me() ?? '');
     this.eUsers.set(new Set());
     this.whoOpen.set(false);
+    this.matchLineup.set(null);
     queueMicrotask(() => { const d = this.expDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
     if (!this.pastMatches().length) {
       try {
@@ -579,14 +593,22 @@ export class PaymentsPage implements OnInit {
   /** scegliendo una partita: titolo «Campo gg/mm/aa» e divisione tra chi era in formazione */
   protected async pickMatch(id: string | null): Promise<void> {
     this.eMatch.set(id);
+    this.matchLineup.set(null);
     if (!id) return;
     const m = this.pastMatches().find((x) => x.id === id);
     if (m && (!this.eTitle || this.eTitle.startsWith('Campo'))) this.eTitle = `Campo ${fmtDate(m.starts_at)}`;
+    // il campo di solito costa 30 €: si propone, si può cambiare
+    if (!parseEuro(this.eAmount())) this.eAmount.set('30');
     try {
       const rows = await this.api.lineup(id);
-      if (rows.length) this.eUsers.set(new Set(rows.map((r) => r.user_id)));
+      if (rows.length) {
+        const ids = new Set(rows.map((r) => r.user_id));
+        this.eUsers.set(new Set(ids));
+        this.matchLineup.set({ ids, day: fmtDate(m?.starts_at ?? '') });
+      }
     } catch { /* si scelgono a mano */ }
   }
+
 
   protected toggleUser(id: string): void {
     const s = new Set(this.eUsers());
