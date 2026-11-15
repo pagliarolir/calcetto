@@ -57,7 +57,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
                 <li class="list-item confirm">
                   <div class="row"><app-avatar [userId]="s.from_id" [size]="36" />
                     <span class="grow"><b>{{ session.name(s.from_id) }}</b> dice di {{ s.to_id === me() ? 'averti' : 'aver dato a ' + session.name(s.to_id) }}
-                      dato <b>{{ eur(s.amount_cents) }}</b> <span class="how"><app-icon [name]="methodIcon(s.method)" [size]="14" /> {{ methodLabel(s.method) }}</span></span></div>
+                      dato <b>{{ eur(s.amount_cents) }}</b> <span class="how sym" role="img" [attr.aria-label]="'con ' + methodLabel(s.method)" [title]="methodLabel(s.method)"><app-icon [name]="methodIcon(s.method)" [size]="18" /></span></span></div>
                   <div class="row acts">
                     <button type="button" class="btn danger" [disabled]="busy()" (click)="decide(s, false)"><app-icon name="x" [size]="16" /> Non ricevuto</button>
                     <button type="button" class="btn primary" [disabled]="busy()" (click)="decide(s, true)"><app-icon name="check" [size]="16" /> Ricevuto</button>
@@ -150,7 +150,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
                 @for (s of d.history; track s.id) {
                   <li class="list-item tight hist">
                     <span class="grow"><span>{{ session.name(s.from_id) }} <app-icon name="back" [size]="14" class="to" /> {{ session.name(s.to_id) }}</span>
-                      <span class="small muted how"><app-icon [name]="methodIcon(s.method)" [size]="14" /> {{ methodLabel(s.method) }}, {{ when(s.decided_at ?? s.created_at) }}</span></span>
+                      <span class="small muted how"><span class="sym" role="img" [attr.aria-label]="methodLabel(s.method)" [title]="methodLabel(s.method)"><app-icon [name]="methodIcon(s.method)" [size]="16" /></span> {{ when(s.decided_at ?? s.created_at) }}</span></span>
                     <b class="num" [class.struck]="s.status === 'rejected'">{{ eur(s.amount_cents) }}</b>
                     @if (s.status === 'rejected') { <span class="tag danger">Non ricevuto</span> }
                   </li>
@@ -231,7 +231,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
         <div class="field"><span>{{ onBehalf() || receiving() ? 'Come ha pagato' : 'Come hai pagato' }}</span>
           <div class="choice">
             @for (k of methods; track k) {
-              <button type="button" [attr.aria-pressed]="method() === k" (click)="method.set(k)"><app-icon [name]="methodIcon(k)" [size]="20" /><span>{{ methodLabel(k) }}</span></button>
+              <button type="button" class="sym-btn" [attr.aria-pressed]="method() === k" (click)="method.set(k)" [attr.aria-label]="methodLabel(k)" [title]="methodLabel(k)"><app-icon [name]="methodIcon(k)" [size]="28" /></button>
             }
           </div>
         </div>
@@ -336,7 +336,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
     .copy-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; border-radius: 10px; padding: 0 4px; }
     .copy-row:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .copy-row:active { background: var(--surface); }
-    .choice button { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .choice .sym-btn { display: grid; place-items: center; min-height: 56px; }
+    .sym { display: inline-grid; place-items: center; }
     .exp .grow, .hist .grow { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
     .to { display: inline-block; transform: rotate(180deg); vertical-align: -2px; color: var(--muted); }
     .struck { text-decoration: line-through; color: var(--muted); }

@@ -38,9 +38,14 @@ export function parseEuro(text: string): number | null {
   const c = Math.round(parseFloat(t) * 100);
   return c > 0 ? c : null;
 }
-/** link PayPal.me con l'importo già scritto (punto come separatore, come vuole PayPal) */
+/**
+ * Link PayPal.me con l'importo già scritto (punto come separatore, come vuole PayPal).
+ * Niente valuta in fondo («7.00EUR»): con la valuta l'app di PayPal sul telefono si apre ma lascia l'importo vuoto;
+ * senza, vale la valuta principale di chi riceve (per noi l'euro) e l'importo arriva sia nell'app sia nel sito.
+ */
 export function paypalLink(user: string, cents: number): string {
-  return `https://paypal.me/${encodeURIComponent(user)}/${(cents / 100).toFixed(2)}EUR`;
+  const amount = cents % 100 === 0 ? String(cents / 100) : (cents / 100).toFixed(2);
+  return `https://paypal.me/${encodeURIComponent(user)}/${amount}`;
 }
 /** IBAN a gruppi di 4, più leggibile */
 export function ibanGroups(iban: string): string {
