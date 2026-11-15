@@ -162,7 +162,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
                   </li>
                 }
               </ul>
-            } @else { <p class="muted small">Ancora nessuna spesa.</p> }
+              <button type="button" class="btn small ghost clear" [disabled]="busy()" (click)="clearExpenses()"><app-icon name="trash" [size]="16" /> Svuota l'elenco</button>
+            } @else { <p class="muted small">Nessuna spesa da mostrare.</p> }
           </details>
 
           @if (d.history.length) {
@@ -655,6 +656,20 @@ export class PaymentsPage implements OnInit {
       this.toasts.show('Spesa tolta');
     } catch (err) {
       this.toasts.error(errorMessage(err));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async clearExpenses(): Promise<void> {
+    if (this.reprimand.guard()) return;
+    if (!confirm('Svuotare l\'elenco delle spese? Spariscono solo dalla tua vista: i conti non cambiano. Per annullare una spesa sbagliata usa il cestino accanto.')) return;
+    this.busy.set(true);
+    try {
+      await this.pay.clearExpenses();
+      this.toasts.show('Elenco delle spese svuotato');
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
     } finally {
       this.busy.set(false);
     }
