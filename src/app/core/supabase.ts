@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
+import { createGuardedFetch } from './request-guard';
 
 @Injectable({ providedIn: 'root' })
 export class Supabase {
@@ -12,6 +13,8 @@ export class Supabase {
       // evita i blocchi del Navigator Lock API in alcune WebView mobili
       lock: async <R>(_name: string, _timeout: number, fn: () => Promise<R>) => fn(),
     },
+    // freno alle chiamate ripetute (un errore che le fa partire in continuazione): vedi request-guard.ts
+    global: { fetch: createGuardedFetch() },
   });
 }
 
@@ -27,6 +30,7 @@ export function errorMessage(e: unknown): string {
     if (m.includes('User already registered')) return 'Esiste già un account con questa email.';
     if (m.includes('Password should be')) return 'La password deve avere almeno 6 caratteri.';
     if (m.includes('should be different from the old')) return 'La nuova password deve essere diversa da quella attuale.';
+    if (m.startsWith('Troppe richieste ripetute')) return m;
     if (m.toLowerCase().includes('rate limit')) return 'Troppe richieste ravvicinate: riprova tra qualche minuto.';
     if (m.includes('exceeded the maximum allowed size') || m.includes('Payload too large')) return 'La foto è troppo grande.';
     if (m.toLowerCase().includes('mime type')) return 'Formato della foto non supportato.';
