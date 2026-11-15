@@ -39,7 +39,7 @@ export class PayMark {
   readonly method = input.required<PayMethod>();
   readonly size = input(20);
 }
-type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
+type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
 
 /**
  * Pagamenti: conti tipo Splitwise. In alto il proprio saldo, poi le conferme da dare, i debiti da saldare
@@ -59,7 +59,10 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
           'I conti si semplificano: ognuno fa meno passaggi possibili.',
           'Salda apre PayPal con l’importo o mostra l’IBAN: i soldi non passano dall’app.',
           'Il debito si chiude quando chi riceve conferma.']" />
-        <button type="button" class="btn small primary push" (click)="openExpense()"><app-icon name="plus" [size]="16" /> Spesa</button>
+        <button type="button" class="icon-btn push data-btn" (click)="openMethods()" [attr.aria-label]="hasMyMethods() ? 'I miei dati di pagamento' : 'I miei dati di pagamento (da aggiungere)'" title="I miei dati di pagamento">
+          <app-icon name="wallet" [size]="22" />@if (pay.data() && !hasMyMethods()) { <span class="dot" aria-hidden="true"></span> }
+        </button>
+        <button type="button" class="btn small primary" (click)="openExpense()"><app-icon name="plus" [size]="16" /> Spesa</button>
       </header>
 
       @if (!pay.data(); as _) {
@@ -112,6 +115,9 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
           </section>
           <section class="panel col" aria-labelledby="h-get">
             <h2 id="h-get">Da ricevere</h2>
+            @if (myCredits().length && !hasMyMethods()) {
+              <button type="button" class="btn small add-data" (click)="openMethods()"><app-icon name="wallet" [size]="16" /> Aggiungi dati di pagamento</button>
+            }
             @for (t of myCredits(); track t.from_id) {
               <div class="debt">
                 <div class="who-line"><app-avatar [userId]="t.from_id" [size]="28" /><span class="grow">{{ session.name(t.from_id) }}</span></div>
@@ -183,22 +189,6 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
             </details>
           }
 
-          <details class="panel fold cfold" [open]="folds().has('metodi')" (toggle)="toggled('metodi', $event)">
-            <summary><h3>Come ricevi i soldi</h3><app-info-tip label="Chi li vede" [lines]="['Li vede solo chi ti deve dei soldi, e il Leader.', 'Il nome PayPal.me è quello dopo paypal.me/ nel tuo link.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
-            <form class="stack" (ngSubmit)="saveMethods()">
-              <label class="field"><span>Nome PayPal.me</span>
-                <div class="pre"><span class="muted">paypal.me/</span><input class="input" name="pp" [(ngModel)]="fPaypal" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" /></div>
-              </label>
-              <label class="field"><span>IBAN</span>
-                <input class="input mono" name="iban" [(ngModel)]="fIban" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="42" placeholder="IT00 X000 0000 0000 0000 0000 000" />
-              </label>
-              <label class="field"><span>Intestatario del conto</span>
-                <input class="input" name="holder" [(ngModel)]="fHolder" maxlength="80" />
-              </label>
-              <button class="btn primary" [disabled]="busy()">Salva</button>
-            </form>
-          </details>
-
           @if (d.boss && d.settings; as st) {
             <details class="panel fold cfold" [open]="folds().has('visibilita')" (toggle)="toggled('visibilita', $event)">
               <summary><h3>Chi vede i Pagamenti</h3><app-info-tip label="Anteprima" [lines]="['Per ora li vedono il Leader e le persone scelte qui.', 'Aprendoli a tutti, ognuno vede solo i propri conti.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
@@ -248,7 +238,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
             </div>
           }
           @if (!m?.paypal && !m?.iban) {
-            <p class="note small">{{ session.name(t.to_id) }} non ha ancora messo PayPal o IBAN: puoi pagare in contanti o chiederglieli.</p>
+            <p class="note small">{{ session.name(t.to_id) }} non ha ancora aggiunto i dati di pagamento: {{ askText() }}. Intanto puoi pagare in contanti.</p>
           }
         }
         <div class="field"><span>{{ onBehalf() || receiving() ? 'Come ha pagato' : 'Come hai pagato' }}</span>
@@ -263,6 +253,26 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
         </button>
         @if (!onBehalf() && !receiving()) { <p class="small muted hint">Il debito si chiude quando {{ session.name(t.to_id) }} conferma di averli ricevuti.</p> }
       }
+    </dialog>
+
+    <!-- i miei dati di pagamento -->
+    <dialog #methodsDlg class="sheet" (click)="backdrop($event)" aria-labelledby="dati-h">
+      <div class="grab" aria-hidden="true"></div>
+      <button type="button" class="x-close" (click)="methodsDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
+      <div class="dati-head"><h2 id="dati-h">I miei dati di pagamento</h2>
+        <app-info-tip label="Chi li vede" [lines]="['Li vede solo chi ti deve dei soldi, e il Leader.', 'Il nome PayPal.me è quello dopo paypal.me/ nel tuo link.', 'Ne basta uno: PayPal oppure IBAN.']" /></div>
+      <form class="stack" (ngSubmit)="saveMethods()">
+        <label class="field"><span>Nome PayPal.me</span>
+          <div class="pre"><span class="muted">paypal.me/</span><input class="input" name="pp" [(ngModel)]="fPaypal" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" /></div>
+        </label>
+        <label class="field"><span>IBAN</span>
+          <input class="input mono" name="iban" [(ngModel)]="fIban" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="42" placeholder="IT00 X000 0000 0000 0000 0000 000" />
+        </label>
+        <label class="field"><span>Intestatario del conto</span>
+          <input class="input" name="holder" [(ngModel)]="fHolder" maxlength="80" />
+        </label>
+        <button class="btn primary block" [disabled]="busy()">Salva</button>
+      </form>
     </dialog>
 
     <!-- nuova spesa -->
@@ -326,6 +336,11 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
   styles: `
     .titlebar { gap: 4px; justify-content: flex-start; }
     .titlebar .push { margin-left: auto; }
+    .data-btn { position: relative; color: var(--ink); }
+    .data-btn .dot { position: absolute; top: 9px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg); }
+    .add-data { gap: 6px; white-space: normal; text-align: left; line-height: 1.2; min-height: 44px; }
+    .dati-head { display: flex; align-items: center; gap: 4px; padding-right: 40px; }
+    .dati-head h2 { padding-right: 0; }
     .balance { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; }
     .balance b { font-size: calc(var(--step-2) * 1.25); color: var(--ink); }
     .balance.owe b { color: var(--danger); }
@@ -432,6 +447,14 @@ export class PaymentsPage implements OnInit {
   protected readonly myDebts = computed(() => (this.pay.data()?.transfers ?? []).filter((t) => t.from_id === this.me()));
   protected readonly myCredits = computed(() => (this.pay.data()?.transfers ?? []).filter((t) => t.to_id === this.me()));
   /** conferme da dare: a me, o (per il Leader) a chiunque */
+  /** ho messo almeno PayPal o IBAN */
+  protected readonly hasMyMethods = computed(() => {
+    const d = this.pay.data(), mine = d?.methods.find((m) => m.user_id === d.me);
+    return !!(mine?.paypal || mine?.iban);
+  });
+  private readonly methodsDlg = viewChild<ElementRef<HTMLDialogElement>>('methodsDlg');
+  /** richiesta dei dati a chi deve ricevere (aprendo «Salda» verso chi non li ha) */
+  protected readonly asked = signal<'none' | 'sent' | 'already'>('none');
   protected readonly toConfirm = computed(() => {
     const d = this.pay.data();
     if (!d) return [];
@@ -496,9 +519,23 @@ export class PaymentsPage implements OnInit {
       this.fPaypal = mine?.paypal ?? '';
       this.fIban = mine?.iban ? ibanGroups(mine.iban) : '';
       this.fHolder = mine?.holder ?? '';
+      // dall'avviso «Aggiungi i dati di pagamento»: si apre subito il foglio
+      if (this.route.snapshot.queryParamMap.get('dati')) {
+        void this.router.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { dati: null } });
+        this.openMethods();
+      }
     } catch (e) {
       this.toasts.error(errorMessage(e));
     }
+  }
+
+  protected askText(): string {
+    const a = this.asked();
+    return a === 'sent' ? 'gli abbiamo mandato un avviso per chiederglieli' : a === 'already' ? "gliel'abbiamo già chiesto con un avviso" : 'glieli chiediamo con un avviso';
+  }
+
+  protected openMethods(): void {
+    queueMicrotask(() => { const d = this.methodsDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
   }
 
   /** tocco sul velo: chiude. Niente espressione che restituisce false nel template: Angular annullerebbe il clic (e l'invio dei moduli) */
@@ -539,6 +576,11 @@ export class PaymentsPage implements OnInit {
     this.method.set(behalf || receiving ? 'cash' : m?.paypal ? 'paypal' : m?.iban ? 'iban' : 'cash');
     this.fAmount = (t.amount_cents / 100).toFixed(2).replace('.', ',').replace(',00', '');
     queueMicrotask(() => { const d = this.payDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
+    // chi deve ricevere non ha dati: glieli chiediamo con un avviso (il server ne manda al massimo uno ogni 12 ore)
+    this.asked.set('none');
+    if (!behalf && !receiving && !m?.paypal && !m?.iban) {
+      this.pay.askMethods(t.to_id).then((sent) => this.asked.set(sent ? 'sent' : 'already')).catch(() => this.asked.set('none'));
+    }
   }
 
   protected async confirmPay(): Promise<void> {
@@ -698,7 +740,8 @@ export class PaymentsPage implements OnInit {
       const mine = this.methodsOf(this.me() ?? '');
       this.fPaypal = mine?.paypal ?? '';
       this.fIban = mine?.iban ? ibanGroups(mine.iban) : '';
-      this.toasts.show('Salvato');
+      this.methodsDlg()?.nativeElement.close();
+      this.toasts.show('Dati di pagamento salvati');
     } catch (e) {
       this.toasts.error(errorMessage(e));
     } finally {
