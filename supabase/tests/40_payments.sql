@@ -40,10 +40,9 @@ select string_agg(amount_cents::text, ' + ' order by amount_cents desc) as quote
 set role authenticated; select as_user('P1'), pay_delete_expense(:spesa3); reset role;
 select * from trs();
 
-\echo '--- 4) regole (attesi 3 errori): P2 non inserisce spese pagate da altri; P3 non vede; IBAN sbagliato'
+\echo '--- 4) regole (attesi 2 errori): P3 non vede; IBAN sbagliato (dalla migrazione 57 si possono inserire spese pagate da altri: test 43)'
 \set ON_ERROR_STOP 0
 set role authenticated;
-select as_user('P2'), pay_add_expense('Furbata', 500, pid('P1'), array[pid('P3')]);
 select as_user('P3'), pay_overview();
 select as_user('P2'), pay_save_methods(null, 'IT60X0542811101000000123457', null);
 reset role;
