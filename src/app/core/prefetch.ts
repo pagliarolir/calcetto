@@ -2,7 +2,7 @@ import { inject, Injectable, Injector } from '@angular/core';
 import { Api } from './api';
 import { Cache } from './cache';
 import { Ratings } from './ratings';
-import { FantaLeader } from './fantaleader';
+import { FANTA_ENABLED, FantaLeader } from './fantaleader';
 import { Session } from './session';
 
 /**
@@ -47,7 +47,7 @@ export class Prefetch {
       // FantaLeader solo per chi lo vede (anteprima): i dati restano nel suo servizio
       (async () => {
         const fl = this.injector.get(FantaLeader);
-        if (await fl.checkVisible()) await fl.load();
+        if (FANTA_ENABLED && await fl.checkVisible()) await fl.load();
       })(),
     ].map((p) => p.catch(() => undefined)));
   }

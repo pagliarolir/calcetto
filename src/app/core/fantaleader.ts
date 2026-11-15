@@ -7,6 +7,12 @@ function must<T>(res: { data: T | null; error: unknown }): T {
   return res.data as T;
 }
 
+/**
+ * Interruttore temporaneo: con `false` FantaLeader è nascosto a tutti (niente voce «Fanta», la pagina rimanda alla home,
+ * niente dati scaricati in anticipo). Server e dati restano intatti: per riaccenderlo basta rimettere `true`.
+ */
+export const FANTA_ENABLED = false;
+
 export interface FlSettings {
   market_open: boolean;
   market_changed_at: string | null;

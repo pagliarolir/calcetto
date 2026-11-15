@@ -12,7 +12,7 @@ import { Branding } from './core/branding';
 import { ScrollMemory } from './core/scroll-memory';
 import { Refresher } from './core/refresher';
 import { Theme } from './core/theme';
-import { FantaLeader } from './core/fantaleader';
+import { FANTA_ENABLED, FantaLeader } from './core/fantaleader';
 import { Payments } from './core/payments';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
@@ -185,7 +185,7 @@ export class App {
     // di norma 5 voci (linee guida Apple e Google); Fanta e Conti solo per chi è in anteprima. Gestione è nel Profilo
     { path: this.next.id() ? `/partita/${this.next.id()}` : '/', key: '/', label: 'Partita', icon: 'pitch' },
     { path: '/classifica', key: '/classifica', label: 'Classifica', icon: 'table' },
-    ...(this.fl.visible() ? [{ path: '/fantaleader', key: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
+    ...(FANTA_ENABLED && this.fl.visible() ? [{ path: '/fantaleader', key: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
     ...(this.pay.visible() ? [{ path: '/pagamenti', key: '/pagamenti', label: 'Conti', icon: 'wallet' }] : []),
     { path: '/avvisi', key: '/avvisi', label: 'Avvisi', icon: 'bell' },
     { path: '/profilo', key: '/profilo', label: 'Profilo', icon: 'user' },

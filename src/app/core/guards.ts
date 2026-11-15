@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { FantaLeader } from './fantaleader';
+import { FANTA_ENABLED, FantaLeader } from './fantaleader';
 import { Payments } from './payments';
 import { NextMatch } from './next-match';
 import { Session } from './session';
@@ -34,6 +34,7 @@ export const fantaLeaderGuard: CanActivateFn = async () => {
   const s = inject(Session);
   const fl = inject(FantaLeader);
   const router = inject(Router);
+  if (!FANTA_ENABLED) return router.parseUrl('/');
   await s.whenReady();
   return (await fl.checkVisible()) ? true : router.parseUrl('/');
 };
