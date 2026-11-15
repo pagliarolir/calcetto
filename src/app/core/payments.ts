@@ -107,6 +107,12 @@ export class Payments {
     await this.load();
   }
   /** «Svuota»: lo storico sparisce solo dalla propria vista, i saldi non cambiano (migrazione 56) */
+  /** chiede a chi deve ricevere di aggiungere PayPal o IBAN (avviso, al massimo uno ogni 12 ore; migrazione 59) */
+  async askMethods(to: string): Promise<boolean> {
+    const { data, error } = await this.sb.rpc('pay_ask_methods', { p_to: to });
+    if (error) throw error;
+    return data === true;
+  }
   /** «Svuota l'elenco» delle spese: spariscono solo dalla propria vista, i saldi non cambiano (migrazione 58) */
   async clearExpenses(): Promise<void> {
     must(await this.sb.rpc('pay_clear_expenses'));
