@@ -16,7 +16,7 @@ export interface PayExpense {
 export interface PayMethods { user_id: string; paypal: string | null; iban: string | null; holder: string | null }
 export interface PayOverview {
   me: string; boss: boolean; balance_cents: number;
-  transfers: PayTransfer[]; pending: PaySettlement[]; history: PaySettlement[]; expenses: PayExpense[]; methods: PayMethods[];
+  transfers: PayTransfer[]; pending: PaySettlement[]; history: PaySettlement[]; history_cleared_at?: string | null; expenses: PayExpense[]; methods: PayMethods[];
   settings: { public: boolean; preview_users: string[] } | null;
 }
 
@@ -99,6 +99,11 @@ export class Payments {
   }
   async saveMethods(paypal: string, iban: string, holder: string): Promise<void> {
     must(await this.sb.rpc('pay_save_methods', { p_paypal: paypal, p_iban: iban, p_holder: holder }));
+    await this.load();
+  }
+  /** «Svuota»: lo storico sparisce solo dalla propria vista, i saldi non cambiano (migrazione 56) */
+  async clearHistory(): Promise<void> {
+    must(await this.sb.rpc('pay_clear_history'));
     await this.load();
   }
   async setVisibility(isPublic: boolean, users: string[]): Promise<void> {

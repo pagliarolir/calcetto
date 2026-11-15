@@ -16,6 +16,7 @@ import { Sheet } from '../ui/sheet';
 import { Skeleton } from '../ui/skeleton';
 
 const METHOD_LABEL: Record<PayMethod, string> = { paypal: 'PayPal', iban: 'Bonifico', cash: 'Contanti' };
+const METHOD_ICON: Record<PayMethod, string> = { paypal: 'send', iban: 'bank', cash: 'cash' };
 type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
 
 /**
@@ -56,10 +57,10 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
                 <li class="list-item confirm">
                   <div class="row"><app-avatar [userId]="s.from_id" [size]="36" />
                     <span class="grow"><b>{{ session.name(s.from_id) }}</b> dice di {{ s.to_id === me() ? 'averti' : 'aver dato a ' + session.name(s.to_id) }}
-                      dato <b>{{ eur(s.amount_cents) }}</b> con {{ methodLabel(s.method).toLowerCase() }}</span></div>
+                      dato <b>{{ eur(s.amount_cents) }}</b> <span class="how"><app-icon [name]="methodIcon(s.method)" [size]="14" /> {{ methodLabel(s.method) }}</span></span></div>
                   <div class="row acts">
-                    <button type="button" class="btn small danger" [disabled]="busy()" (click)="decide(s, false)">Non ricevuto</button>
-                    <button type="button" class="btn small primary" [disabled]="busy()" (click)="decide(s, true)">Ricevuto</button>
+                    <button type="button" class="btn danger" [disabled]="busy()" (click)="decide(s, false)"><app-icon name="x" [size]="16" /> Non ricevuto</button>
+                    <button type="button" class="btn primary" [disabled]="busy()" (click)="decide(s, true)"><app-icon name="check" [size]="16" /> Ricevuto</button>
                   </div>
                 </li>
               }
@@ -67,43 +68,41 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
           </section>
         }
 
-        <section class="section">
-          <header><h2>Da pagare</h2></header>
-          @if (myDebts().length) {
-            <ul class="list panel flush">
-              @for (t of myDebts(); track t.to_id) {
-                <li class="list-item">
-                  <app-avatar [userId]="t.to_id" [size]="36" />
-                  <span class="grow">Devi <b>{{ eur(t.amount_cents) }}</b> a {{ session.name(t.to_id) }}</span>
-                  @if (waiting(t.to_id); as w) {
-                    <span class="tag">In attesa di conferma</span>
+        <div class="cols">
+          <section class="panel col" aria-labelledby="h-pay">
+            <h2 id="h-pay">Da pagare</h2>
+            @for (t of myDebts(); track t.to_id) {
+              <div class="debt">
+                <div class="who-line"><app-avatar [userId]="t.to_id" [size]="28" /><span class="grow">{{ session.name(t.to_id) }}</span></div>
+                <div class="amt-line">
+                  <b class="num amt owe">{{ eur(t.amount_cents) }}</b>
+                  @if (waiting(t.to_id)) {
+                    <span class="wait" role="img" aria-label="In attesa di conferma" title="In attesa di conferma"><app-icon name="clock" [size]="20" /></span>
                   } @else {
-                    <button type="button" class="btn small primary" (click)="openPay(t)">Salda</button>
+                    <button type="button" class="btn primary act" (click)="openPay(t)">Salda</button>
                   }
-                </li>
-              }
-            </ul>
-          } @else {
-            <p class="muted small">Non devi niente a nessuno.</p>
-          }
-        </section>
-
-        <section class="section">
-          <header><h2>Da ricevere</h2></header>
-          @if (myCredits().length) {
-            <ul class="list panel flush">
-              @for (t of myCredits(); track t.from_id) {
-                <li class="list-item">
-                  <app-avatar [userId]="t.from_id" [size]="36" />
-                  <span class="grow">{{ session.name(t.from_id) }} ti deve <b>{{ eur(t.amount_cents) }}</b></span>
-                  <button type="button" class="btn small ghost" (click)="openReceive(t)">Segna ricevuto</button>
-                </li>
-              }
-            </ul>
-          } @else {
-            <p class="muted small">Nessuno ti deve niente.</p>
-          }
-        </section>
+                </div>
+                @if (waiting(t.to_id)) { <span class="small muted">In attesa di conferma</span> }
+              </div>
+            } @empty {
+              <p class="muted small none">Non devi niente a nessuno.</p>
+            }
+          </section>
+          <section class="panel col" aria-labelledby="h-get">
+            <h2 id="h-get">Da ricevere</h2>
+            @for (t of myCredits(); track t.from_id) {
+              <div class="debt">
+                <div class="who-line"><app-avatar [userId]="t.from_id" [size]="28" /><span class="grow">{{ session.name(t.from_id) }}</span></div>
+                <div class="amt-line">
+                  <b class="num amt get">{{ eur(t.amount_cents) }}</b>
+                  <button type="button" class="round-btn" (click)="openReceive(t)" [attr.aria-label]="'Segna che ' + session.name(t.from_id) + ' ti ha pagato'" title="Segna ricevuto"><app-icon name="check" [size]="20" /></button>
+                </div>
+              </div>
+            } @empty {
+              <p class="muted small none">Nessuno ti deve niente.</p>
+            }
+          </section>
+        </div>
 
         <div class="folds">
           @if (d.boss) {
@@ -149,14 +148,15 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
               <summary><h3>Pagamenti fatti</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <ul class="list">
                 @for (s of d.history; track s.id) {
-                  <li class="list-item tight">
-                    <span class="grow">{{ session.name(s.from_id) }} <app-icon name="back" [size]="14" class="to" /> {{ session.name(s.to_id) }}
-                      <span class="small muted">{{ methodLabel(s.method) }}, {{ when(s.decided_at ?? s.created_at) }}</span></span>
+                  <li class="list-item tight hist">
+                    <span class="grow"><span>{{ session.name(s.from_id) }} <app-icon name="back" [size]="14" class="to" /> {{ session.name(s.to_id) }}</span>
+                      <span class="small muted how"><app-icon [name]="methodIcon(s.method)" [size]="14" /> {{ methodLabel(s.method) }}, {{ when(s.decided_at ?? s.created_at) }}</span></span>
                     <b class="num" [class.struck]="s.status === 'rejected'">{{ eur(s.amount_cents) }}</b>
                     @if (s.status === 'rejected') { <span class="tag danger">Non ricevuto</span> }
                   </li>
                 }
               </ul>
+              <button type="button" class="btn small ghost clear" [disabled]="busy()" (click)="clearHistory()"><app-icon name="trash" [size]="16" /> Svuota lo storico</button>
             </details>
           }
 
@@ -211,17 +211,17 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
         @if (!onBehalf() && !receiving()) {
           @if (m?.paypal) {
             <a class="btn block paypal" [href]="paypalUrl(m!.paypal!)" target="_blank" rel="noopener" (click)="method.set('paypal')">
-              <app-icon name="external" [size]="16" /> Apri PayPal con {{ amountText() }}
+              <app-icon name="send" [size]="16" /> Apri PayPal con {{ amountText() }}
             </a>
             <p class="small muted hint">Scegli «Amici e familiari»: tra amici in Italia è gratis con saldo PayPal o conto collegato.</p>
           }
           @if (m?.iban) {
             <div class="iban panel">
-              <span class="small muted">Bonifico a {{ m!.holder || session.fullName(t.to_id) }}</span>
-              <div class="row"><code class="grow">{{ ibanGroups(m!.iban!) }}</code>
-                <button type="button" class="icon-btn" aria-label="Copia l'IBAN" (click)="copy(m!.iban!, 'IBAN copiato'); method.set('iban')"><app-icon name="copy" [size]="18" /></button></div>
-              <div class="row"><span class="grow small">Causale: {{ causale() }}</span>
-                <button type="button" class="icon-btn" aria-label="Copia la causale" (click)="copy(causale(), 'Causale copiata')"><app-icon name="copy" [size]="18" /></button></div>
+              <span class="small muted how"><app-icon name="bank" [size]="14" /> Bonifico a {{ m!.holder || session.fullName(t.to_id) }}: tocca per copiare</span>
+              <button type="button" class="copy-row" (click)="copy(m!.iban!, 'IBAN copiato'); method.set('iban')" aria-label="Copia l'IBAN">
+                <code class="grow">{{ ibanGroups(m!.iban!) }}</code><app-icon name="copy" [size]="18" /></button>
+              <button type="button" class="copy-row" (click)="copy(causale(), 'Causale copiata')" aria-label="Copia la causale">
+                <span class="grow small">Causale: {{ causale() }}</span><app-icon name="copy" [size]="18" /></button>
             </div>
           }
           @if (!m?.paypal && !m?.iban) {
@@ -231,7 +231,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
         <div class="field"><span>{{ onBehalf() || receiving() ? 'Come ha pagato' : 'Come hai pagato' }}</span>
           <div class="choice">
             @for (k of methods; track k) {
-              <button type="button" [attr.aria-pressed]="method() === k" (click)="method.set(k)">{{ methodLabel(k) }}</button>
+              <button type="button" [attr.aria-pressed]="method() === k" (click)="method.set(k)"><app-icon [name]="methodIcon(k)" [size]="20" /><span>{{ methodLabel(k) }}</span></button>
             }
           </div>
         </div>
@@ -267,8 +267,11 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
             </select>
           </label>
         </div>
-        <fieldset class="field split">
-          <legend>Tra chi dividere</legend>
+        <details class="who-fold" [open]="whoOpen()" (toggle)="whoOpen.set($any($event.target).open)">
+          <summary>
+            <span class="grow"><span class="lbl">Tra chi dividere</span><span class="small muted sum">{{ pickedText() }}</span></span>
+            <app-icon name="chevron" [size]="18" class="chev" />
+          </summary>
           <ul class="who" role="list">
             <li>
               <label class="who-row all">
@@ -287,7 +290,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
               </li>
             }
           </ul>
-        </fieldset>
+        </details>
         <div class="each" aria-live="polite">
           <span>A testa</span>
           <span class="each-val">
@@ -308,9 +311,33 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
     .balance.get b { color: var(--turf); }
     .list.flush { padding: 0; }
     .list-item.confirm { flex-direction: column; align-items: stretch; gap: 10px; }
-    .list-item.tight { padding: 10px 0; gap: 8px; }
-    .acts { justify-content: flex-end; }
-    .exp .grow { display: flex; flex-direction: column; gap: 2px; }
+    .list-item.tight { padding: 10px 14px; gap: 8px; }
+    .acts { justify-content: flex-end; flex-wrap: wrap; }
+    .how { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
+    .small.how { margin-left: 0; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+    .col { display: flex; flex-direction: column; gap: 10px; padding: 12px; min-width: 0; }
+    .col h2 { margin: 0; font-size: var(--step-1); }
+    .debt { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .who-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .who-line .grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .amt { font-size: var(--step-2); line-height: 1.1; }
+    .amt.owe { color: var(--danger); }
+    .amt.get { color: var(--turf); }
+    .amt-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 44px; }
+    .act { min-height: 44px; padding: 0 14px; }
+    .round-btn { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+      border: 1.5px solid var(--turf); background: var(--surface); color: var(--turf); }
+    .round-btn:active { background: var(--surface-2); }
+    .round-btn:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
+    .wait { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
+    .none { margin: 0; }
+    .clear { margin-top: 10px; gap: 6px; }
+    .copy-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; border-radius: 10px; padding: 0 4px; }
+    .copy-row:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
+    .copy-row:active { background: var(--surface); }
+    .choice button { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .exp .grow, .hist .grow { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
     .to { display: inline-block; transform: rotate(180deg); vertical-align: -2px; color: var(--muted); }
     .struck { text-decoration: line-through; color: var(--muted); }
     .folds { display: flex; flex-direction: column; gap: 12px; }
@@ -328,8 +355,16 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'metodi' | 'visibilita';
     .iban { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--surface-2); border-color: transparent; }
     .hint { margin: -4px 0 0; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    fieldset.split { border: 0; margin: 0; padding: 0; min-width: 0; }
-    fieldset.split legend { padding: 0; margin-bottom: 6px; }
+    .who-fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 14px; cursor: pointer;
+      border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .who-fold > summary::-webkit-details-marker { display: none; }
+    .who-fold > summary .grow { display: flex; flex-direction: column; gap: 2px; }
+    .who-fold > summary .lbl { font-weight: 600; }
+    .who-fold > summary .chev { transition: transform 0.2s; flex: none; }
+    .who-fold[open] > summary .chev { transform: rotate(90deg); }
+    .who-fold[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .who-fold[open] .who { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+    .who-fold .who { max-height: 320px; overflow-y: auto; }
     .who { list-style: none; margin: 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
     .who li + li { border-top: 1px solid var(--line); }
     .who-row { display: flex; align-items: center; gap: 12px; min-height: 52px; cursor: pointer; }
@@ -393,6 +428,16 @@ export class PaymentsPage implements OnInit {
   protected readonly eAmount = signal('');
   protected readonly ePayer = signal<string>('');
   protected readonly eUsers = signal(new Set<string>());
+  protected readonly whoOpen = signal(false);
+  /** riassunto chiuso: «10 su 14: Alberto, Checco e altri 8» */
+  protected readonly pickedText = computed(() => {
+    const ids = this.session.activeMembers().filter((m) => this.eUsers().has(m.id)).map((m) => this.session.name(m.id));
+    const n = this.session.activeMembers().length;
+    if (!ids.length) return 'Nessuno: tocca per scegliere';
+    if (ids.length === n) return `Tutti (${n})`;
+    const head = ids.slice(0, 2).join(', ');
+    return `${ids.length} su ${n}: ${head}${ids.length > 2 ? ` e altri ${ids.length - 2}` : ''}`;
+  });
   protected readonly allPicked = computed(() => { const n = this.session.activeMembers().length; return n > 0 && this.eUsers().size === n; });
   /** quota a testa: se non si divide in parti uguali, in grande la più alta e sotto quanti pagano un centesimo in meno */
   protected readonly each = computed(() => {
@@ -421,6 +466,7 @@ export class PaymentsPage implements OnInit {
   }
 
   protected methodLabel(m: PayMethod): string { return METHOD_LABEL[m]; }
+  protected methodIcon(m: PayMethod): string { return METHOD_ICON[m]; }
   protected when(iso: string): string { return fmtDate(iso); }
   protected day(iso: string): string { return fmtDayShort(iso); }
   protected methodsOf(uid: string): PayMethods | undefined { return this.pay.data()?.methods.find((m) => m.user_id === uid); }
@@ -496,6 +542,7 @@ export class PaymentsPage implements OnInit {
     this.eAmount.set('');
     this.ePayer.set(this.me() ?? '');
     this.eUsers.set(new Set());
+    this.whoOpen.set(false);
     queueMicrotask(() => { const d = this.expDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
     if (!this.pastMatches().length) {
       try {
@@ -557,6 +604,20 @@ export class PaymentsPage implements OnInit {
       this.toasts.show('Spesa tolta');
     } catch (err) {
       this.toasts.error(errorMessage(err));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async clearHistory(): Promise<void> {
+    if (this.reprimand.guard()) return;
+    if (!confirm('Svuotare lo storico dei pagamenti? Sparisce solo dalla tua vista: i conti non cambiano.')) return;
+    this.busy.set(true);
+    try {
+      await this.pay.clearHistory();
+      this.toasts.show('Storico svuotato');
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
     } finally {
       this.busy.set(false);
     }
