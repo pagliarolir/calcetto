@@ -24,6 +24,9 @@ interface SlotView {
 
 type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
 
+/** altezza più bassa di una figurina ancora comoda da leggere e toccare (quella normale si misura) */
+const FIG_MIN = 50;
+
 @Component({
   selector: 'app-booking-tab',
   imports: [Figurina, FormsModule, Icon, FitText, Empty],
@@ -551,6 +554,30 @@ export class BookingTab {
     const avail = Math.max(240, Math.floor(sc.clientHeight - top - 6));
     panel.style.maxHeight = `${avail}px`;
     panel.style.setProperty('--avail', `${avail}px`);
+    this.fitCards(panel, avail);
+  }
+
+  /**
+   * Figurine che si stringono per far stare tutto l'elenco senza scorrere (telefoni bassi, barra di Android,
+   * pulsanti di risposta visibili): altezza tra FIG_MIN e quella normale; se non basta, altezza normale e si scorre.
+   */
+  private figNatural = 70;
+  private fitCards(panel: HTMLElement, avail: number): void {
+    const board = panel.querySelector('.board') as HTMLElement | null;
+    const items = board ? [...board.children].filter((li) => !li.classList.contains('empty')).length : 0;
+    if (!board || !items) { panel.classList.remove('fit'); return; }
+    const cs = getComputedStyle(board);
+    const cols = cs.gridTemplateColumns.split(' ').length || 1;
+    const gap = parseFloat(cs.rowGap) || 8;
+    const ps = getComputedStyle(panel);
+    const inner = avail - (parseFloat(ps.paddingTop) || 0) - (parseFloat(ps.paddingBottom) || 0);
+    const rows = Math.ceil(items / cols);
+    const h = Math.floor((inner - gap * (rows - 1)) / rows);
+    // altezza normale: misurata quando le figurine non sono strette (dipende da testo e tema)
+    if (!panel.classList.contains('fit')) this.figNatural = (board.querySelector('app-figurina') as HTMLElement | null)?.offsetHeight || this.figNatural;
+    const fit = h < this.figNatural && h >= FIG_MIN;
+    panel.classList.toggle('fit', fit);
+    if (fit) panel.style.setProperty('--fig-h', `${h}px`);
   }
 
   /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
