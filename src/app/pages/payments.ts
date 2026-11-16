@@ -52,18 +52,18 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
   imports: [FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="page stack-l">
+    <div class="page stack-l pay-page">
       <header class="titlebar">
-        <h1>Pagamenti</h1>
+        <h1 appFitText>Pagamenti</h1>
         <app-info-tip label="Come funziona" [lines]="[
           'Chi paga una spesa la inserisce e sceglie tra chi dividerla.',
           'I conti si semplificano: ognuno fa meno passaggi possibili.',
           'Salda apre PayPal con l’importo o mostra l’IBAN: i soldi non passano dall’app.',
           'Il debito si chiude quando chi riceve conferma.']" />
-        <button type="button" class="icon-btn push data-btn" (click)="openMethods()" [attr.aria-label]="hasMyMethods() ? 'I miei dati di pagamento' : 'I miei dati di pagamento (da aggiungere)'" title="I miei dati di pagamento">
-          <app-icon name="wallet" [size]="22" />@if (pay.data() && !hasMyMethods()) { <span class="dot" aria-hidden="true"></span> }
+        <button type="button" class="btn small push data-btn" (click)="openMethods()">
+          <app-icon name="wallet" [size]="18" /> Dati di pagamento
+          @if (pay.data() && !hasMyMethods()) { <span class="dot" aria-hidden="true"></span><span class="sr-only">(da aggiungere)</span> }
         </button>
-        <button type="button" class="btn small primary" (click)="openExpense()"><app-icon name="plus" [size]="16" /> Spesa</button>
       </header>
 
       @if (!pay.data(); as _) {
@@ -134,20 +134,22 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
         </div>
 
         <div class="folds">
+          @if (d.boss) {
           <details class="panel fold cfold" [open]="folds().has('tutti')" (toggle)="toggled('tutti', $event)">
-              <summary><h3>Tutti i conti</h3><app-info-tip label="Cosa vedi qui" [lines]="d.boss ? ['I debiti di tutto il gruppo, già semplificati.', 'Puoi segnare un pagamento per conto di qualcuno: vale subito.'] : ['I debiti di tutto il gruppo, già semplificati.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
+              <summary><h3>Tutti i conti</h3><app-info-tip label="Cosa vedi qui" [lines]="['I debiti di tutto il gruppo, già semplificati.', 'Puoi segnare un pagamento per conto di qualcuno: vale subito.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               @if (d.transfers.length) {
                 <ul class="list">
                   @for (t of d.transfers; track t.from_id + t.to_id) {
                     <li class="list-item tight">
                       <span class="grow">{{ session.name(t.from_id) }} <app-icon name="back" [size]="14" class="to" /> {{ session.name(t.to_id) }}</span>
                       <b class="num">{{ eur(t.amount_cents) }}</b>
-                      @if (d.boss) { <button type="button" class="btn small ghost" (click)="openOnBehalf(t)">Segna pagato</button> }
+                      <button type="button" class="btn small ghost" (click)="openOnBehalf(t)">Segna pagato</button>
                     </li>
                   }
                 </ul>
               } @else { <p class="muted small">Tutti in pari.</p> }
             </details>
+          }
 
           <details class="panel fold cfold" [open]="folds().has('spese')" (toggle)="toggled('spese', $event)">
             <summary><h3>Spese</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
@@ -205,6 +207,9 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
           }
         </div>
       }
+      <div class="fab-dock">
+        <button type="button" class="fab" (click)="openExpense()" aria-label="Aggiungi una spesa" title="Aggiungi una spesa"><app-icon name="plus" [size]="28" /></button>
+      </div>
     </div>
 
     <!-- Salda: come pagare chi deve ricevere -->
@@ -334,15 +339,29 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     </dialog>
   `,
   styles: `
-    .titlebar { gap: 4px; justify-content: flex-start; }
+    /* la pagina riempie almeno lo schermo: il pulsante tondo sta sempre in basso, anche con poco contenuto */
+    :host { display: flex; flex-direction: column; flex: 1 0 auto; }
+    .pay-page { flex: 1 0 auto; display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
+    .pay-page > .fab-dock { margin-top: auto; }
+    .titlebar { gap: 4px; justify-content: flex-start; flex-wrap: nowrap; }
+    .titlebar h1 { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .titlebar app-info-tip { flex: none; }
     .titlebar .push { margin-left: auto; }
-    .data-btn { position: relative; color: var(--ink); }
-    .data-btn .dot { position: absolute; top: 9px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg); }
+    .data-btn { position: relative; gap: 6px; white-space: nowrap; flex: none; min-height: 44px; }
+    /* schermi stretti: l'etichetta va su due righe e il titolo resta intero */
+    @media (max-width: 380px) { .data-btn { white-space: normal; max-width: 8.5em; line-height: 1.1; text-align: left; } }
+    .data-btn .dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg); }
     .add-data { gap: 6px; white-space: normal; text-align: left; line-height: 1.2; min-height: 44px; }
     /* titolo su una riga */
     .dati-head { display: flex; align-items: center; gap: 2px; padding-right: 48px; min-width: 0; }
     .dati-head h2 { padding-right: 0; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       font-size: var(--step-2); }
+    /* pulsante tondo «Aggiungi una spesa»: in fondo alla pagina ma «appiccicato» in basso a destra mentre si scorre */
+    .fab-dock { position: sticky; bottom: 16px; display: flex; justify-content: flex-end; pointer-events: none; z-index: 5; }
+    .fab { pointer-events: auto; width: 60px; height: 60px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+      background: var(--turf); color: var(--turf-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 28%), 0 0 0 3px var(--bg); }
+    .fab:active { filter: brightness(0.92); }
+    .fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
     .balance { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; }
     .balance b { font-size: calc(var(--step-2) * 1.25); color: var(--ink); }
     .balance.owe b { color: var(--danger); }
@@ -524,6 +543,13 @@ export class PaymentsPage implements OnInit {
       this.fIban = mine?.iban ? ibanGroups(mine.iban) : '';
       this.fHolder = mine?.holder ?? '';
       // dall'avviso «Aggiungi i dati di pagamento»: si apre subito il foglio
+      // da «Dividi il campo» nella partita: spesa già pronta (partita, 30 €, chi ha giocato)
+      const fromMatch = this.route.snapshot.queryParamMap.get('spesa');
+      if (fromMatch) {
+        void this.router.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { spesa: null } });
+        await this.openExpense();
+        if (this.pastMatches().some((m) => m.id === fromMatch)) await this.pickMatch(fromMatch);
+      }
       if (this.route.snapshot.queryParamMap.get('dati')) {
         void this.router.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { dati: null } });
         this.openMethods();

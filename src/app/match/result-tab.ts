@@ -15,13 +15,15 @@ import { kit } from '../core/kits';
 import { Ball, Boot, KitShirt } from '../ui/match-marks';
 import { Icon } from '../ui/icon';
 import { Sheet } from '../ui/sheet';
+import { RouterLink } from '@angular/router';
+import { Payments } from '../core/payments';
 
 interface Line { goals: number; assists: number; own_goals: number }
 type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
+  imports: [Sheet, FormsModule, RouterLink, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
@@ -89,6 +91,11 @@ type Field = keyof Line;
                 <h3>Com'è finita?</h3>
                 <ng-container *ngTemplateOutlet="entry" />
               </div>
+            }
+
+            <!-- Pagamenti (solo per chi li vede): la spesa del campo già pronta, con questa partita e chi ha giocato -->
+            @if (pay.visible() && store.t()?.ended) {
+              <a class="btn block split-btn" routerLink="/pagamenti" [queryParams]="{ spesa: m.id }"><app-icon name="wallet" [size]="18" /> Dividi il campo</a>
             }
           </section>
 
@@ -260,6 +267,7 @@ type Field = keyof Line;
 })
 export class ResultTab {
   protected readonly store = inject(MatchStore);
+  protected readonly pay = inject(Payments);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
