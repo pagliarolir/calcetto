@@ -134,22 +134,20 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
         </div>
 
         <div class="folds">
-          @if (d.boss) {
-            <details class="panel fold cfold" [open]="folds().has('tutti')" (toggle)="toggled('tutti', $event)">
-              <summary><h3>Tutti i conti</h3><app-info-tip label="Cosa vedi qui" [lines]="['I debiti di tutto il gruppo, già semplificati.', 'Puoi segnare un pagamento per conto di qualcuno: vale subito.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
+          <details class="panel fold cfold" [open]="folds().has('tutti')" (toggle)="toggled('tutti', $event)">
+              <summary><h3>Tutti i conti</h3><app-info-tip label="Cosa vedi qui" [lines]="d.boss ? ['I debiti di tutto il gruppo, già semplificati.', 'Puoi segnare un pagamento per conto di qualcuno: vale subito.'] : ['I debiti di tutto il gruppo, già semplificati.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               @if (d.transfers.length) {
                 <ul class="list">
                   @for (t of d.transfers; track t.from_id + t.to_id) {
                     <li class="list-item tight">
                       <span class="grow">{{ session.name(t.from_id) }} <app-icon name="back" [size]="14" class="to" /> {{ session.name(t.to_id) }}</span>
                       <b class="num">{{ eur(t.amount_cents) }}</b>
-                      <button type="button" class="btn small ghost" (click)="openOnBehalf(t)">Segna pagato</button>
+                      @if (d.boss) { <button type="button" class="btn small ghost" (click)="openOnBehalf(t)">Segna pagato</button> }
                     </li>
                   }
                 </ul>
               } @else { <p class="muted small">Tutti in pari.</p> }
             </details>
-          }
 
           <details class="panel fold cfold" [open]="folds().has('spese')" (toggle)="toggled('spese', $event)">
             <summary><h3>Spese</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
@@ -231,9 +229,11 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
           }
           @if (m?.iban) {
             <div class="iban panel">
-              <span class="small muted how"><app-icon name="bank" [size]="14" /> Bonifico a {{ m!.holder || session.fullName(t.to_id) }}: tocca per copiare</span>
-              <button type="button" class="copy-row" (click)="copy(m!.iban!, 'IBAN copiato'); method.set('iban')" aria-label="Copia l'IBAN">
-                <code class="grow">{{ ibanGroups(m!.iban!) }}</code><app-icon name="copy" [size]="18" /></button>
+              <span class="small muted how"><app-icon name="bank" [size]="14" /> Bonifico a {{ m!.holder || session.fullName(t.to_id) }}</span>
+              <div class="iban-row">
+                <code class="grow" aria-label="IBAN nascosto">{{ m!.iban!.slice(0, 4) }} ********</code>
+                <button type="button" class="btn small primary" (click)="copyIban(t.to_id); method.set('iban')"><app-icon name="copy" [size]="16" /> Copia IBAN</button>
+              </div>
               <button type="button" class="copy-row" (click)="copy(causale(), 'Causale copiata')" aria-label="Copia la causale">
                 <span class="grow small">Causale: {{ causale() }}</span><app-icon name="copy" [size]="18" /></button>
             </div>
@@ -371,6 +371,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .wait { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
     .none { margin: 0; }
     .clear { margin-top: 10px; gap: 6px; }
+    .iban-row { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+    .iban-row .btn { flex: none; gap: 6px; min-height: 40px; }
     .copy-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; border-radius: 10px; padding: 0 4px; }
     .copy-row:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .copy-row:active { background: var(--surface); }
@@ -612,6 +614,25 @@ export class PaymentsPage implements OnInit {
       this.toasts.error(errorMessage(e));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /**
+   * L'IBAN degli altri arriva mascherato: quello intero si chiede al server solo per copiarlo (e solo se gli devi dei soldi).
+   * Con ClipboardItem la copia parte subito al tocco e il testo arriva dopo (Safari non permette di copiare dopo un'attesa).
+   */
+  protected async copyIban(to: string): Promise<void> {
+    const text = this.pay.revealIban(to);
+    try {
+      if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
+        await navigator.clipboard.write([new ClipboardItem({ 'text/plain': text.then((t) => new Blob([t], { type: 'text/plain' })) })]);
+      } else {
+        await navigator.clipboard.writeText(await text);
+      }
+      this.toasts.show('IBAN copiato');
+    } catch (e) {
+      const msg = await text.then(() => '', (err) => errorMessage(err));
+      this.toasts.error(msg || 'Non riesco a copiare l\'IBAN');
     }
   }
 

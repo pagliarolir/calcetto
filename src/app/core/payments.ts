@@ -107,6 +107,12 @@ export class Payments {
     await this.load();
   }
   /** «Svuota»: lo storico sparisce solo dalla propria vista, i saldi non cambiano (migrazione 56) */
+  /** IBAN intero di chi devo pagare, solo per copiarlo (agli altri arriva mascherato; migrazione 60) */
+  async revealIban(to: string): Promise<string> {
+    const { data, error } = await this.sb.rpc('pay_reveal_iban', { p_to: to });
+    if (error) throw error;
+    return String(data ?? '');
+  }
   /** chiede a chi deve ricevere di aggiungere PayPal o IBAN (avviso, al massimo uno ogni 12 ore; migrazione 59) */
   async askMethods(to: string): Promise<boolean> {
     const { data, error } = await this.sb.rpc('pay_ask_methods', { p_to: to });
