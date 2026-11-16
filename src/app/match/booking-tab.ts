@@ -38,6 +38,13 @@ const FIG_MIN = 50;
         <section class="section" aria-labelledby="me-h">
           <header class="tab-head">
             <h2 id="me-h" appFitText>{{ myHeadline() }}</h2>
+            <!-- risposta già data: i pulsanti si nascondono e si riaprono da qui (più spazio per l'elenco) -->
+            @if (canChange()) {
+              <button type="button" class="swap-b" aria-controls="my-choice" [attr.aria-expanded]="choiceOpen()"
+                      [attr.aria-label]="choiceOpen() ? 'Chiudi le risposte' : 'Cambia la tua risposta'" (click)="choiceOpen.set(!choiceOpen())">
+                <app-icon [name]="choiceOpen() ? 'x' : 'swap'" [size]="18" />
+              </button>
+            }
             @if (infoLines().length) {
               <button type="button" class="info-i" aria-label="Come funzionano le prenotazioni" [attr.aria-expanded]="infoOpen()" (click)="infoOpen.set(!infoOpen())">
                 <app-icon name="info" [size]="20" />
@@ -61,7 +68,10 @@ const FIG_MIN = 50;
                 </div>
               }
             </span>
-            @if (statusPill(); as sp) { <span class="spill" [class]="'spill ' + sp.cls" role="status">{{ sp.label }}</span> }
+            @if (statusPill(); as sp) {
+              <!-- su schermi stretti resta la parola che conta (Aperte, Chiuse…): così c'è posto per il titolo e il cambio di risposta -->
+              <span class="spill" [class]="'spill ' + sp.cls" role="status" [attr.aria-label]="sp.label"><span class="pl-long" aria-hidden="true">{{ sp.label }}</span><span class="pl-short" aria-hidden="true">{{ sp.short }}</span></span>
+            }
           </header>
           @if (m.status === 'cancelled') {
             <p class="muted">Questa partita è stata annullata.</p>
@@ -78,8 +88,8 @@ const FIG_MIN = 50;
               <button class="absent" (click)="book('absent')">Assente</button>
             </div>
           } @else if (!canBook()) {
-          } @else {
-            <div class="choice" role="group" aria-label="La tua presenza">
+          } @else if (!canChange() || choiceOpen()) {
+            <div class="choice" id="my-choice" role="group" aria-label="La tua presenza" [class.enter-fade]="choiceOpen()">
               <button [attr.aria-pressed]="store.mine()?.choice === 'present'" (click)="book('present')">
                 Ci sono
               </button>
@@ -198,11 +208,19 @@ const FIG_MIN = 50;
     /* risposta appena data, in attesa del server */
     app-figurina.arriving { opacity: 0.55; transition: opacity 200ms; }
     .sortw { margin-left: auto; position: relative; flex: none; }
+    /* cambio di risposta: tondo pieno, ben visibile accanto al titolo */
+    .swap-b { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+      display: grid; place-items: center; cursor: pointer; margin-left: 2px; }
+    .swap-b[aria-expanded='true'] { background: var(--ink); color: var(--bg); border-color: transparent; }
+    .swap-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     .sort-b { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
     .sort-b[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
     .sort-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; min-width: 240px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .sort-menu button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step--1)/1.2 var(--font-body); text-align: left; cursor: pointer; }
     .sort-menu button[aria-checked='true'] { color: var(--turf); }
+    .pl-short { display: none; }
+    /* niente container query qui: renderebbe .pop-shield (fixed) relativo all'intestazione */
+    @media (max-width: 440px) { .pl-long { display: none; } .pl-short { display: inline; } }
     .spill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px;
              font: 700 0.72rem/1 var(--font-body); white-space: nowrap; }
     .spill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
@@ -260,6 +278,14 @@ export class BookingTab {
   protected readonly when = fmtWhen;
 
   protected readonly amLeaderTitular = computed(() => this.session.me()?.titular_leader === this.session.uid());
+
+  /** risposte nascoste dietro l'icona di cambio: solo per chi ha già risposto e può ancora cambiare */
+  protected readonly choiceOpen = signal(false);
+  protected readonly canChange = computed(() => {
+    const m = this.store.match(), t = this.store.t();
+    return !!this.store.mine()?.choice && !!m && m.status === 'scheduled' && !t?.started && this.canBook()
+      && !(t?.bookingClosed && !this.amLeaderTitular());
+  });
 
   protected readonly canBook = computed(() => {
     const t = this.store.t();
@@ -363,6 +389,7 @@ export class BookingTab {
       else if (res.list === 'reserve') this.toasts.show(`Sei tra le riserve${n}.`);
       else if (res.list === 'pending') this.toasts.show('Sei tra i disponibili: titolari e riserve li sceglie il Leader.');
       else this.toasts.show('Segnato come assente.');
+      this.choiceOpen.set(false);
     });
   }
 
@@ -531,10 +558,10 @@ export class BookingTab {
   protected readonly statusPill = computed(() => {
     const m = this.store.match(), t = this.store.t();
     if (!m || m.status !== 'scheduled' || !t) return null;
-    if (t.started) return { label: 'Partita in corso', cls: 'live' };
-    if (t.bookingOpen) return { label: 'Prenotazioni aperte', cls: 'open' };
-    if (t.bookingClosed) return { label: 'Prenotazioni chiuse', cls: 'closed' };
-    return { label: 'Prenotazioni in arrivo', cls: 'soon' };
+    if (t.started) return { label: 'Partita in corso', short: 'In corso', cls: 'live' };
+    if (t.bookingOpen) return { label: 'Prenotazioni aperte', short: 'Aperte', cls: 'open' };
+    if (t.bookingClosed) return { label: 'Prenotazioni chiuse', short: 'Chiuse', cls: 'closed' };
+    return { label: 'Prenotazioni in arrivo', short: 'In arrivo', cls: 'soon' };
   });
 
   // ------------------------------------------------ solo l'elenco dei giocatori scorre
