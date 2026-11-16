@@ -18,6 +18,7 @@ const PATHS: Record<string, string> = {
   list: 'M8 6h12 M8 12h12 M8 18h12 M4 6h.01 M4 12h.01 M4 18h.01',
   shirt: 'M8 3l-5 3l2 4l3-1v12h8V9l3 1l2-4l-5-3a4 4 0 0 1-8 0z',
   score: 'M4 5h16v14H4z M12 5v14 M8 10v4 M15 10h2v4h-2',
+  megaphone: 'M3 10v4h3l6 4V6L6 10z M15.5 9.5a3.5 3.5 0 0 1 0 5 M18 7a7 7 0 0 1 0 10',
   star: 'M12 3l2.7 5.6l6.1.9l-4.4 4.3l1 6.1L12 17l-5.4 2.9l1-6.1L3.2 9.5l6.1-.9z',
   chat: 'M4 5h16v11H9l-5 4z',
   clock: 'M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0 -16 0 M12 8v4l3 2',
