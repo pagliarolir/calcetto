@@ -28,7 +28,8 @@ export class PayCards {
   async load(): Promise<void> {
     const [all, mine] = await Promise.all([this.sb.rpc('pay_cards_active'), this.sb.rpc('pay_my_cards')]);
     if (!all.error && Array.isArray(all.data)) {
-      this.active.set(new Map((all.data as { user_id: string; color: CardColor }[]).map((c) => [c.user_id, c.color])));
+      // sulla figurina si segnala solo il giallo: chi ha il rosso è in punizione e non può fare nulla se non saldare
+      this.active.set(new Map((all.data as { user_id: string; color: CardColor }[]).filter((c) => c.color === 'yellow').map((c) => [c.user_id, c.color])));
     }
     if (!mine.error && Array.isArray(mine.data)) this.mine.set(mine.data as MyCard[]);
   }

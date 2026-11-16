@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injectable, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injectable, signal, untracked, viewChild } from '@angular/core';
+import { PayCards } from '../core/pay-cards';
 import { fmtWhen } from '../core/format';
 import { Session } from '../core/session';
 
@@ -11,8 +12,18 @@ export class Reprimand {
   readonly visible = signal(false);
   /** cambia a ogni tentativo: fa ripartire lo scossone anche se il rimprovero è già aperto */
   readonly attempt = signal(0);
+  /** cartellino giallo dei Pagamenti (migrazione 64): stessa schermata, in giallo, come ammonizione senza blocchi */
+  readonly yellow = signal<number | null>(null);
+
+  showYellow(cardId: number): void {
+    this.yellow.set(cardId);
+    this.visible.set(true);
+    this.attempt.update((n) => n + 1);
+    navigator.vibrate?.([70, 50, 70]);
+  }
 
   show(): void {
+    this.yellow.set(null);
     // bloccato dal server senza che l'app sapesse della punizione: si leggono durata e motivo
     if (!this.session.punishment()) void this.session.refreshPunishment();
     this.visible.set(true);
@@ -22,6 +33,14 @@ export class Reprimand {
 
   hide(): void {
     this.visible.set(false);
+  }
+
+  /** chiusura del giallo: il cartellino è stato visto */
+  readonly yellowSeen = signal<number | null>(null);
+  close(): void {
+    const y = this.yellow();
+    this.hide();
+    if (y !== null) { this.yellowSeen.set(y); this.yellow.set(null); }
   }
 
   /** Da chiamare all'inizio di ogni azione: true (e rimprovero) se l'utente è in punizione. */
@@ -35,21 +54,31 @@ export class Reprimand {
 @Component({
   selector: 'app-reprimand',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown.escape)': 'reprimand.hide()' },
+  host: { '(document:keydown.escape)': 'reprimand.close()' },
   template: `
     @if (reprimand.visible()) {
-      <div class="backdrop enter-fade" (click)="reprimand.hide()"></div>
+      <div class="backdrop enter-fade" (click)="reprimand.close()"></div>
       <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="rep-msg" aria-describedby="rep-sub">
         @for (k of [reprimand.attempt()]; track k) {
-          <div class="sheet">
-            <div class="red-card" aria-hidden="true"></div>
-            <p id="rep-msg" class="msg">Sei in punizione per ordine del Leader, rifletti sui tuoi errori</p>
-            <p id="rep-sub" class="sub">
-              {{ until() }}
-              @if (reason(); as r) { <br />Motivo: {{ r }} }
-            </p>
-            <button #ok class="ok" (click)="reprimand.hide()">Ho capito</button>
-          </div>
+          @if (reprimand.yellow() !== null) {
+            <!-- cartellino giallo: stessa schermata e stessa animazione, ma è solo un'ammonizione -->
+            <div class="sheet yellow">
+              <div class="red-card" aria-hidden="true"></div>
+              <p id="rep-msg" class="msg">Sei ammonito: la quota del campo non è stata pagata in tempo</p>
+              <p id="rep-sub" class="sub">Salda in Conti: se alla prossima partita hai ancora un debito, è cartellino rosso.</p>
+              <button #ok class="ok" (click)="reprimand.close()">Ho capito</button>
+            </div>
+          } @else {
+            <div class="sheet">
+              <div class="red-card" aria-hidden="true"></div>
+              <p id="rep-msg" class="msg">Sei in punizione per ordine del Leader, rifletti sui tuoi errori</p>
+              <p id="rep-sub" class="sub">
+                {{ until() }}
+                @if (reason(); as r) { <br />Motivo: {{ r }} }
+              </p>
+              <button #ok class="ok" (click)="reprimand.close()">Ho capito</button>
+            </div>
+          }
         }
       </div>
     }
@@ -80,6 +109,11 @@ export class Reprimand {
       margin-top: 18px; min-height: 46px; padding: 0 22px; border-radius: 999px; cursor: pointer;
       background: var(--danger); color: var(--danger-ink); border: 0; font: 600 var(--step-0)/1 var(--font-body);
     }
+    /* giallo: colori dell'arbitro per il cartellino, bordo e pulsante con la fascia ambra del tema, testo in --ink */
+    .sheet.yellow { border-color: var(--armband); box-shadow: 0 0 0 6px color-mix(in srgb, var(--armband) 22%, transparent), 0 24px 60px rgb(0 0 0 / 45%); }
+    .sheet.yellow .red-card { background: linear-gradient(160deg, #ffe45c, #f2c200 70%); }
+    .sheet.yellow .msg { color: var(--ink); }
+    .sheet.yellow .ok { background: var(--armband); color: var(--armband-ink); }
     @keyframes raise { from { transform: translateY(40px) rotate(-24deg); opacity: 0; } to { transform: rotate(-9deg); opacity: 1; } }
     @keyframes scold {
       0% { transform: scale(0.9); opacity: 0; }
@@ -97,12 +131,25 @@ export class ReprimandView {
   protected readonly until = computed(() => {
     const p = this.session.punishment();
     if (!p) return '';
+    // il rosso dei Pagamenti finisce da solo con il saldo confermato (migrazione 64)
+    if (!p.ends_at && p.reason?.startsWith('Quota del campo')) return 'Fino al saldo, confermato da chi riceve. In Conti puoi sempre pagare.';
     return p.ends_at ? `Fino a ${fmtWhen(p.ends_at)}.` : 'Fino a nuovo ordine del Leader.';
   });
   protected readonly reason = computed(() => this.session.punishment()?.reason ?? null);
 
+  private readonly cards = inject(PayCards);
+
   constructor() {
     // il pulsante prende il fuoco a ogni apertura (tastiera e lettori di schermo)
     effect(() => this.ok()?.nativeElement.focus());
+    // cartellino giallo non ancora visto: all'apertura dell'app la schermata dell'ammonizione (una volta)
+    effect(() => {
+      const y = this.cards.mine().find((c) => c.color === 'yellow' && !c.seen);
+      untracked(() => { if (y && !this.reprimand.visible()) this.reprimand.showYellow(y.id); });
+    });
+    effect(() => {
+      const id = this.reprimand.yellowSeen();
+      if (id !== null) untracked(() => void this.cards.seen(id));
+    });
   }
 }
