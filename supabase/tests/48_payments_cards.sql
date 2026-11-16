@@ -30,6 +30,11 @@ select (select n from ids where id = user_id) chi, (select name from achievement
 \echo '--- 2) il promemoria: P1 a P3 (dalle 13 e una volta al giorno: «sent» o «early», poi «already» o «early»)'
 select as_user('P1'), pay_remind(pid('P3')) in ('sent', 'early') as primo, pay_remind(pid('P3')) in ('already', 'early') as secondo;
 
+-- P3 è prenotato in una partita futura: col rosso deve uscire dalla lista
+insert into matches (starts_at, nominal_date, bookings_open_at, bookings_close_at) values (now() + interval '3 days', (now() + interval '3 days')::date, now() - interval '1 day', now() + interval '2 days');
+create function mf() returns uuid language sql as $$ select id from matches where starts_at > now() order by starts_at limit 1 $$;
+grant execute on function mf() to authenticated, anon;
+select _book(pid('P3'), pid('P3'), mf(), 'present', true) ->> 'list' as p3_prenotato;
 \echo '--- 3) seconda partita: P3 ancora in debito → rosso e punizione; P2 nessun cartellino'
 select as_user('P1'), pay_add_expense('Campo', 3000, pid('P1'), array[pid('P1'), pid('P2'), pid('P3')], m2()) is not null as spesa2;
 update pay_expenses set created_at = now() - interval '2 days';
@@ -39,6 +44,7 @@ select as_user('P1'), pay_decide((select id from pay_settlements where from_id =
 select pay_cards_tick();
 select (select n from ids where id = user_id) chi, color, punishment_id is not null as punito from pay_cards where cleared_at is null order by 1, 2;
 select is_punished(pid('P3')) as p3_in_punizione;
+select list as p3_nella_partita_futura from bookings where match_id = mf() and user_id = pid('P3');
 
 \echo '--- 4) in punizione P3 vede i conti e salda; P1 conferma; al giro dopo niente cartellini e punizione finita'
 select as_user('P3'), (pay_overview() ->> 'balance_cents') as saldo_p3;
@@ -54,6 +60,16 @@ do $$ begin
   if exists (select 1 from pay_cards where user_id = pid('P2')) then raise exception 'P2 aveva pagato in tempo'; end if;
   if (select count(*) from pay_card_checks) <> 2 then raise exception 'ogni partita si controlla una volta'; end if;
 end $$;
-\echo '--- 5) cartellini visibili a tutti (solo il colore) e i miei'
+\echo '--- 5) il Leader titolare (P1) non prende cartellini; spesa inserita dopo la scadenza: vale subito la scadenza'
+insert into matches (starts_at, nominal_date) values (now() - interval '50 hours', (now() - interval '50 hours')::date);
+create function m3() returns uuid language sql as $$ select id from matches where id not in (m1(), m2()) and starts_at < now() - interval '40 hours' and starts_at > now() - interval '55 hours' limit 1 $$;
+select as_user('P3'), pay_add_expense('Campo', 2000, pid('P3'), array[pid('P1'), pid('P3')], m3()) is not null as spesa3;
+select pay_cards_tick();
+select count(*) as cartellini_leader from pay_cards where user_id = pid('P1');
+do $$ begin
+  if exists (select 1 from pay_cards where user_id = pid('P1')) then raise exception 'il Leader non prende cartellini'; end if;
+  if not exists (select 1 from pay_card_checks where match_id = m3()) then raise exception 'la scadenza delle 12 vale anche per le spese inserite tardi'; end if;
+end $$;
+\echo '--- 6) cartellini visibili a tutti (solo il colore) e i miei'
 select as_user('P2'), pay_cards_active() as attivi;
 select as_user('P3'), pay_my_cards() as miei;
