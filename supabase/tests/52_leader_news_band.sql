@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP 1
 \pset footer off
--- Banda delle Leader News (migrazione 69): le notizie degli ultimi 14 giorni, lette o no, solo per chi è nel gruppo.
+-- Banda delle Leader News (migrazione 70): le notizie degli ultimi 14 giorni, lette o no, solo per chi è nel gruppo.
 insert into auth.users (email, raw_user_meta_data) select 'u'||g||'@x.it', jsonb_build_object('first_name', 'P'||g) from generate_series(1,2) g;
 create temp table ids as select first_name n, id from profiles; grant select on ids to authenticated, anon;
 create function as_user(p text) returns void language sql as $$ select set_config('request.jwt.claim.sub', coalesce((select id::text from ids where n = p), ''), false) $$;
