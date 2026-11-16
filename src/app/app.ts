@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { SwUpdate } from '@angular/service-worker';
 import { filter, map } from 'rxjs';
 import { Session } from './core/session';
 import { Toasts } from './core/toast';
@@ -17,13 +16,14 @@ import { Payments } from './core/payments';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
 import { ConfirmView } from './ui/confirm';
+import { UpdateNotice } from './ui/update-notice';
 import { Network } from './core/network';
 import { NextMatch } from './core/next-match';
 import { Prefetch } from './core/prefetch';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView, UpdateNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
@@ -66,6 +66,7 @@ import { Prefetch } from './core/prefetch';
     <app-confirm />
 
     <div class="toasts" [class.above-net]="!network.online() || network.back()" role="status" aria-live="polite">
+      <app-update-notice />
       @for (t of toasts.items(); track t.id) {
         <button class="toast enter-fade" [class.error]="t.tone === 'error'" (click)="toasts.dismiss(t.id)">{{ t.text }}</button>
       }
@@ -223,14 +224,7 @@ export class App {
       setTimeout(() => el.classList.remove('page-in'), 250);
     });
 
-    // nuova versione dell'app pronta: si ricarica alla prossima apertura senza chiedere nulla
-    const sw = inject(SwUpdate);
-    if (sw.isEnabled) {
-      sw.versionUpdates.pipe(filter((e) => e.type === 'VERSION_READY')).subscribe(() => {
-        this.toasts.show('Nuova versione pronta: si attiva alla prossima apertura.', 'info', 8000);
-        document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && location.reload(), { once: true });
-      });
-    }
+    // nuova versione dell'app pronta: avviso con le novità in <app-update-notice> (si attiva alla prossima apertura)
   }
 
   protected isActive(path: string): boolean {

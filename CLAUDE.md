@@ -60,6 +60,8 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 
 ## Regole del frontend
 
+- Novità degli aggiornamenti: `public/changelog.json` (più recente in cima, `id` che cresce di 1, frasi brevi in italiano per i giocatori). Ogni PR con un cambiamento visibile aggiunge o completa la voce in cima; niente cose in anteprima (Pagamenti, FantaLeader) né dettagli tecnici. L'avviso «Nuova versione pronta» (`ui/update-notice.ts`) scarica il file della nuova versione e mostra con «Novità» le voci con `id` più alto di quello compilato nell'app (`core/changelog.ts`).
+
 - Componenti standalone, `ChangeDetectionStrategy.OnPush`, signals, niente zone.js. Negli `effect` leggi solo i segnali che devono farlo ripartire; usa `untracked` per il resto (un effect che legge e scrive lo stesso segnale blocca l'app).
 - Stile: token e classi condivise in `src/styles.scss` (colori campo, maglie bianche e nere, fascia ambra del Leader). Riusa `.btn`, `.panel`, `.list`, `.chip`, `.field` prima di creare stili nuovi.
 - Testi in italiano, tono amichevole e diretto. Niente maiuscole su intere etichette, niente separatori a punto centrale tra informazioni.
