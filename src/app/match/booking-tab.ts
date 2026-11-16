@@ -142,7 +142,7 @@ type SortMode = 'alpha' | 'ovr' | 'form' | 'insert' | 'team';
             @case ('pending') {
               <ul class="people board">
                 @for (r of byName(store.pending()); track r.user_id) {
-                  <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" note="disponibile" /></li>
+                  <li [attr.data-flip]="r.user_id"><app-figurina variant="free" [class.arriving]="!!r.provisional" [userId]="r.user_id" [mine]="r.user_id === session.uid()" /></li>
                 } @empty { <li class="empty"><app-empty icon="user" text="Nessun disponibile." /></li> }
               </ul>
             }

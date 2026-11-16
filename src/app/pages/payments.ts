@@ -520,7 +520,7 @@ export class PaymentsPage implements OnInit {
   protected readonly eUsers = signal(new Set<string>());
   protected readonly whoOpen = signal(false);
   /** formazione della partita scelta: finché la scelta è quella, il riassunto dice «Chi ha giocato il giorno …» */
-  protected readonly matchLineup = signal<{ ids: Set<string>; day: string } | null>(null);
+  protected readonly matchLineup = signal<{ ids: Set<string>; day: string; future?: boolean } | null>(null);
   /** chi può aver pagato: con una partita scelta, solo chi era in campo */
   protected readonly payerOptions = computed(() => {
     const ml = this.matchLineup();
@@ -532,7 +532,7 @@ export class PaymentsPage implements OnInit {
     const n = this.session.activeMembers().length;
     if (!ids.length) return 'Nessuno: tocca per scegliere';
     const ml = this.matchLineup(), picked = this.eUsers();
-    if (ml && ml.ids.size === picked.size && [...ml.ids].every((x) => picked.has(x))) return `Chi ha giocato il giorno ${ml.day} (${picked.size})`;
+    if (ml && ml.ids.size === picked.size && [...ml.ids].every((x) => picked.has(x))) return `${ml.future ? 'Chi gioca' : 'Chi ha giocato'} il giorno ${ml.day} (${picked.size})`;
     if (ids.length === n) return `Tutti (${n})`;
     const head = ids.slice(0, 2).join(', ');
     return `${ids.length} su ${n}: ${head}${ids.length > 2 ? ` e altri ${ids.length - 2}` : ''}`;
@@ -561,7 +561,7 @@ export class PaymentsPage implements OnInit {
         const m = this.pastMatches().find((x) => x.id === fromMatch);
         const lock = m ? this.matchLock(m) : null;
         if (m && !lock) await this.pickMatch(fromMatch);
-        else if (lock) this.toasts.show(lock === 'già divisa' ? 'Il campo di questa partita è già nei Conti' : 'Sono passati più di 3 giorni: il campo lo può dividere solo il Leader', 'ok', 4500);
+        else this.toasts.show(lock ? 'Il campo di questa partita è già nei Conti' : 'Sono passati più di 3 giorni: il campo lo può dividere solo il Leader', 'ok', 4500);
       }
       if (this.route.snapshot.queryParamMap.get('dati')) {
         void this.router.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { dati: null } });
@@ -709,10 +709,14 @@ export class PaymentsPage implements OnInit {
     queueMicrotask(() => { const d = this.expDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
     if (!this.pastMatches().length) {
       try {
-        const now = Date.now();
-        const all = await this.api.matches(30);
-        this.pastMatches.set(all.filter((m) => m.status !== 'cancelled' && Date.parse(m.starts_at) < now)
-          .sort((a, b) => b.starts_at.localeCompare(a.starts_at)).slice(0, 8));
+        // la prossima partita (il campo si può dividere anche prima) e le ultime giocate, 6 in tutto;
+        // quelle di più di 3 giorni fa solo per il Leader (il server lo controlla comunque)
+        const now = Date.now(), old = now - 3 * 864e5, boss = !!this.pay.data()?.boss;
+        const all = (await this.api.matches(30)).filter((m) => m.status !== 'cancelled');
+        const next = all.filter((m) => Date.parse(m.starts_at) >= now).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
+        const past = all.filter((m) => Date.parse(m.starts_at) < now && (boss || Date.parse(m.starts_at) >= old))
+          .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
+        this.pastMatches.set([...(next ? [next] : []), ...past].slice(0, 6));
       } catch { /* senza partite si inserisce a mano */ }
     }
     // partite che hanno già il campo nei Conti (si riguarda a ogni apertura: qualcuno può averlo appena diviso)
@@ -721,11 +725,9 @@ export class PaymentsPage implements OnInit {
 
   /** partite con il campo già nei Conti (migrazione 68) */
   protected readonly fieldDone = signal(new Set<string>());
-  /** perché una partita non si può scegliere: campo già diviso, oppure più di 3 giorni fa (solo il Leader) */
+  /** perché una partita non si può scegliere: campo già diviso (quelle di più di 3 giorni fa non sono in elenco) */
   protected matchLock(m: Match): string | null {
-    if (this.fieldDone().has(m.id)) return 'già divisa';
-    if (!this.pay.data()?.boss && Date.parse(m.starts_at) < Date.now() - 3 * 864e5) return 'solo il Leader';
-    return null;
+    return this.fieldDone().has(m.id) ? 'già divisa' : null;
   }
 
   /** scegliendo una partita: titolo «Campo gg/mm/aa» e divisione tra chi era in formazione */
@@ -742,7 +744,7 @@ export class PaymentsPage implements OnInit {
       if (rows.length) {
         const ids = new Set(rows.map((r) => r.user_id));
         this.eUsers.set(new Set(ids));
-        this.matchLineup.set({ ids, day: fmtDate(m?.starts_at ?? '') });
+        this.matchLineup.set({ ids, day: fmtDate(m?.starts_at ?? ''), future: !!m && Date.parse(m.starts_at) > Date.now() });
         // chi ha pagato il campo è tra chi ha giocato: se non c'era, si propone il primo dell'elenco
         if (!ids.has(this.ePayer())) this.ePayer.set(this.payerOptions()[0]?.id ?? this.ePayer());
       }
