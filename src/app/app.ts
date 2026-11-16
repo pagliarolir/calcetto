@@ -18,13 +18,14 @@ import { AchievementBanner } from './ui/achievement-banner';
 import { ConfirmView } from './ui/confirm';
 import { UpdateNotice } from './ui/update-notice';
 import { LeaderNewsNotice } from './ui/leader-news-notice';
+import { CardNotice } from './ui/card-notice';
 import { Network } from './core/network';
 import { NextMatch } from './core/next-match';
 import { Prefetch } from './core/prefetch';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView, UpdateNotice, LeaderNewsNotice],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView, UpdateNotice, LeaderNewsNotice, CardNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
@@ -64,6 +65,7 @@ import { Prefetch } from './core/prefetch';
     </div>
 
     <app-reprimand />
+    <app-card-notice />
     <app-confirm />
 
     <div class="toasts" [class.above-net]="!network.online() || network.back()" role="status" aria-live="polite">

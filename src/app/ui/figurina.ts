@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input } from '@angular/core';
+import { PayCards } from '../core/pay-cards';
 import { formAngle, formLabel, formOf, overallOf, Ratings } from '../core/ratings';
 import { RouterLink } from '@angular/router';
 import { Session } from '../core/session';
@@ -29,6 +30,7 @@ import { Avatar } from './avatar';
       }
       @if (number() !== null) { <span class="num" [attr.aria-label]="'numero ' + number()">{{ number() }}</span> }
       @if (captain()) { <span class="armband" title="Capitano" aria-label="Capitano">C</span> }
+      @if (card(); as c) { <span class="pcard" [class.red]="c === 'red'" role="img" [attr.aria-label]="c === 'red' ? 'Cartellino rosso' : 'Cartellino giallo'" [title]="c === 'red' ? 'Cartellino rosso' : 'Cartellino giallo'"></span> }
     </span>
     <span class="txt">
       @if (userId(); as id) {
@@ -78,6 +80,10 @@ import { Avatar } from './avatar';
       background: var(--armband); color: var(--armband-ink); box-shadow: 0 0 0 2px var(--surface);
       font: 800 0.72rem/1 var(--font-display);
     }
+    /* cartellino dei Pagamenti (giallo o rosso, colori fissi come quelli dell'arbitro) */
+    .pcard { position: absolute; right: -4px; bottom: -3px; width: 11px; height: 15px; border-radius: 2px; background: #ffd400;
+      box-shadow: 0 0 0 2px var(--surface); transform: rotate(10deg); }
+    .pcard.red { background: #e3262f; }
     .txt { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
     .name { font-weight: 700; color: inherit; text-decoration: none; font-size: var(--step-0); }
     .sub { font-size: 0.75rem; color: var(--muted); }
@@ -122,6 +128,9 @@ import { Avatar } from './avatar';
 })
 export class Figurina {
   protected readonly session = inject(Session);
+  private readonly cards = inject(PayCards);
+  /** cartellino dei Pagamenti in corso (migrazione 64) */
+  protected readonly card = computed(() => { const id = this.userId(); return id ? this.cards.active().get(id) ?? null : null; });
   readonly userId = input<string | null>(null);
   readonly number = input<number | null>(null);
   readonly captain = input(false);
