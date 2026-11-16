@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { Supabase } from './supabase';
 
 /** Leader News (migrazione 62): avvisi scritti dal Leader, visti una volta da ognuno al primo avvio dopo la pubblicazione. */
@@ -8,6 +8,8 @@ export interface LeaderNewsAdmin extends LeaderNews { created_by: string; seen: 
 @Injectable({ providedIn: 'root' })
 export class LeaderNewsService {
   private readonly sb = inject(Supabase).client;
+  /** riquadro all'avvio: «done» quando non ci sono notizie o sono state chiuse (le Novità aspettano questo, per non sovrapporsi) */
+  readonly state = signal<'checking' | 'showing' | 'done'>('checking');
 
   /** notizie non ancora lette (vuoto se la migrazione non c'è ancora o in caso di errore: l'avvio non deve bloccarsi) */
   async pending(): Promise<LeaderNews[]> {

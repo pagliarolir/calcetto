@@ -1,5 +1,16 @@
 [
   {
+    "id": 3,
+    "date": "2026-11-16",
+    "items": [
+      "Novità: dopo ogni aggiornamento, all'apertura dell'app trovi questo riquadro con cosa è cambiato.",
+      "Confronta: dalla scheda di un giocatore o dal Profilo puoi metterlo a confronto con un altro.",
+      "Statistiche: tendine più compatte e confronto più leggibile.",
+      "La «i» delle spiegazioni ora si apre sopra a tutto e punta alla «i».",
+      "Il logo in alto non salta più all'apertura e l'app si avvia più leggera."
+    ]
+  },
+  {
     "id": 2,
     "date": "2026-11-16",
     "items": [
@@ -10,7 +21,6 @@
     "id": 1,
     "date": "2026-11-16",
     "items": [
-      "Quando arriva un aggiornamento puoi vedere cosa è cambiato toccando «Novità».",
       "Lista: cambiando ordinamento i giocatori non finiscono più sopra la data e le schede; toccare l'ordinamento già attivo non fa nulla."
     ]
   }

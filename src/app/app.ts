@@ -18,13 +18,14 @@ import { AchievementBanner } from './ui/achievement-banner';
 import { ConfirmView } from './ui/confirm';
 import { UpdateNotice } from './ui/update-notice';
 import { LeaderNewsNotice } from './ui/leader-news-notice';
+import { ChangesNotice } from './ui/changes-notice';
 import { Network } from './core/network';
 import { NextMatch } from './core/next-match';
 import { Prefetch } from './core/prefetch';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView, UpdateNotice, LeaderNewsNotice],
+  imports: [RouterOutlet, RouterLink, Icon, ReprimandView, AchievementBanner, PullRefresh, ConfirmView, UpdateNotice, LeaderNewsNotice, ChangesNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- App shell: il documento non scorre mai; scorre solo questo riquadro. La barra è l'ultimo
@@ -68,6 +69,7 @@ import { Prefetch } from './core/prefetch';
 
     <div class="toasts" [class.above-net]="!network.online() || network.back()" role="status" aria-live="polite">
       <app-leader-news />
+      <app-changes-notice />
       <app-update-notice />
       @for (t of toasts.items(); track t.id) {
         <button class="toast enter-fade" [class.error]="t.tone === 'error'" (click)="toasts.dismiss(t.id)">{{ t.text }}</button>
@@ -226,7 +228,7 @@ export class App {
       setTimeout(() => el.classList.remove('page-in'), 250);
     });
 
-    // nuova versione dell'app pronta: avviso con le novità in <app-update-notice> (si attiva alla prossima apertura)
+    // nuova versione dell'app pronta: avviso in <app-update-notice> (si attiva alla prossima apertura, poi le Novità in <app-changes-notice>)
   }
 
   protected isActive(path: string): boolean {
