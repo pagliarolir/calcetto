@@ -5,7 +5,7 @@ import { Api } from '../core/api';
 import { Confirm } from '../core/confirm';
 import { fmtDate, fmtDayShort } from '../core/format';
 import { Match } from '../core/models';
-import { eur, ibanGroups, parseEuro, PayExpense, PayMethod, PayMethods, Payments, paypalLink, PaySettlement, PayTransfer } from '../core/payments';
+import { eur, fieldChoices, ibanGroups, parseEuro, PayExpense, PayMethod, PayMethods, Payments, paypalLink, PaySettlement, PayTransfer } from '../core/payments';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
@@ -709,14 +709,8 @@ export class PaymentsPage implements OnInit {
     queueMicrotask(() => { const d = this.expDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
     if (!this.pastMatches().length) {
       try {
-        // la prossima partita (il campo si può dividere anche prima) e le ultime giocate, 6 in tutto;
-        // quelle di più di 3 giorni fa solo per il Leader (il server lo controlla comunque)
-        const now = Date.now(), old = now - 3 * 864e5, boss = !!this.pay.data()?.boss;
-        const all = (await this.api.matches(30)).filter((m) => m.status !== 'cancelled');
-        const next = all.filter((m) => Date.parse(m.starts_at) >= now).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
-        const past = all.filter((m) => Date.parse(m.starts_at) < now && (boss || Date.parse(m.starts_at) >= old))
-          .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
-        this.pastMatches.set([...(next ? [next] : []), ...past].slice(0, 6));
+        // stesse partite di «Dividi il campo» nel Risultato (fieldChoices)
+        this.pastMatches.set(fieldChoices(await this.api.matches(30), !!this.pay.data()?.boss));
       } catch { /* senza partite si inserisce a mano */ }
     }
     // partite che hanno già il campo nei Conti (si riguarda a ogni apertura: qualcuno può averlo appena diviso)
