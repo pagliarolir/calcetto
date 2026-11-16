@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { Match } from './models';
 import { Session } from './session';
 import { Supabase } from './supabase';
 
@@ -50,6 +51,19 @@ export function paypalLink(user: string, cents: number): string {
 /** IBAN a gruppi di 4, più leggibile */
 export function ibanGroups(iban: string): string {
   return iban.replace(/(.{4})/g, '$1 ').trim();
+}
+
+/**
+ * Partite per cui si può dividere il campo: la prossima e le ultime giocate, 6 in tutto; quelle di più di
+ * 3 giorni fa solo per il Leader (il server lo controlla comunque). Le usano la tendina della spesa e
+ * «Dividi il campo» nel Risultato, così le due cose non si contraddicono.
+ */
+export function fieldChoices<T extends Match>(all: T[], boss: boolean, now = Date.now()): T[] {
+  const ok = all.filter((m) => m.status !== 'cancelled');
+  const next = ok.filter((m) => Date.parse(m.starts_at) >= now).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
+  const past = ok.filter((m) => Date.parse(m.starts_at) < now && (boss || Date.parse(m.starts_at) >= now - 3 * 864e5))
+    .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
+  return [...(next ? [next] : []), ...past].slice(0, 6);
 }
 
 @Injectable({ providedIn: 'root' })

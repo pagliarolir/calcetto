@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
 import { filter } from 'rxjs';
+import { nextHasChanges } from '../core/changelog';
 import { Icon } from './icon';
 
 /**
- * Avviso «Nuova versione pronta»: si chiude da solo dopo 12 secondi. La nuova versione si attiva quando l'app va in
+ * Avviso «Nuova versione pronta» (solo se la nuova versione ha voci nuove nel changelog): si chiude da solo dopo 12 secondi. La nuova versione si attiva quando l'app va in
  * secondo piano; alla riapertura le novità compaiono nel riquadro da telegiornale di `<app-changes-notice>`.
  */
 @Component({
@@ -37,8 +38,12 @@ export class UpdateNotice {
     const sw = inject(SwUpdate);
     if (!sw.isEnabled) return;
     sw.versionUpdates.pipe(filter((e) => e.type === 'VERSION_READY')).subscribe(() => {
-      this.shown.set(true);
-      setTimeout(() => this.shown.set(false), 12000);
+      // avviso solo se la nuova versione porta novità: le correzioni silenziose si installano e basta
+      void nextHasChanges().then((news) => {
+        if (!news) return;
+        this.shown.set(true);
+        setTimeout(() => this.shown.set(false), 12000);
+      });
       document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && location.reload(), { once: true });
     });
   }

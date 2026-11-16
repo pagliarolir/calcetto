@@ -16,7 +16,7 @@ import { Ball, Boot, KitShirt } from '../ui/match-marks';
 import { Icon } from '../ui/icon';
 import { Sheet } from '../ui/sheet';
 import { RouterLink } from '@angular/router';
-import { Payments } from '../core/payments';
+import { fieldChoices, Payments } from '../core/payments';
 
 interface Line { goals: number; assists: number; own_goals: number }
 type Field = keyof Line;
@@ -94,8 +94,14 @@ type Field = keyof Line;
             }
 
             <!-- Pagamenti (solo per chi li vede): la spesa del campo già pronta, con questa partita e chi ha giocato -->
-            @if (pay.visible() && store.t()?.ended) {
-              <a class="btn block split-btn" routerLink="/pagamenti" [queryParams]="{ spesa: m.id }"><app-icon name="wallet" [size]="18" /> Dividi il campo</a>
+            @if (pay.visible() && store.t()?.ended && splitState(); as st) {
+              @if (st === 'ok') {
+                <a class="btn block split-btn" routerLink="/pagamenti" [queryParams]="{ spesa: m.id }"><app-icon name="wallet" [size]="18" /> Dividi il campo</a>
+              } @else {
+                <!-- solo le partite che si possono scegliere tra le spese (fieldChoices): le altre restano spente -->
+                <button type="button" class="btn block split-btn" disabled aria-describedby="split-why"><app-icon name="wallet" [size]="18" /> Dividi il campo</button>
+                <p id="split-why" class="small muted split-why">{{ st === 'done' ? 'Il campo di questa partita è già nei Conti.' : st === 'old' ? 'Nelle spese ci sono solo le ultime 6 partite.' : 'Sono passati più di 3 giorni: ora può dividerlo solo il Leader.' }}</p>
+              }
             }
           </section>
 
@@ -192,6 +198,7 @@ type Field = keyof Line;
     }
   `,
   styles: `
+    .split-why { margin: 6px 0 0; text-align: center; }
     .big { font-size: var(--step-4); }
     .meter { display: flex; gap: 6px; }
     .meter span { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); }
@@ -376,7 +383,21 @@ export class ResultTab {
     return out;
   });
 
+  /** «Dividi il campo»: ok se la partita è tra quelle della tendina delle spese e il campo non è ancora nei Conti */
+  protected readonly splitState = signal<'ok' | 'done' | 'late' | 'old' | null>(null);
+  private async checkSplit(id: string): Promise<void> {
+    try {
+      const boss = this.pay.data()?.boss ?? this.session.isLeader();
+      const [all, done] = await Promise.all([this.api.matches(30), this.pay.fieldMatches([id])]);
+      this.splitState.set(done.has(id) ? 'done' : fieldChoices(all, boss).some((m) => m.id === id) ? 'ok' : boss ? 'old' : 'late');
+    } catch { this.splitState.set(null); }
+  }
+
   constructor() {
+    effect(() => {
+      const id = this.store.match()?.id, ended = !!this.store.t()?.ended, vis = this.pay.visible();
+      if (id && ended && vis) untracked(() => void this.checkSplit(id));
+    });
     effect(() => {
       this.store.scorers();
       untracked(() => this.fromStore());

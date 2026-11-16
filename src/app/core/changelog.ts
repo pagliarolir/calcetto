@@ -28,3 +28,18 @@ export function unseenChanges(now = Date.now()): string[] {
 export function markChangesSeen(): void {
   try { localStorage.setItem(KEY, String(BUILD_CHANGE_ID)); } catch { /* niente */ }
 }
+
+/**
+ * La nuova versione ha novità da raccontare? Si legge il suo changelog senza passare dalla cache.
+ * Un aggiornamento senza voci nuove (correzioni silenziose) non mostra l'avviso «Nuova versione pronta».
+ */
+export async function nextHasChanges(): Promise<boolean> {
+  try {
+    const res = await fetch(`/changelog.json?ngsw-bypass=true&t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return false;
+    const list = (await res.json()) as ChangeEntry[];
+    return (list[0]?.id ?? 0) > BUILD_CHANGE_ID;
+  } catch {
+    return false;
+  }
+}
