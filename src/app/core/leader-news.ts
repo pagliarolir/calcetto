@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Supabase } from './supabase';
 
 /** Leader News (migrazione 62): avvisi scritti dal Leader, visti una volta da ognuno al primo avvio dopo la pubblicazione. */
-export interface LeaderNews { id: number; body: string; created_at: string }
+export interface LeaderNews { id: number; body: string; created_at: string; created_by?: string }
 export interface LeaderNewsAdmin extends LeaderNews { created_by: string; seen: number; members: number }
 
 @Injectable({ providedIn: 'root' })
