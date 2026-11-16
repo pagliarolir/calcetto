@@ -5,7 +5,7 @@ import { Session } from '../core/session';
 import { TvNotice } from './tv-notice';
 
 /**
- * «Novità» all'apertura dopo un aggiornamento: stesso riquadro da telegiornale delle Leader News, con l'elenco di cosa
+ * «Novità» all'apertura dopo un aggiornamento: è una Leader News anche questa (titolo «Leader News», etichetta «Novità»), con l'elenco di cosa
  * è cambiato. Compare una volta per versione (e per telefono), solo con l'accesso fatto e dopo le Leader News,
  * così i due riquadri non si sovrappongono.
  */
@@ -15,7 +15,7 @@ import { TvNotice } from './tv-notice';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (items().length) {
-      <app-tv-notice tag="Aggiornamento" heading="Novità" (done)="close()">
+      <app-tv-notice tag="Novità" heading="Leader News" (done)="close()">
         <ul>
           @for (c of items(); track $index) { <li>{{ c }}</li> }
         </ul>
