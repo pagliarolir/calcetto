@@ -1,7 +1,7 @@
 \set ON_ERROR_STOP 1
 \pset footer off
 -- Pagamenti (migrazione 60): IBAN degli altri mascherato (anche al Leader), copiabile solo da chi deve pagare;
--- i debiti di tutti visibili a tutti quelli che vedono i Pagamenti
+-- i debiti di tutti solo al Leader (migrazione 61)
 insert into auth.users (email, raw_user_meta_data)
 select 'u'||g||'@x.it', jsonb_build_object('first_name', 'P'||g) from generate_series(1,4) g;
 update profiles set nickname = 'Bobbo' where first_name = 'P2';
@@ -20,7 +20,7 @@ select as_user('P3'), (select m->>'iban' from jsonb_array_elements(pay_overview(
 \echo '--- copia: P2 sì, P3 il suo sì'
 select as_user('P2'), pay_reveal_iban(pid('P3')) as copia_p2;
 select as_user('P3'), pay_reveal_iban(pid('P3')) as copia_p3;
-\echo '--- tutti vedono i debiti di tutti: P4 vede 3 righe'
+\echo '--- dalla migrazione 61 i debiti di tutti li vede solo il Leader: P4 vede solo il suo (1 riga)'
 select as_user('P4'), jsonb_array_length(pay_overview()->'transfers') as debiti_visti_da_p4;
 do $$ begin
   perform as_user('P2');
@@ -31,7 +31,9 @@ do $$ begin
   if (select m->>'iban' from jsonb_array_elements(pay_overview()->'methods') m where m->>'user_id' = pid('P3')::text) not like 'IT60*%' then
     raise exception 'anche al Leader va mascherato'; end if;
   perform as_user('P4');
-  if jsonb_array_length(pay_overview()->'transfers') <> 3 then raise exception 'P4 deve vedere tutti i debiti'; end if;
+  if jsonb_array_length(pay_overview()->'transfers') <> 1 then raise exception 'P4 vede solo i suoi debiti'; end if;
+  perform as_user('P1');
+  if jsonb_array_length(pay_overview()->'transfers') <> 3 then raise exception 'il Leader vede tutti i debiti'; end if;
 end $$;
 \set ON_ERROR_STOP 0
 \echo '--- P3 (creditore) non può copiare l IBAN di P2, P2 salda e poi non può più copiare quello di P3 (attesi 2 errori; in mezzo P3 segna «Ricevuti» da sé)'
