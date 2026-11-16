@@ -10,7 +10,7 @@ create function as_user(p text) returns void language sql as $$ select set_confi
 create function pid(p text) returns uuid language sql as $$ select id from ids where n = p $$;
 grant execute on function as_user(text), pid(text) to authenticated, anon;
 select as_user('P1'), pay_set_visibility(false, array[pid('P3')]);
-insert into achievements (number, name) values (900, 'Premio Nagali');
+insert into achievements (number, name) values (11, 'Sticker segreto') on conflict (number) do nothing;
 -- due partite giocate: la prima 3 giorni fa, la seconda 2 giorni fa
 insert into matches (starts_at, nominal_date) values (now() - interval '3 days', (now() - interval '3 days')::date), (now() - interval '2 days', (now() - interval '2 days')::date);
 create function m1() returns uuid language sql as $$ select id from matches where starts_at < now() - interval '60 hours' order by starts_at limit 1 $$;
