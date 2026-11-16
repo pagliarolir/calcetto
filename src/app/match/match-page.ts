@@ -12,10 +12,12 @@ import { MatchStore } from './match-store';
 import { SwipeTabs } from '../ui/swipe-tabs';
 import { Session } from '../core/session';
 import { haptic } from '../core/haptics';
+import { NewsBand } from '../ui/news-band';
+import { LeaderNews, LeaderNewsService } from '../core/leader-news';
 
 @Component({
   selector: 'app-match-page',
-  imports: [SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
+  imports: [SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton, NewsBand],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
     '[style.--team-b]': 'kitB().color', '[style.--team-b-ink]': 'kitB().ink',
@@ -28,7 +30,29 @@ import { haptic } from '../core/haptics';
         <a class="btn" routerLink="/">Vai alla prossima partita</a>
       </main>
     } @else if (!store.loading() && store.match(); as m) {
-      <header class="hero">
+      <header class="hero" [class.with-band]="band().length > 0">
+        @if (band().length) {
+          <div class="hero-in">
+            <div class="ticket with-cal">
+              @if (branding.headerUrl(); as logo) {
+                <span class="logo-box sm"><img [src]="logo" alt="" /></span>
+              } @else {
+                <div class="calbig sm" aria-hidden="true"><small>{{ weekdayShort() }}</small><b>{{ dayNum() }}</b><small>{{ monthShort() }}</small></div>
+              }
+              <div class="tmain">
+                <h1>{{ day() }}</h1>
+                <p class="line time"><app-icon name="clock" [size]="18" />{{ kickoff() }} – {{ until() }}</p>
+                @if (maps(); as href) {
+                  <a class="line venue-link" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="m.venue_name + ', apri nelle mappe: ' + address()">
+                    <app-icon name="pitch" [size]="16" /><span class="ellipsis">{{ m.venue_name }}</span><span class="mapbtn"><app-icon name="map" [size]="14" /></span>
+                  </a>
+                }
+              </div>
+              <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
+            </div>
+          </div>
+          <app-news-band [items]="band()" (open)="openNews()" />
+        } @else {
           <!-- intestazione a biglietto: calendario, data, orario e luogo; sotto le squadre -->
           <div class="hero-in v-b">
             <div class="ticket with-cal">
@@ -63,6 +87,7 @@ import { haptic } from '../core/haptics';
               <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
             </div>
           </div>
+        }
         <nav class="tabs" [class.off]="tools()" aria-label="Sezioni della partita">
           @if (finished()) {
             <a routerLink="risultato" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Risultato</a>
@@ -166,6 +191,18 @@ import { haptic } from '../core/haptics';
     .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
     .tools-btn app-icon { display: grid; place-items: center; transition: transform 300ms var(--ease-spring); }
     .tools-btn[aria-pressed='true'] app-icon { transform: rotate(-45deg); }
+
+    /* con le Leader News: logo più piccolo, campo che apre le mappe, banda sopra le schede; stessa altezza di sempre */
+    .logo-box.sm { width: 84px; height: 84px; }
+    .calbig.sm { width: 70px; }
+    .calbig.sm b { font-size: 2.2rem; }
+    .venue-link { text-decoration: none; }
+    .venue-link .ellipsis { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .mapbtn { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgb(255 255 255 / 14%); }
+    .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .with-band .hero-in { padding: 8px 16px 6px; height: 107px; }
+    .with-band .ticket { align-items: center; }
+    .with-band app-news-band { margin-bottom: 4px; }
     /* «flip» della pagina sull'asse verticale, con profondità: solo dentro l'area che scorre (la barra non si muove) */
     @media (prefers-reduced-motion: no-preference) {
       .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
@@ -180,6 +217,15 @@ export class MatchPage {
   readonly id = input.required<string>();
   protected readonly store = inject(MatchStore);
   protected readonly branding = inject(Branding);
+  private readonly newsSvc = inject(LeaderNewsService);
+  /** Leader News degli ultimi 14 giorni per la banda (vuota: intestazione di sempre) */
+  private readonly recent = signal<LeaderNews[]>([]);
+  protected readonly band = computed(() => this.recent().map((n) => ({
+    who: n.created_by ? this.session.name(n.created_by) : 'Il Leader',
+    text: n.body.replace(/\s+/g, ' ').trim(),
+  })));
+  /** toccando la banda: tutte le notizie nel riquadro da telegiornale */
+  protected openNews(): void { this.newsSvc.showAll.set(this.recent()); }
 
   protected readonly day = computed(() => (this.store.match() ? fmtDayLong(this.store.match()!.starts_at) : ''));
 
@@ -267,6 +313,7 @@ export class MatchPage {
   private readonly logoEl = viewChild<ElementRef<HTMLElement>>('logoBox');
 
   constructor() {
+    void this.newsSvc.recent().then((list) => this.recent.set(list));
     effect((onCleanup) => {
       const t = this.tmainEl()?.nativeElement;
       const l = this.logoEl()?.nativeElement;

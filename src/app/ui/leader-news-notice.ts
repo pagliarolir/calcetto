@@ -59,9 +59,17 @@ export class LeaderNewsNotice {
         });
       });
     });
+    // dalla banda della partita: si rileggono le notizie recenti (già lette o no)
+    effect(() => {
+      const again = this.svc.showAll();
+      if (!again?.length) return;
+      untracked(() => { this.rereading = true; this.news.set(again); this.svc.showAll.set(null); });
+    });
   }
+  private rereading = false;
 
   protected close(): void {
+    if (this.rereading) { this.rereading = false; this.news.set([]); return; }
     const last = this.news().at(-1);
     this.news.set([]);
     this.svc.state.set('done');

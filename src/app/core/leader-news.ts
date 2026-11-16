@@ -10,6 +10,14 @@ export class LeaderNewsService {
   private readonly sb = inject(Supabase).client;
   /** riquadro all'avvio: «done» quando non ci sono notizie o sono state chiuse (le Novità aspettano questo, per non sovrapporsi) */
   readonly state = signal<'checking' | 'showing' | 'done'>('checking');
+  /** notizie da rileggere (toccando la banda nella partita): le mostra il riquadro delle Leader News */
+  readonly showAll = signal<LeaderNews[] | null>(null);
+
+  /** notizie degli ultimi 14 giorni, lette o no (banda della partita; vuoto senza la migrazione) */
+  async recent(): Promise<LeaderNews[]> {
+    const { data, error } = await this.sb.rpc('leader_news_recent');
+    return error || !Array.isArray(data) ? [] : (data as LeaderNews[]);
+  }
 
   /** notizie non ancora lette (vuoto se la migrazione non c'è ancora o in caso di errore: l'avvio non deve bloccarsi) */
   async pending(): Promise<LeaderNews[]> {
