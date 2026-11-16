@@ -90,6 +90,12 @@ export class Payments {
     must(await this.sb.rpc('pay_add_expense', { p_title: title, p_amount_cents: cents, p_payer: payer, p_users: users, p_match: matchId }));
     await this.load();
   }
+  /** quali di queste partite hanno già il campo nei Conti (migrazione 68: uno solo per partita) */
+  async fieldMatches(ids: string[]): Promise<Set<string>> {
+    if (!ids.length) return new Set();
+    const { data, error } = await this.sb.rpc('pay_field_matches', { p_ids: ids });
+    return new Set(error || !Array.isArray(data) ? [] : (data as string[]));
+  }
   async deleteExpense(id: number): Promise<void> {
     must(await this.sb.rpc('pay_delete_expense', { p_id: id }));
     await this.load();

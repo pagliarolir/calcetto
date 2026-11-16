@@ -4,6 +4,8 @@ import { fmtWhen } from '../core/format';
 import { Session } from '../core/session';
 
 export const PUNISHMENT_MESSAGE = 'Sei in punizione per ordine del Leader, rifletti sui tuoi errori';
+/** il rosso dei Conti (migrazione 68): si può solo saldare, poi si torna attivi da soli */
+export const PAY_PUNISHMENT_MESSAGE = 'Sei in punizione per la quota del campo: puoi solo saldare in Conti, poi torni attivo da solo';
 
 /** Rimprovero mostrato a chi è in punizione quando prova a intervenire. */
 @Injectable({ providedIn: 'root' })
@@ -71,7 +73,7 @@ export class Reprimand {
           } @else {
             <div class="sheet">
               <div class="red-card" aria-hidden="true"></div>
-              <p id="rep-msg" class="msg">Sei in punizione per ordine del Leader, rifletti sui tuoi errori</p>
+              <p id="rep-msg" class="msg">{{ payRed() ? payMessage : leaderMessage }}</p>
               <p id="rep-sub" class="sub">
                 {{ until() }}
                 @if (reason(); as r) { <br />Motivo: {{ r }} }
@@ -132,10 +134,14 @@ export class ReprimandView {
     const p = this.session.punishment();
     if (!p) return '';
     // il rosso dei Pagamenti finisce da solo con il saldo confermato (migrazione 64)
-    if (!p.ends_at && p.reason?.startsWith('Quota del campo')) return 'Fino al saldo, confermato da chi riceve. In Conti puoi sempre pagare.';
+    if (!p.ends_at && p.reason?.startsWith('Quota del campo')) return 'Finisce appena chi riceve conferma il tuo pagamento.';
     return p.ends_at ? `Fino a ${fmtWhen(p.ends_at)}.` : 'Fino a nuovo ordine del Leader.';
   });
-  protected readonly reason = computed(() => this.session.punishment()?.reason ?? null);
+  protected readonly reason = computed(() => (this.payRed() ? null : this.session.punishment()?.reason ?? null));
+  /** rosso dei Conti: niente «per ordine del Leader», si spiega che basta saldare */
+  protected readonly payRed = computed(() => { const p = this.session.punishment(); return !!p && !p.ends_at && !!p.reason?.startsWith('Quota del campo'); });
+  protected readonly payMessage = PAY_PUNISHMENT_MESSAGE;
+  protected readonly leaderMessage = PUNISHMENT_MESSAGE;
 
   private readonly cards = inject(PayCards);
 

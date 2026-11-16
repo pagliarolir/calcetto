@@ -1,5 +1,5 @@
 import { inject, Injectable, Injector, signal } from '@angular/core';
-import { PUNISHMENT_MESSAGE, Reprimand } from '../ui/reprimand';
+import { PAY_PUNISHMENT_MESSAGE, PUNISHMENT_MESSAGE, Reprimand } from '../ui/reprimand';
 
 export interface Toast {
   id: number;
@@ -20,7 +20,7 @@ export class Toasts {
   }
 
   error(text: string): void {
-    if (text === PUNISHMENT_MESSAGE) {
+    if (text === PUNISHMENT_MESSAGE || text === PAY_PUNISHMENT_MESSAGE) {
       this.injector.get(Reprimand).show();
       return;
     }

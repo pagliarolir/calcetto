@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
+import { Confirm } from '../core/confirm';
 import { fmtDate, fmtDayShort } from '../core/format';
 import { Match } from '../core/models';
 import { eur, ibanGroups, parseEuro, PayExpense, PayMethod, PayMethods, Payments, paypalLink, PaySettlement, PayTransfer } from '../core/payments';
@@ -290,7 +291,9 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
         <label class="field"><span>Partita (per il campo)</span>
           <select class="input" name="match" [ngModel]="eMatch()" (ngModelChange)="pickMatch($event)">
             <option [ngValue]="null">Nessuna</option>
-            @for (m of pastMatches(); track m.id) { <option [ngValue]="m.id">{{ day(m.starts_at) }}</option> }
+            @for (m of pastMatches(); track m.id) {
+              <option [ngValue]="m.id" [disabled]="matchLock(m) !== null">{{ day(m.starts_at) }}{{ matchLock(m) ? ' (' + matchLock(m) + ')' : '' }}</option>
+            }
           </select>
         </label>
         <label class="field"><span>Cosa</span>
@@ -462,6 +465,7 @@ export class PaymentsPage implements OnInit {
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
   private readonly reprimand = inject(Reprimand);
+  private readonly confirm = inject(Confirm);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly eur = eur;
@@ -534,12 +538,11 @@ export class PaymentsPage implements OnInit {
     return `${ids.length} su ${n}: ${head}${ids.length > 2 ? ` e altri ${ids.length - 2}` : ''}`;
   });
   protected readonly allPicked = computed(() => { const n = this.session.activeMembers().length; return n > 0 && this.eUsers().size === n; });
-  /** quota a testa: se non si divide in parti uguali, in grande la più alta e sotto quanti pagano un centesimo in meno */
+  /** quota a testa, arrotondata per eccesso al centesimo: uguale per tutti, chi ha pagato tiene il resto (migrazione 68) */
   protected readonly each = computed(() => {
     const c = parseEuro(this.eAmount()), n = this.eUsers().size;
     if (!c || !n) return null;
-    const lo = Math.floor(c / n), extra = c - lo * n;
-    return extra ? { main: eur(lo + 1), note: `${n - extra} su ${n} pagano ${eur(lo)}` } : { main: eur(lo), note: null };
+    return { main: eur(Math.ceil(c / n)), note: null as string | null };
   });
 
   async ngOnInit(): Promise<void> {
@@ -555,7 +558,10 @@ export class PaymentsPage implements OnInit {
       if (fromMatch) {
         void this.router.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { spesa: null } });
         await this.openExpense();
-        if (this.pastMatches().some((m) => m.id === fromMatch)) await this.pickMatch(fromMatch);
+        const m = this.pastMatches().find((x) => x.id === fromMatch);
+        const lock = m ? this.matchLock(m) : null;
+        if (m && !lock) await this.pickMatch(fromMatch);
+        else if (lock) this.toasts.show(lock === 'già divisa' ? 'Il campo di questa partita è già nei Conti' : 'Sono passati più di 3 giorni: il campo lo può dividere solo il Leader', 'ok', 4500);
       }
       if (this.route.snapshot.queryParamMap.get('dati')) {
         void this.router.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { dati: null } });
@@ -623,7 +629,7 @@ export class PaymentsPage implements OnInit {
   protected async confirmPay(): Promise<void> {
     // niente blocco della punizione: i conti si saldano sempre (migrazione 64)
     const t = this.payTo(), c = this.amountCents();
-    if (!t || !c) return;
+    if (!t || !c || this.busy()) return;   // due tocchi rapidi: il secondo non parte
     this.busy.set(true);
     try {
       // il Leader per altri, o chi riceve che segna da sé: vale subito
@@ -709,6 +715,17 @@ export class PaymentsPage implements OnInit {
           .sort((a, b) => b.starts_at.localeCompare(a.starts_at)).slice(0, 8));
       } catch { /* senza partite si inserisce a mano */ }
     }
+    // partite che hanno già il campo nei Conti (si riguarda a ogni apertura: qualcuno può averlo appena diviso)
+    this.fieldDone.set(await this.pay.fieldMatches(this.pastMatches().map((m) => m.id)));
+  }
+
+  /** partite con il campo già nei Conti (migrazione 68) */
+  protected readonly fieldDone = signal(new Set<string>());
+  /** perché una partita non si può scegliere: campo già diviso, oppure più di 3 giorni fa (solo il Leader) */
+  protected matchLock(m: Match): string | null {
+    if (this.fieldDone().has(m.id)) return 'già divisa';
+    if (!this.pay.data()?.boss && Date.parse(m.starts_at) < Date.now() - 3 * 864e5) return 'solo il Leader';
+    return null;
   }
 
   /** scegliendo una partita: titolo «Campo gg/mm/aa» e divisione tra chi era in formazione */
@@ -764,7 +781,7 @@ export class PaymentsPage implements OnInit {
 
   protected async removeExpense(e: PayExpense): Promise<void> {
     if (this.reprimand.guard()) return;
-    if (!confirm(`Togliere «${e.title}» (${eur(e.amount_cents)})? I conti si ricalcolano.`)) return;
+    if (!(await this.confirm.ask({ title: `Togliere «${e.title}» (${eur(e.amount_cents)})? I conti si ricalcolano e chi è coinvolto riceve un avviso.`, ok: 'Togli', danger: true }))) return;
     this.busy.set(true);
     try {
       await this.pay.deleteExpense(e.id);
@@ -778,7 +795,7 @@ export class PaymentsPage implements OnInit {
 
   protected async clearExpenses(): Promise<void> {
     if (this.reprimand.guard()) return;
-    if (!confirm('Svuotare l\'elenco delle spese? Spariscono solo dalla tua vista: i conti non cambiano. Per annullare una spesa sbagliata usa il cestino accanto.')) return;
+    if (!(await this.confirm.ask({ title: "Svuotare l'elenco delle spese? Spariscono solo dalla tua vista: i conti non cambiano.", ok: 'Svuota' }))) return;
     this.busy.set(true);
     try {
       await this.pay.clearExpenses();
@@ -792,7 +809,7 @@ export class PaymentsPage implements OnInit {
 
   protected async clearHistory(): Promise<void> {
     if (this.reprimand.guard()) return;
-    if (!confirm('Svuotare lo storico dei pagamenti? Sparisce solo dalla tua vista: i conti non cambiano.')) return;
+    if (!(await this.confirm.ask({ title: 'Svuotare lo storico dei pagamenti? Sparisce solo dalla tua vista: i conti non cambiano.', ok: 'Svuota' }))) return;
     this.busy.set(true);
     try {
       await this.pay.clearHistory();
