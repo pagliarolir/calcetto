@@ -19,8 +19,7 @@ grant execute on function m1(), m2() to authenticated, anon;
 
 \echo '--- 1) campo della prima partita: paga P1 (30 €, 10 a testa con P2 e P3); P2 salda e P1 conferma, P3 no'
 select as_user('P1'), pay_add_expense('Campo', 3000, pid('P1'), array[pid('P1'), pid('P2'), pid('P3')], m1()) is not null as spesa1;
--- la spesa è stata inserita «in tempo»: la retrodatiamo di un giorno
-update pay_expenses set created_at = now() - interval '2 days';
+update pay_expenses e set created_at = x.starts_at + interval '1 hour' from matches x where x.id = e.match_id;   -- inserita la sera stessa (migrazione 68)
 select as_user('P2'), pay_mark_paid(pid('P1'), 1000, 'cash') is not null as segnato;
 select as_user('P1'), pay_decide((select id from pay_settlements where from_id = pid('P2')), true);
 select pay_cards_tick();
@@ -37,7 +36,7 @@ grant execute on function mf() to authenticated, anon;
 select _book(pid('P3'), pid('P3'), mf(), 'present', true) ->> 'list' as p3_prenotato;
 \echo '--- 3) seconda partita: P3 ancora in debito → rosso e punizione; P2 nessun cartellino'
 select as_user('P1'), pay_add_expense('Campo', 3000, pid('P1'), array[pid('P1'), pid('P2'), pid('P3')], m2()) is not null as spesa2;
-update pay_expenses set created_at = now() - interval '2 days';
+update pay_expenses e set created_at = x.starts_at + interval '1 hour' from matches x where x.id = e.match_id;   -- inserita la sera stessa (migrazione 68)
 -- P2 paga in tempo anche la seconda
 select as_user('P2'), pay_mark_paid(pid('P1'), 1000, 'cash') is not null as p2_paga;
 select as_user('P1'), pay_decide((select id from pay_settlements where from_id = pid('P2') and status = 'pending'), true);
@@ -60,15 +59,15 @@ do $$ begin
   if exists (select 1 from pay_cards where user_id = pid('P2')) then raise exception 'P2 aveva pagato in tempo'; end if;
   if (select count(*) from pay_card_checks) <> 2 then raise exception 'ogni partita si controlla una volta'; end if;
 end $$;
-\echo '--- 5) il Leader titolare (P1) non prende cartellini; spesa inserita dopo la scadenza: vale subito la scadenza'
-insert into matches (starts_at, nominal_date) values (now() - interval '50 hours', (now() - interval '50 hours')::date);
-create function m3() returns uuid language sql as $$ select id from matches where id not in (m1(), m2()) and starts_at < now() - interval '40 hours' and starts_at > now() - interval '55 hours' limit 1 $$;
+\echo '--- 5) il Leader titolare (P1) non prende cartellini; spesa inserita dopo la mezzanotte della partita: si controlla ma niente cartellini'
+insert into matches (starts_at, nominal_date) values (now() - interval '70 hours', (now() - interval '70 hours')::date);
+create function m3() returns uuid language sql as $$ select id from matches where id not in (m1(), m2()) and starts_at < now() - interval '65 hours' and starts_at > now() - interval '71 hours' limit 1 $$;
 select as_user('P3'), pay_add_expense('Campo', 2000, pid('P3'), array[pid('P1'), pid('P3')], m3()) is not null as spesa3;
 select pay_cards_tick();
 select count(*) as cartellini_leader from pay_cards where user_id = pid('P1');
 do $$ begin
   if exists (select 1 from pay_cards where user_id = pid('P1')) then raise exception 'il Leader non prende cartellini'; end if;
-  if not exists (select 1 from pay_card_checks where match_id = m3()) then raise exception 'la scadenza delle 12 vale anche per le spese inserite tardi'; end if;
+  if not exists (select 1 from pay_card_checks where match_id = m3()) then raise exception 'anche le spese inserite tardi si segnano come controllate'; end if;
 end $$;
 \echo '--- 6) cartellini visibili a tutti (solo il colore) e i miei'
 select as_user('P2'), pay_cards_active() as attivi;

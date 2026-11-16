@@ -1,5 +1,16 @@
 [
   {
+    "id": 5,
+    "date": "2026-11-16",
+    "items": [
+      "Conti: il campo di una partita si divide una volta sola, entro 3 giorni (dopo può farlo solo il Leader).",
+      "Le quote si arrotondano per eccesso al centesimo: tutti pagano uguale.",
+      "Cartellini più giusti: contano solo per il campo, solo se è stato inserito entro la mezzanotte della partita, e se hai segnato il pagamento prima delle 12 aspetti la risposta di chi riceve.",
+      "Appena chi riceve conferma il tuo pagamento il cartellino sparisce subito.",
+      "Se qualcuno toglie una spesa che ti riguarda ricevi un avviso."
+    ]
+  },
+  {
     "id": 4,
     "date": "2026-11-16",
     "items": [

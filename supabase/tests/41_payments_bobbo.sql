@@ -10,6 +10,8 @@ grant execute on function as_user(text) to authenticated, anon;
 update profiles set first_name = '-', nickname = ' BOBBO 🐻' where id = (select id from ids where n = 'P2');
 update profiles set nickname = 'Bobbone' where id = (select id from ids where n = 'P3');
 update profiles set first_name = 'Bobbo' where id = (select id from ids where n = 'P4');
+-- l'anteprima: dalla migrazione 67 i Conti sono aperti a tutti
+update pay_settings set public = false where id = 1;
 \echo '--- Leader sì, Bobbo senza nome sì (anche senza essere nell elenco), Bobbone no, chi si chiama Bobbo di nome sì'
 select as_user('P1'), pay_visible() as leader;
 select as_user('P2'), pay_visible() as bobbo;
