@@ -122,6 +122,15 @@ import { Avatar } from './avatar';
     :host(.ta) .frm, :host(.tb) .frm { color: var(--tci) !important; }
     :host(.ta) .num, :host(.tb) .num { background: var(--tci); color: var(--tc); box-shadow: 0 0 0 2px var(--tc); }
     :host(.ta) .pic app-avatar, :host(.tb) .pic app-avatar, :host(.ta) .armband, :host(.tb) .armband { box-shadow: 0 0 0 2px var(--tc); }
+    /* elenco che deve stare tutto nello schermo (.fit, booking-tab fitCards): figurina più bassa, stessa larghezza */
+    :host-context(.fit) { min-height: 0; height: var(--fig-h); padding-top: 3px; padding-bottom: 3px; row-gap: 1px; }
+    :host-context(.fit) .pic, :host-context(.fit) .pic app-avatar, :host-context(.fit) .hole { width: 34px !important; height: 34px !important; }
+    :host-context(.fit) .pic app-avatar { font-size: 12px !important; }
+    :host-context(.fit) .pic { margin-right: 6px; }
+    :host-context(.fit) .name { font-size: 0.95rem; line-height: 1.15; }
+    :host-context(.fit) .frm { height: 20px; }
+    :host-context(.fit) .ovr { width: 22px; height: 22px; font-size: 0.75rem; }
+    :host-context(.fit) .num { min-width: 19px; height: 19px; font-size: 0.68rem; }
     /* la propria figurina resta riconoscibile: contorno del campo staccato dal bordo */
     :host(.me.ta), :host(.me.tb) { outline: 2px solid var(--turf); outline-offset: 2px; }
   `,
