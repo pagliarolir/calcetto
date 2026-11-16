@@ -3,11 +3,12 @@ import { Api } from './api';
 import { Cache } from './cache';
 import { Ratings } from './ratings';
 import { FANTA_ENABLED, FantaLeader } from './fantaleader';
+import { Payments } from './payments';
 import { Session } from './session';
 
 /**
  * Precaricamento: dopo l'avvio, quando l'app è libera, scarica i dati delle altre sezioni
- * (Classifica dell'anno, Punti Leader, valori dei giocatori, Avvisi, FantaLeader) così che aprirle sia immediato.
+ * (Classifica dell'anno, Punti Leader, valori dei giocatori, Avvisi, Conti, FantaLeader) così che aprirle sia immediato.
  * Non sostituisce il caricamento delle pagine: lo anticipa e riempie la cache (core/cache.ts).
  */
 @Injectable({ providedIn: 'root' })
@@ -44,6 +45,11 @@ export class Prefetch {
       this.api.notifications().then((list) => {
         if (!this.cache.get('notifications')) this.cache.set('notifications', list, true);
       }),
+      // Conti: solo in memoria nel servizio (ci sono IBAN di altri), mai nella cache sul telefono
+      (async () => {
+        const pay = this.injector.get(Payments);
+        if (await pay.checkVisible() && !pay.data()) await pay.load();
+      })(),
       // FantaLeader solo per chi lo vede (anteprima): i dati restano nel suo servizio
       (async () => {
         const fl = this.injector.get(FantaLeader);
