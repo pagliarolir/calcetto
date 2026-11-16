@@ -49,15 +49,18 @@ import { haptic } from '../core/haptics';
                   </p>
                 }
                 <p class="line time"><app-icon name="clock" [size]="18" />{{ kickoff() }} – {{ until() }}</p>
-                @if (m.venue_name) {
-                  <p class="line"><app-icon name="pitch" [size]="16" /><span class="ellipsis">{{ m.venue_name }}</span>
+                <!-- una riga sola per il campo: il nome apre le mappe (l'indirizzo è nel link), accanto l'icona della mappa -->
+                @if (m.venue_name || maps()) {
+                  <p class="line venue">
+                    @if (maps(); as href) {
+                      <a class="venue-link" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="(m.venue_name || 'Campo') + ', indicazioni nelle mappe' + (address() ? ': ' + address() : '')">
+                        <app-icon name="pitch" [size]="16" /><span class="ellipsis">{{ m.venue_name || address() }}</span><span class="mapbtn" aria-hidden="true"><app-icon name="map" [size]="14" /></span>
+                      </a>
+                    } @else {
+                      <app-icon name="pitch" [size]="16" /><span class="ellipsis">{{ m.venue_name }}</span>
+                    }
                     @if (m.venue_url) { <a class="mini" [href]="m.venue_url" target="_blank" rel="noopener" aria-label="Sito del circolo"><app-icon name="external" [size]="14" /></a> }
                   </p>
-                }
-                @if (maps(); as href) {
-                  <a class="line link-line" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="'Apri nelle mappe: ' + (address() || m.venue_name)">
-                    <app-icon name="map" [size]="16" /><span class="ellipsis">{{ address() || 'Apri nelle mappe' }}</span>
-                  </a>
                 }
               </div>
               <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
@@ -138,6 +141,9 @@ import { haptic } from '../core/haptics';
     .line.time { font: 700 1.3rem/1 var(--font-display); letter-spacing: 0.01em; min-height: 28px; }
     .link-line span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     /* l'indirizzo non si taglia: va a capo (al massimo due righe) */
+    .venue-link { display: inline-flex; align-items: center; gap: 6px; min-width: 0; min-height: 28px; color: inherit; text-decoration: none; }
+    .venue-link .ellipsis { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .mapbtn { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgb(255 255 255 / 16%); }
     .link-line { align-items: flex-start; }
     .link-line app-icon { margin-top: 5px; }
     .link-line .ellipsis { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; padding: 4px 0; }
