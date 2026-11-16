@@ -121,7 +121,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
             }
             @for (t of myCredits(); track t.from_id) {
               <div class="debt">
-                <div class="who-line"><app-avatar [userId]="t.from_id" [size]="28" /><span class="grow">{{ session.name(t.from_id) }}</span></div>
+                <div class="who-line"><app-avatar [userId]="t.from_id" [size]="28" /><span class="grow">{{ session.name(t.from_id) }}</span>
+                  <button type="button" class="bell" [class.off]="!afterOne()" (click)="remind(t)" [attr.aria-label]="'Manda un promemoria a ' + session.name(t.from_id)" [title]="afterOne() ? 'Manda un promemoria' : 'Promemoria dalle 13'"><app-icon name="bell" [size]="20" /></button></div>
                 <div class="amt-line">
                   <b class="num amt get">{{ eur(t.amount_cents) }}</b>
                   <button type="button" class="round-btn" (click)="openReceive(t)" [attr.aria-label]="'Segna che ' + session.name(t.from_id) + ' ti ha pagato'" title="Segna ricevuto"><app-icon name="check" [size]="20" /></button>
@@ -386,6 +387,12 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .round-btn { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
       border: 1.5px solid var(--turf); background: var(--surface); color: var(--turf); }
     .round-btn:active { background: var(--surface-2); }
+    /* promemoria a chi mi deve dei soldi: campanella accanto al nome */
+    .bell { appearance: none; border: 0; background: transparent; color: var(--ink); cursor: pointer; flex: none;
+      width: 44px; height: 44px; margin: -8px -8px -8px 0; display: grid; place-items: center; border-radius: 50%; }
+    .bell.off { color: var(--muted); }
+    .bell:active { background: var(--surface-2); }
+    .bell:focus-visible { outline: 2px solid var(--turf); outline-offset: -2px; }
     .round-btn:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .wait { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
     .none { margin: 0; }
@@ -598,7 +605,7 @@ export class PaymentsPage implements OnInit {
   protected openReceive(t: PayTransfer): void { this.openSheet(t, false, true); }
   protected openOnBehalf(t: PayTransfer): void { this.openSheet(t, true, false); }
   private openSheet(t: PayTransfer, behalf: boolean, receiving: boolean): void {
-    if (this.reprimand.guard()) return;
+    // niente blocco della punizione: i conti si saldano sempre (migrazione 64)
     this.payTo.set(t);
     this.onBehalf.set(behalf);
     this.receiving.set(receiving);
@@ -614,7 +621,7 @@ export class PaymentsPage implements OnInit {
   }
 
   protected async confirmPay(): Promise<void> {
-    if (this.reprimand.guard()) return;
+    // niente blocco della punizione: i conti si saldano sempre (migrazione 64)
     const t = this.payTo(), c = this.amountCents();
     if (!t || !c) return;
     this.busy.set(true);
@@ -630,8 +637,25 @@ export class PaymentsPage implements OnInit {
     }
   }
 
-  protected async decide(s: PaySettlement, ok: boolean): Promise<void> {
+  /** dalle 13 (ora di Roma) si può mandare il promemoria; prima il pulsante resta, ma spiega quando */
+  protected afterOne(): boolean {
+    return Number(new Intl.DateTimeFormat('it-IT', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Rome' }).format(new Date())) >= 13;
+  }
+
+  /** promemoria a chi mi deve dei soldi: una volta al giorno per persona, dalle 13 (migrazione 64) */
+  protected async remind(t: PayTransfer): Promise<void> {
     if (this.reprimand.guard()) return;
+    const name = this.session.name(t.from_id);
+    try {
+      const r = await this.pay.remind(t.from_id);
+      this.toasts.show(r === 'sent' ? `Promemoria mandato a ${name}` : r === 'already' ? `Hai già mandato un promemoria a ${name} oggi` : 'I promemoria si mandano dalle 13', r === 'sent' ? 'ok' : 'info');
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    }
+  }
+
+  protected async decide(s: PaySettlement, ok: boolean): Promise<void> {
+    // niente blocco della punizione: i conti si saldano sempre (migrazione 64)
     this.busy.set(true);
     try {
       await this.pay.decide(s.id, ok);
@@ -782,7 +806,7 @@ export class PaymentsPage implements OnInit {
 
   // ------------------------------------------------ dati propri e visibilità
   protected async saveMethods(): Promise<void> {
-    if (this.reprimand.guard()) return;
+    // niente blocco della punizione: i conti si saldano sempre (migrazione 64)
     this.busy.set(true);
     try {
       await this.pay.saveMethods(this.fPaypal, this.fIban, this.fHolder);

@@ -3,6 +3,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { Achievements } from './achievements';
 import { FantaLeader } from './fantaleader';
 import { Payments } from './payments';
+import { PayCards } from './pay-cards';
 import { Session } from './session';
 import { Unread } from './unread';
 
@@ -19,6 +20,7 @@ export class Refresher {
   private readonly sw = inject(SwUpdate);
   private readonly fantaLeader = inject(FantaLeader);
   private readonly payments = inject(Payments);
+  private readonly payCards = inject(PayCards);
   /** cambia a ogni aggiornamento: la pagina corrente viene ricreata */
   readonly key = signal(0);
   readonly busy = signal(false);
@@ -42,6 +44,7 @@ export class Refresher {
           this.achievements.load().catch(() => undefined),
           this.fantaLeader.checkVisible().catch(() => false),
           this.payments.checkVisible().catch(() => false),
+          this.payCards.load().catch(() => undefined),
         ]);
       }
       this.key.update((k) => k + 1);

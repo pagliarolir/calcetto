@@ -113,6 +113,12 @@ export class Payments {
     if (error) throw error;
     return String(data ?? '');
   }
+  /** promemoria a chi mi deve dei soldi: 'sent', 'already' (già oggi) o 'early' (prima delle 13) */
+  async remind(from: string): Promise<'sent' | 'already' | 'early'> {
+    const { data, error } = await this.sb.rpc('pay_remind', { p_from: from });
+    if (error) throw error;
+    return data as 'sent' | 'already' | 'early';
+  }
   /** chiede a chi deve ricevere di aggiungere PayPal o IBAN (avviso, al massimo uno ogni 12 ore; migrazione 59) */
   async askMethods(to: string): Promise<boolean> {
     const { data, error } = await this.sb.rpc('pay_ask_methods', { p_to: to });
