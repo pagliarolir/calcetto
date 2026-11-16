@@ -17,10 +17,12 @@ import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
 import { ProfileAdmin } from '../ratings/profile-admin';
 import { Back } from '../ui/back';
+import { InfoTip } from '../ui/info-tip';
+import { LeaderNewsAdmin, LeaderNewsService } from '../core/leader-news';
 
 @Component({
   selector: 'app-admin',
-  imports: [Back, Sheet, FormsModule, Icon, Avatar, RouterLink, WeightsEditor, ProfileAdmin],
+  imports: [Back, Sheet, FormsModule, Icon, Avatar, RouterLink, WeightsEditor, ProfileAdmin, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main class="page stack-l">
@@ -252,6 +254,33 @@ import { Back } from '../ui/back';
         }
       </section>
 
+      @if (session.isLeader()) {
+        <details class="section fold sec" aria-labelledby="news-h" (toggle)="newsToggled($event)">
+          <summary><h2 id="news-h">Leader News</h2>
+            <app-info-tip label="Come funziona" [lines]="['Ognuno la vede una volta, al primo avvio dell’app dopo che l’hai pubblicata.', 'Chi la apre più di 14 giorni dopo non la vede più.', 'Testo semplice, al massimo 1000 caratteri.']" />
+            <app-icon name="chevron" [size]="18" class="chev" /></summary>
+          <div class="panel stack">
+            <label class="field"><span>Il tuo messaggio</span>
+              <textarea class="input news-text" rows="4" maxlength="1000" [(ngModel)]="newsText" placeholder="Scrivi a tutto il gruppo…"></textarea>
+            </label>
+            <div class="spread"><span class="small muted">{{ newsText.length }}/1000</span>
+              <button class="btn primary" [disabled]="busy() || !newsText.trim()" (click)="postNews()">Pubblica</button></div>
+            @if (newsList().length) {
+              <h3 class="news-sub">Pubblicate</h3>
+              <ul class="list news-list">
+                @for (n of newsList(); track n.id) {
+                  <li class="list-item">
+                    <span class="grow"><span class="news-body">{{ n.body }}</span>
+                      <span class="small muted">{{ when(n.created_at) }}, letta da {{ n.seen }} su {{ n.members }}</span></span>
+                    <button type="button" class="icon-btn" [attr.aria-label]="'Togli la notizia del ' + when(n.created_at)" (click)="removeNews(n.id)"><app-icon name="trash" [size]="18" /></button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </details>
+      }
+
       @if (isTitular()) {
         <details class="section fold sec">
           <summary><h2>Delega i tuoi poteri</h2><app-icon name="chevron" [size]="18" class="chev" /></summary>
@@ -392,6 +421,10 @@ import { Back } from '../ui/back';
     </main>
   `,
   styles: `
+    .news-text { min-height: 96px; resize: vertical; height: auto; }
+    .news-sub { margin: 4px 0 0; font-size: var(--step-0); }
+    .news-list .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .news-body { white-space: pre-line; overflow-wrap: anywhere; }
     .member { width: 100%; text-align: left; }
     .member .go { flex: none; color: var(--muted); }
     .mem-head { display: flex; align-items: center; gap: 12px; }
@@ -428,6 +461,9 @@ import { Back } from '../ui/back';
 })
 export class AdminPage implements OnInit {
   private readonly confirmBox = inject(Confirm);
+  private readonly newsSvc = inject(LeaderNewsService);
+  protected newsText = '';
+  protected readonly newsList = signal<LeaderNewsAdmin[]>([]);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly toasts = inject(Toasts);
@@ -842,5 +878,33 @@ export class AdminPage implements OnInit {
     } catch (e) {
       this.toasts.error(errorMessage(e));
     }
+  }
+
+  // ------------------------------------------------ Leader News
+  protected newsToggled(e: Event): void {
+    if ((e.target as HTMLDetailsElement).open) void this.loadNews();
+  }
+  private async loadNews(): Promise<void> {
+    try { this.newsList.set(await this.newsSvc.list()); } catch (e) { this.toasts.error(errorMessage(e)); }
+  }
+  protected async postNews(): Promise<void> {
+    const body = this.newsText.trim();
+    if (!body) return;
+    if (!(await this.confirmBox.ask({ title: 'Pubblicare la Leader News? La vedranno tutti al prossimo avvio dell\'app.', ok: 'Pubblica' }))) return;
+    this.busy.set(true);
+    try {
+      await this.newsSvc.post(body);
+      this.newsText = '';
+      this.toasts.show('Leader News pubblicata');
+      await this.loadNews();
+    } catch (e) {
+      this.toasts.error(errorMessage(e));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+  protected async removeNews(id: number): Promise<void> {
+    if (!(await this.confirmBox.ask({ title: 'Togliere questa notizia? Chi non l\'ha ancora vista non la vedrà più.', ok: 'Togli', danger: true }))) return;
+    try { await this.newsSvc.remove(id); await this.loadNews(); } catch (e) { this.toasts.error(errorMessage(e)); }
   }
 }
