@@ -210,6 +210,7 @@ export class InboxPage implements OnInit {
   /** icona e tono per ogni tipo di avviso */
   protected iconOf(kind: string): { name: string; tone: string } {
     if (kind === 'achievement') return { name: 'star', tone: 'turf' };
+    if (kind === 'leader_points_all') return { name: 'trophy', tone: 'gold' };
     if (kind === 'chat') return { name: 'chat', tone: 'turf' };
     if (kind === 'team_full') return { name: 'list', tone: 'turf' };
     if (/^(punished|pardoned|late_withdrawal|withdrawal|match_cancelled|avatar_removed|stats_deleted)/.test(kind)) return { name: 'whistle', tone: 'red' };
@@ -278,7 +279,7 @@ export class InboxPage implements OnInit {
   /** tipi che si possono spegnere nel Profilo (voci di notify_category): gli altri sono personali o compiti dello staff */
   private static readonly SHARED = new Set(['chat', 'booking_open', 'priority_open', 'team_full', 'withdrawal', 'need_one', 'late_withdrawal',
     'lineup_official', 'lineup_change', 'match_moved', 'venue_changed', 'match_cancelled', 'result_open', 'result_review', 'result_contested',
-    'result_final', 'result_homologated', 'votes_open', 'achievement']);
+    'result_final', 'result_homologated', 'votes_open', 'achievement', 'leader_points_all']);
 
   /** «Per te» (personali non letti o delle ultime 24 ore), poi per giorno; gli avvisi uguali sulla stessa partita diventano un gruppo */
   protected readonly sections = computed<Section[]>(() => {
@@ -308,6 +309,7 @@ export class InboxPage implements OnInit {
     const n = r.items.length, k = r.items[0].kind;
     if (k === 'chat') return `${n} messaggi in chat`;
     if (k === 'achievement') return `${n} sticker sbloccati`;
+    if (k === 'leader_points_all') return `${n} Punti Leader assegnati`;
     return r.items[0].title;
   }
 

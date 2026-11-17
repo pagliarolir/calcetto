@@ -20,11 +20,6 @@ import { Sheet } from './sheet';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stack-l">
-      <div class="intro panel">
-        <p>Completa le missioni per vincere gli sticker. <strong>Il primo che li completerà tutti riceverà tutti i poteri del Leader.</strong></p>
-        <p class="small muted">Di ogni sticker vedi il nome; la missione si scopre appena qualcuno lo sblocca.</p>
-      </div>
-
       <section class="section" aria-labelledby="album-h">
         <header><h2 id="album-h">Il tuo album</h2><span class="small muted">{{ mineCount() }} su {{ ach.list().length }}</span></header>
         <ul class="album">
@@ -101,7 +96,6 @@ import { Sheet } from './sheet';
           @if (mission(a); as m) {
             <p class="mission"><strong>Missione:</strong> {{ m }}</p>
             @if (!ach.holders(a.id).length && session.isLeader()) { <p class="small muted">La missione la vedi solo tu, finché un giocatore non lo sblocca.</p> }
-            @if (!ach.mine(a.id) && ach.holders(a.id).length) { <p class="small muted">Qualcuno l'ha già sbloccato: ora tutti vedono come si ottiene.</p> }
           } @else if (ach.mine(a.id) || session.isLeader()) {
             <p class="small muted">Nessuna missione scritta: lo assegna il Leader.</p>
           } @else {
@@ -110,19 +104,21 @@ import { Sheet } from './sheet';
           @if (ach.mine(a.id); as u) { <p class="small">Sbloccato {{ when(u.unlocked_at) }}.</p> }
         </div>
 
-        <div class="holders">
-          <h3>L'hanno sbloccato</h3>
-          <ul>
-            @for (h of ach.holders(a.id); track h.user_id) {
-              <li>
-                <app-avatar [userId]="h.user_id" [size]="28" /><span class="grow ellipsis">{{ session.name(h.user_id) }}</span>
-                @if (session.isLeader()) {
-                  <button class="btn small ghost" [disabled]="busy()" (click)="revoke(a, h.user_id)" [attr.aria-label]="'Togli lo sticker a ' + session.name(h.user_id)">Togli</button>
-                }
-              </li>
-            } @empty { <li class="small muted">Nessuno, per ora.</li> }
-          </ul>
-        </div>
+        @if (ach.holders(a.id).length) {
+          <div class="holders">
+            <h3>L'hanno sbloccato</h3>
+            <ul>
+              @for (h of ach.holders(a.id); track h.user_id) {
+                <li>
+                  <app-avatar [userId]="h.user_id" [size]="28" /><span class="grow ellipsis">{{ session.name(h.user_id) }}</span>
+                  @if (session.isLeader()) {
+                    <button class="btn small ghost" [disabled]="busy()" (click)="revoke(a, h.user_id)" [attr.aria-label]="'Togli lo sticker a ' + session.name(h.user_id)">Togli</button>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        }
 
         @if (session.isLeader()) {
           <div class="tools stack">
@@ -151,7 +147,6 @@ import { Sheet } from './sheet';
     </dialog>
   `,
   styles: `
-    .intro p { margin: 0 0 6px; }
     .section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
     /* album: righe da 4, come le medaglie */
     .album { list-style: none; margin: 0; padding: 14px 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px;
