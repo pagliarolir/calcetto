@@ -1,5 +1,14 @@
 [
   {
+    "id": 7,
+    "date": "2026-11-17",
+    "items": [
+      "Lista più pulita: dopo «Ci sono» o «Assente» ti appare una conferma in basso e i pulsanti si richiudono; per cambiare risposta tocca la freccia accanto al titolo.",
+      "Per ordinare i giocatori tocca l'icona accanto a «Lista»: ordina l'elenco che stai guardando.",
+      "Le figurine restano sempre della stessa altezza e la scheda «Lista» resta evidenziata anche dopo aver ordinato o cambiato elenco."
+    ]
+  },
+  {
     "id": 6,
     "date": "2026-11-16",
     "items": [
