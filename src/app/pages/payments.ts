@@ -105,7 +105,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
                 @if (waiting(t.to_id)) {
                   <span class="wait" role="img" aria-label="In attesa di conferma" title="In attesa di conferma"><app-icon name="clock" [size]="20" /></span>
                 } @else {
-                  <button type="button" class="pay-btn" (click)="openPay(t)" [attr.aria-label]="'Salda ' + session.name(t.to_id)" title="Salda"><app-icon name="euro" [size]="22" /></button>
+                  <button type="button" class="pay-btn" (click)="openPay(t)" [attr.aria-label]="'Salda ' + session.name(t.to_id)" title="Salda"><app-icon name="euro" [size]="20" /></button>
                 }
               </div>
               @if (waiting(t.to_id)) { <span class="small muted wait-note">In attesa di conferma</span> }
@@ -119,13 +119,12 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
               <button type="button" class="btn small add-data" (click)="openMethods()"><app-icon name="wallet" [size]="16" /> Aggiungi dati di pagamento</button>
             }
             @for (t of myCredits(); track t.from_id) {
-              <div class="debt">
-                <div class="who-line"><app-avatar [userId]="t.from_id" [size]="28" /><span class="grow">{{ session.name(t.from_id) }}</span>
-                  <button type="button" class="bell" [class.off]="!afterOne()" (click)="remind(t)" [attr.aria-label]="'Manda un promemoria a ' + session.name(t.from_id)" [title]="afterOne() ? 'Manda un promemoria' : 'Promemoria dalle 13'"><app-icon name="bell" [size]="20" /></button></div>
-                <div class="amt-line">
-                  <b class="num amt get">{{ eur(t.amount_cents) }}</b>
-                  <button type="button" class="round-btn" (click)="openReceive(t)" [attr.aria-label]="'Segna che ' + session.name(t.from_id) + ' ti ha pagato'" title="Segna ricevuto"><app-icon name="check" [size]="20" /></button>
-                </div>
+              <div class="debt drow">
+                <app-avatar [userId]="t.from_id" [size]="28" />
+                <span class="dinfo"><span class="dname-l"><span class="dname">{{ session.name(t.from_id) }}</span>
+                    <button type="button" class="bell" [class.off]="!afterOne()" (click)="remind(t)" [attr.aria-label]="'Manda un promemoria a ' + session.name(t.from_id)" [title]="afterOne() ? 'Manda un promemoria' : 'Promemoria dalle 13'"><app-icon name="bell" [size]="16" /></button></span>
+                  <b class="num amt get">{{ eur(t.amount_cents) }}</b></span>
+                <button type="button" class="pay-btn get" (click)="openReceive(t)" [attr.aria-label]="'Segna che ' + session.name(t.from_id) + ' ti ha pagato'" title="Segna ricevuto"><app-icon name="check" [size]="18" /></button>
               </div>
             } @empty {
               <p class="muted small none">Nessuno ti deve niente.</p>
@@ -221,7 +220,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
         @let plain = onBehalf() || receiving();
         @let other = receiving() || onBehalf() ? t.from_id : t.to_id;
         <div class="phead">
-          <app-avatar [userId]="other" [size]="40" />
+          <app-avatar [userId]="other" [size]="36" />
           <span class="pname">
             <h2 id="pay-h">{{ session.name(other) }}</h2>
             <small>{{ onBehalf() ? 'Deve a ' + session.name(t.to_id) : receiving() ? 'Ti deve' : 'Gli devi' }}</small>
@@ -230,7 +229,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
             <span class="amt-in"><input #amtIn class="input num" inputmode="decimal" [(ngModel)]="fAmount" aria-label="Importo in euro" (blur)="editAmount.set(false)" (keydown.enter)="editAmount.set(false)" /><span class="muted">€</span></span>
           } @else {
             <button type="button" class="amt-ed" (click)="startEdit()" [attr.aria-label]="'Importo ' + amountText() + ', tocca per cambiarlo'">
-              <b class="num">{{ amountText() || '0 €' }}</b><app-icon name="pencil" [size]="16" />
+              <b class="num">{{ amountText() || '0 €' }}</b><app-icon name="pencil" [size]="14" />
             </button>
           }
         </div>
@@ -241,8 +240,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
           @for (k of rowMethods(); track k) {
             <li [class.on]="method() === k">
               <button type="button" class="mpick" role="radio" [attr.aria-checked]="method() === k" (click)="method.set(k)">
-                <span class="rad" aria-hidden="true">@if (method() === k) { <app-icon name="check" [size]="14" /> }</span>
-                <span class="mi"><app-pay-mark [method]="k" [size]="k === 'paypal' ? 20 : 22" /></span>
+                <span class="rad" aria-hidden="true">@if (method() === k) { <app-icon name="check" [size]="12" /> }</span>
+                <span class="mi"><app-pay-mark [method]="k" [size]="k === 'paypal' ? 16 : 20" /></span>
                 <span class="mt"><b>{{ methodLabel(k) }}</b>
                   @if (!plain) {
                     <small>{{ k === 'paypal' ? 'Amici e familiari, gratis' : k === 'iban' ? m!.iban!.slice(0, 4) + ' ••••' : 'A mano' }}</small>
@@ -250,10 +249,10 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
                 </span>
               </button>
               @if (!plain && k === 'paypal') {
-                <a class="mact" [href]="paypalUrl(m!.paypal!)" target="_blank" rel="noopener" (click)="method.set('paypal')" [attr.aria-label]="'Apri PayPal con ' + amountText()" title="Apri PayPal"><app-icon name="external" [size]="20" /></a>
+                <a class="mact" [href]="paypalUrl(m!.paypal!)" target="_blank" rel="noopener" (click)="method.set('paypal')" [attr.aria-label]="'Apri PayPal con ' + amountText()" title="Apri PayPal"><app-icon name="external" [size]="18" /></a>
               }
               @if (!plain && k === 'iban') {
-                <button type="button" class="mact" (click)="copyIban(t.to_id); method.set('iban')" aria-label="Copia l'IBAN" title="Copia l'IBAN"><app-icon name="copy" [size]="20" /></button>
+                <button type="button" class="mact" (click)="copyIban(t.to_id); method.set('iban')" aria-label="Copia l'IBAN" title="Copia l'IBAN"><app-icon name="copy" [size]="18" /></button>
               }
             </li>
             @if (!plain && k === 'iban' && method() === 'iban') {
@@ -395,13 +394,21 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .debt.drow { flex-direction: row; align-items: center; gap: 8px; min-height: 52px; }
     .dinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
     .dname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .drow .amt { font-size: var(--step-1); }
-    .pay-btn { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+    .drow .amt { font-size: var(--step-0); font-weight: 800; }
+    .pay-btn { position: relative; flex: none; width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
       background: var(--turf); color: var(--turf-ink); }
-    .pay-btn::after { content: ''; position: absolute; inset: -2px; }
+    .pay-btn::after { content: ''; position: absolute; inset: -4px; }
+    .pay-btn.get { background: var(--surface); color: var(--turf); box-shadow: inset 0 0 0 1.5px var(--turf); }
+    .dname-l { display: flex; align-items: center; gap: 2px; min-width: 0; }
+    .dname-l .bell { position: relative; width: 24px; height: 24px; margin: 0; }
+    .dname-l .bell::after { content: ''; position: absolute; inset: -10px -8px; }
+    .drow .amt { white-space: nowrap; }
+    /* colonne strette (schermo piccolo o testo grande): via l'avatar, così nome e importo restano interi */
+    .col { container-type: inline-size; }
+    @container (max-width: 165px) { .drow app-avatar { display: none; } }
     .pay-btn:active { filter: brightness(0.92); }
     .pay-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-    .drow .wait { width: 24px; height: 40px; }
+    .drow .wait { width: 24px; height: 36px; }
     .wait-note { margin-top: -6px; }
     /* foglio «Salda»: intestazione con importo, metodi in elenco */
     .phead { display: flex; align-items: center; gap: 12px; min-height: 48px; padding-right: 48px; }
@@ -419,9 +426,9 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .mrows > li.sub { border-top: 0; padding: 0 6px 6px 50px; min-height: 0; }
     .mpick { all: unset; box-sizing: border-box; flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0 6px 14px; cursor: pointer; }
     .mpick:focus-visible, .mact:focus-visible { outline: 2px solid var(--turf); outline-offset: -2px; border-radius: 12px; }
-    .rad { width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; }
+    .rad { width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; }
     .on .rad { border-color: var(--turf); background: var(--turf); color: var(--turf-ink); }
-    .mi { width: 30px; flex: none; display: grid; place-items: center; color: var(--ink); }
+    .mi { width: 26px; flex: none; display: grid; place-items: center; color: var(--ink); }
     .mt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
     .mt > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mact { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--ink); background: none; border: 0; cursor: pointer; }
@@ -432,23 +439,15 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .col { display: flex; flex-direction: column; gap: 10px; padding: 12px; min-width: 0; }
     .col h2 { margin: 0; font-size: var(--step-1); }
     .debt { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
-    .who-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .who-line .grow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .amt { font-size: var(--step-2); line-height: 1.1; }
     .amt.owe { color: var(--danger); }
     .amt.get { color: var(--turf); }
-    .amt-line { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 44px; }
-    .act { min-height: 44px; padding: 0 14px; }
-    .round-btn { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
-      border: 1.5px solid var(--turf); background: var(--surface); color: var(--turf); }
-    .round-btn:active { background: var(--surface-2); }
     /* promemoria a chi mi deve dei soldi: campanella accanto al nome */
     .bell { appearance: none; border: 0; background: transparent; color: var(--ink); cursor: pointer; flex: none;
       width: 44px; height: 44px; margin: -8px -8px -8px 0; display: grid; place-items: center; border-radius: 50%; }
     .bell.off { color: var(--muted); }
     .bell:active { background: var(--surface-2); }
     .bell:focus-visible { outline: 2px solid var(--turf); outline-offset: -2px; }
-    .round-btn:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .wait { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
     .none { margin: 0; }
     .clear { margin-top: 10px; gap: 6px; }
