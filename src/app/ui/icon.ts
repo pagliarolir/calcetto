@@ -50,6 +50,8 @@ const PATHS: Record<string, string> = {
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
   lock: 'M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v10H5z M12 15v2',
   camera: 'M4 8h3l2-3h6l2 3h3v11H4z M12 16.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7z',
+  pencil: 'M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4',
+  euro: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M15 8.6a4 4 0 1 0 0 6.8 M7.5 11h5.5 M7.5 13.2h5.5',
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
 };
 

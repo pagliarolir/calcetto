@@ -99,18 +99,16 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
           <section class="panel col" aria-labelledby="h-pay">
             <h2 id="h-pay">Da pagare</h2>
             @for (t of myDebts(); track t.to_id) {
-              <div class="debt">
-                <div class="who-line"><app-avatar [userId]="t.to_id" [size]="28" /><span class="grow">{{ session.name(t.to_id) }}</span></div>
-                <div class="amt-line">
-                  <b class="num amt owe">{{ eur(t.amount_cents) }}</b>
-                  @if (waiting(t.to_id)) {
-                    <span class="wait" role="img" aria-label="In attesa di conferma" title="In attesa di conferma"><app-icon name="clock" [size]="20" /></span>
-                  } @else {
-                    <button type="button" class="btn primary act" (click)="openPay(t)">Salda</button>
-                  }
-                </div>
-                @if (waiting(t.to_id)) { <span class="small muted">In attesa di conferma</span> }
+              <div class="debt drow">
+                <app-avatar [userId]="t.to_id" [size]="28" />
+                <span class="dinfo"><span class="dname">{{ session.name(t.to_id) }}</span><b class="num amt owe">{{ eur(t.amount_cents) }}</b></span>
+                @if (waiting(t.to_id)) {
+                  <span class="wait" role="img" aria-label="In attesa di conferma" title="In attesa di conferma"><app-icon name="clock" [size]="20" /></span>
+                } @else {
+                  <button type="button" class="pay-btn" (click)="openPay(t)" [attr.aria-label]="'Salda ' + session.name(t.to_id)" title="Salda"><app-icon name="euro" [size]="22" /></button>
+                }
               </div>
+              @if (waiting(t.to_id)) { <span class="small muted wait-note">In attesa di conferma</span> }
             } @empty {
               <p class="muted small none">Non devi niente a nessuno.</p>
             }
@@ -220,46 +218,60 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
       <button type="button" class="x-close" (click)="payDlg.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (payTo(); as t) {
         @let m = methodsOf(t.to_id);
-        <h2 id="pay-h">{{ onBehalf() ? 'Segna un pagamento' : receiving() ? 'Segna che hai ricevuto' : 'Paga ' + session.name(t.to_id) }}</h2>
-        @if (onBehalf() || receiving()) {
-          <p class="muted small">{{ session.name(t.from_id) }} <app-icon name="back" [size]="12" class="to" /> {{ session.name(t.to_id) }}: vale subito, senza conferma.</p>
-        }
-        <label class="field"><span>Importo</span>
-          <div class="pre amount"><input class="input num" inputmode="decimal" [(ngModel)]="fAmount" aria-label="Importo in euro" /><span class="muted">€</span></div>
-        </label>
-        @if (!onBehalf() && !receiving()) {
-          @if (m?.paypal) {
-            <a class="btn block paypal" [href]="paypalUrl(m!.paypal!)" target="_blank" rel="noopener" (click)="method.set('paypal')">
-              <app-pay-mark method="paypal" [size]="18" /> Apri PayPal con {{ amountText() }}
-            </a>
-            <p class="small muted hint">Scegli «Amici e familiari»: tra amici in Italia è gratis con saldo PayPal o conto collegato.</p>
+        @let plain = onBehalf() || receiving();
+        @let other = receiving() || onBehalf() ? t.from_id : t.to_id;
+        <div class="phead">
+          <app-avatar [userId]="other" [size]="40" />
+          <span class="pname">
+            <h2 id="pay-h">{{ session.name(other) }}</h2>
+            <small>{{ onBehalf() ? 'Deve a ' + session.name(t.to_id) : receiving() ? 'Ti deve' : 'Gli devi' }}</small>
+          </span>
+          @if (editAmount()) {
+            <span class="amt-in"><input #amtIn class="input num" inputmode="decimal" [(ngModel)]="fAmount" aria-label="Importo in euro" (blur)="editAmount.set(false)" (keydown.enter)="editAmount.set(false)" /><span class="muted">€</span></span>
+          } @else {
+            <button type="button" class="amt-ed" (click)="startEdit()" [attr.aria-label]="'Importo ' + amountText() + ', tocca per cambiarlo'">
+              <b class="num">{{ amountText() || '0 €' }}</b><app-icon name="pencil" [size]="16" />
+            </button>
           }
-          @if (m?.iban) {
-            <div class="iban panel">
-              <span class="small muted how"><app-icon name="bank" [size]="14" /> Bonifico a {{ m!.holder || session.fullName(t.to_id) }}</span>
-              <div class="iban-row">
-                <code class="grow" aria-label="IBAN nascosto">{{ m!.iban!.slice(0, 4) }} ********</code>
-                <button type="button" class="btn small primary" (click)="copyIban(t.to_id); method.set('iban')"><app-icon name="copy" [size]="16" /> Copia IBAN</button>
-              </div>
-              <button type="button" class="copy-row" (click)="copy(causale(), 'Causale copiata')" aria-label="Copia la causale">
-                <span class="grow small">Causale: {{ causale() }}</span><app-icon name="copy" [size]="18" /></button>
-            </div>
-          }
-          @if (!m?.paypal && !m?.iban) {
-            <p class="note small">{{ session.name(t.to_id) }} non ha ancora aggiunto i dati di pagamento: {{ askText() }}. Intanto puoi pagare in contanti.</p>
-          }
-        }
-        <div class="field"><span>{{ onBehalf() || receiving() ? 'Come ha pagato' : 'Come hai pagato' }}</span>
-          <div class="choice">
-            @for (k of methods; track k) {
-              <button type="button" class="sym-btn" [attr.aria-pressed]="method() === k" (click)="method.set(k)" [attr.aria-label]="methodLabel(k)" [title]="methodLabel(k)"><app-pay-mark [method]="k" [size]="28" /></button>
-            }
-          </div>
         </div>
-        <button type="button" class="btn primary block" [disabled]="busy() || !amountCents()" (click)="confirmPay()">
-          {{ onBehalf() ? 'Segna pagato' : receiving() ? 'Ho ricevuto ' + amountText() : 'Ho pagato ' + amountText() }}
+        @if (!plain && !m?.paypal && !m?.iban) {
+          <p class="note small">{{ session.name(t.to_id) }} non ha ancora aggiunto i dati di pagamento: {{ askText() }}. Intanto puoi pagare in contanti.</p>
+        }
+        <ul class="mrows" role="radiogroup" [attr.aria-label]="plain ? 'Come ha pagato' : 'Come paghi'">
+          @for (k of rowMethods(); track k) {
+            <li [class.on]="method() === k">
+              <button type="button" class="mpick" role="radio" [attr.aria-checked]="method() === k" (click)="method.set(k)">
+                <span class="rad" aria-hidden="true">@if (method() === k) { <app-icon name="check" [size]="14" /> }</span>
+                <span class="mi"><app-pay-mark [method]="k" [size]="k === 'paypal' ? 20 : 22" /></span>
+                <span class="mt"><b>{{ methodLabel(k) }}</b>
+                  @if (!plain) {
+                    <small>{{ k === 'paypal' ? 'Amici e familiari, gratis' : k === 'iban' ? m!.iban!.slice(0, 4) + ' ••••' : 'A mano' }}</small>
+                  }
+                </span>
+              </button>
+              @if (!plain && k === 'paypal') {
+                <a class="mact" [href]="paypalUrl(m!.paypal!)" target="_blank" rel="noopener" (click)="method.set('paypal')" [attr.aria-label]="'Apri PayPal con ' + amountText()" title="Apri PayPal"><app-icon name="external" [size]="20" /></a>
+              }
+              @if (!plain && k === 'iban') {
+                <button type="button" class="mact" (click)="copyIban(t.to_id); method.set('iban')" aria-label="Copia l'IBAN" title="Copia l'IBAN"><app-icon name="copy" [size]="20" /></button>
+              }
+            </li>
+            @if (!plain && k === 'iban' && method() === 'iban') {
+              <li class="sub">
+                <button type="button" class="copy-row" (click)="copy(causale(), 'Causale copiata')" aria-label="Copia la causale">
+                  <span class="mt"><small>A {{ m!.holder || session.fullName(t.to_id) }}, causale</small><span>{{ causale() }}</span></span><app-icon name="copy" [size]="18" /></button>
+              </li>
+            }
+          }
+        </ul>
+        <button type="button" class="btn primary block go" [disabled]="busy() || !amountCents()" (click)="confirmPay()">
+          <app-icon name="check" [size]="18" />
+          {{ onBehalf() ? 'Segna pagato' : receiving() ? 'Ricevuto' : 'Ho pagato' }}
         </button>
-        @if (!onBehalf() && !receiving()) { <p class="small muted hint">Il debito si chiude quando {{ session.name(t.to_id) }} conferma di averli ricevuti.</p> }
+        <p class="foot">
+          @if (plain) { <app-icon name="check" [size]="14" /> Vale subito, senza conferma }
+          @else { <app-icon name="clock" [size]="14" /> Si chiude quando {{ session.name(t.to_id) }} conferma }
+        </p>
       }
     </dialog>
 
@@ -376,7 +388,47 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .acts { justify-content: flex-end; flex-wrap: wrap; }
     .how { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
     .small.how { margin-left: 0; }
-    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+    /* le due colonne alte uguali; se una è vuota, la scritta sta al centro */
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+    .col > .none { margin: auto 0; flex: 1; display: grid; place-items: center; text-align: center; }
+    /* riga «Da pagare»: avatar, nome e importo, tasto tondo */
+    .debt.drow { flex-direction: row; align-items: center; gap: 8px; min-height: 52px; }
+    .dinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .dname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .drow .amt { font-size: var(--step-1); }
+    .pay-btn { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+      background: var(--turf); color: var(--turf-ink); }
+    .pay-btn::after { content: ''; position: absolute; inset: -2px; }
+    .pay-btn:active { filter: brightness(0.92); }
+    .pay-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .drow .wait { width: 24px; height: 40px; }
+    .wait-note { margin-top: -6px; }
+    /* foglio «Salda»: intestazione con importo, metodi in elenco */
+    .phead { display: flex; align-items: center; gap: 12px; min-height: 48px; padding-right: 48px; }
+    .pname { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .pname h2 { padding: 0; font-size: var(--step-1); line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pname small, .mt small { color: var(--muted); font-size: var(--step--1); }
+    .amt-ed { flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 2px; border: 0; background: none; color: var(--ink); cursor: pointer; }
+    .amt-ed b { font-size: var(--step-2); line-height: 1; }
+    .amt-ed app-icon { color: var(--muted); }
+    .amt-in { flex: none; display: inline-flex; align-items: center; gap: 4px; }
+    .amt-in .input { width: 4.5em; height: 44px; font-size: var(--step-1); text-align: right; }
+    .mrows { list-style: none; margin: 14px 0 0; padding: 0; border-radius: 16px; background: var(--surface-2); overflow: hidden; }
+    .mrows > li { display: flex; align-items: center; min-height: 56px; padding-right: 6px; }
+    .mrows > li + li { border-top: 1px solid var(--line); }
+    .mrows > li.sub { border-top: 0; padding: 0 6px 6px 50px; min-height: 0; }
+    .mpick { all: unset; box-sizing: border-box; flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0 6px 14px; cursor: pointer; }
+    .mpick:focus-visible, .mact:focus-visible { outline: 2px solid var(--turf); outline-offset: -2px; border-radius: 12px; }
+    .rad { width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; }
+    .on .rad { border-color: var(--turf); background: var(--turf); color: var(--turf-ink); }
+    .mi { width: 30px; flex: none; display: grid; place-items: center; color: var(--ink); }
+    .mt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .mt > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mact { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--ink); background: none; border: 0; cursor: pointer; }
+    .mact:active { background: var(--surface); }
+    .sub .copy-row { width: 100%; padding: 4px 4px 4px 12px; background: var(--surface); }
+    .go { margin-top: 14px; gap: 8px; }
+    .foot { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; color: var(--muted); font-size: var(--step--1); text-align: center; }
     .col { display: flex; flex-direction: column; gap: 10px; padding: 12px; min-width: 0; }
     .col h2 { margin: 0; font-size: var(--step-1); }
     .debt { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
@@ -400,12 +452,9 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .wait { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
     .none { margin: 0; }
     .clear { margin-top: 10px; gap: 6px; }
-    .iban-row { display: flex; align-items: center; gap: 10px; min-height: 44px; }
-    .iban-row .btn { flex: none; gap: 6px; min-height: 40px; }
     .copy-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; border-radius: 10px; padding: 0 4px; }
     .copy-row:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .copy-row:active { background: var(--surface); }
-    .choice .sym-btn { display: grid; place-items: center; min-height: 56px; }
     .sym { display: inline-grid; place-items: center; }
     .exp .grow, .hist .grow { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
     .to { display: inline-block; transform: rotate(180deg); vertical-align: -2px; color: var(--muted); }
@@ -422,8 +471,6 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .amount .input { font-size: var(--step-1); max-width: 160px; }
     .mono, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
     code { font-size: var(--step--1); word-break: break-all; }
-    .iban { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--surface-2); border-color: transparent; }
-    .hint { margin: -4px 0 0; }
     .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .who-fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 14px; cursor: pointer;
       border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
@@ -509,6 +556,20 @@ export class PaymentsPage implements OnInit {
   protected fAmount = '';
   protected readonly amountCents = () => parseEuro(this.fAmount);
   protected readonly amountText = () => { const c = this.amountCents(); return c ? eur(c) : ''; };
+  /** importo: si mostra come numero, il campo compare solo toccandolo */
+  protected readonly editAmount = signal(false);
+  private readonly amtIn = viewChild<ElementRef<HTMLInputElement>>('amtIn');
+  protected startEdit(): void {
+    this.editAmount.set(true);
+    setTimeout(() => { const i = this.amtIn()?.nativeElement; i?.focus(); i?.select(); });
+  }
+  /** metodi in elenco: a chi paga solo quelli che chi riceve ha messo (più i contanti); per conto di altri o da chi riceve, tutti */
+  protected rowMethods(): PayMethod[] {
+    const t = this.payTo();
+    if (!t || this.onBehalf() || this.receiving()) return this.methods;
+    const m = this.methodsOf(t.to_id);
+    return this.methods.filter((k) => k === 'cash' || (k === 'paypal' && !!m?.paypal) || (k === 'iban' && !!m?.iban));
+  }
 
   // nuova spesa
   private readonly expDlg = viewChild<ElementRef<HTMLDialogElement>>('expDlg');
@@ -613,6 +674,7 @@ export class PaymentsPage implements OnInit {
   private openSheet(t: PayTransfer, behalf: boolean, receiving: boolean): void {
     // niente blocco della punizione: i conti si saldano sempre (migrazione 64)
     this.payTo.set(t);
+    this.editAmount.set(false);
     this.onBehalf.set(behalf);
     this.receiving.set(receiving);
     const m = this.methodsOf(t.to_id);
