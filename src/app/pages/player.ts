@@ -160,6 +160,8 @@ interface PlayerSeen {
     main.scroll-area > .page { padding-left: 10px; padding-right: 10px; }
     .phead { position: relative; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
     .scroll-area.embedded { overflow: visible; }
+    /* dentro il Profilo il margine in alto c'è già: niente doppio spazio sotto le schede */
+    .scroll-area.embedded > .page { padding-top: 0; }
     /* titolo dei valori con l'interruttore del confronto a destra */
     .vhead { display: flex; align-items: center; gap: 8px; margin-bottom: -6px; }
     .vhead h2 { margin: 0; font-size: var(--step-1); }

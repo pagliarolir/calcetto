@@ -424,7 +424,10 @@ const RECORDS: Record[] = [
     .award { border: 2px solid var(--armband); }
     .lp-rank, .lp-hist, .bars, .pairs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .lp-rank li, .lp-hist li, .pairs li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; }
-    .lp-rank li.me { background: var(--turf-soft); border-radius: 12px; padding-left: 8px; padding-right: 8px; }
+    /* la propria riga: una fascia che sporge di poco ai lati (il contenuto resta allineato alle altre righe)
+       e senza le linee attaccate sopra e sotto, che con gli angoli tondi stonavano */
+    .lp-rank li.me { background: var(--turf-soft); margin-inline: -8px; padding-inline: 8px; border-radius: 12px; border-top-color: transparent; }
+    .lp-rank li.me + li { border-top-color: transparent; }
     .lp-rank a { color: inherit; text-decoration: none; font-weight: 600; }
     .pos { width: 22px; text-align: center; color: var(--muted); font-weight: 700; }
     .lp-rank li.top .pos { color: var(--armband-ink, var(--ink)); background: var(--armband); border-radius: 50%; height: 22px; line-height: 22px; font-size: 0.8rem; }
