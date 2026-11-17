@@ -84,7 +84,7 @@ import { haptic } from '../core/haptics';
             <!-- fuori dalla Lista resta il suo posto vuoto, così le schede non si spostano -->
             <button type="button" class="sort-tab" [class.gone]="!listSort.active() || tools()" [disabled]="!listSort.active() || tools()"
                     aria-label="Ordina i giocatori" aria-haspopup="menu" [attr.aria-expanded]="!!sortAt()" (click)="openSort($event)">
-              <app-icon name="sort" [size]="18" />
+              <app-icon name="sort" [size]="16" />
             </button>
             <a routerLink="squadre" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Squadre</a>
           }
