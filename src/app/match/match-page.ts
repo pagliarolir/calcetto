@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { MatchSkeleton } from '../ui/match-skeleton';
 import { Skeleton } from '../ui/skeleton';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { fmtCountdown, fmtDayLong, fmtDayNum, fmtMonthShort, fmtTime, fmtWeekday, mapsUrl, titleCase } from '../core/format';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 import { Branding } from '../core/branding';
+import { ListSort } from '../core/list-sort';
 import { MatchStore } from './match-store';
 import { SwipeTabs } from '../ui/swipe-tabs';
 import { Session } from '../core/session';
@@ -63,12 +64,28 @@ import { haptic } from '../core/haptics';
               <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
             </div>
           </div>
+        @if (listSort.active() && sortAt(); as at) {
+          <div class="sort-shield" aria-hidden="true" (click)="sortAt.set(null)"></div>
+          <div class="sort-menu panel" role="menu" [style.top.px]="at.top" [style.left.px]="at.left">
+            @for (o of listSort.options(); track o.id) {
+              <button type="button" role="menuitemradio" [attr.aria-checked]="listSort.current() === o.id" (click)="pickSort(o.id)">
+                <span class="grow">{{ o.label }}</span>@if (listSort.current() === o.id) { <app-icon name="check" [size]="16" /> }
+              </button>
+            }
+          </div>
+        }
         <nav class="tabs" [class.off]="tools()" aria-label="Sezioni della partita">
           @if (finished()) {
             <a routerLink="risultato" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Risultato</a>
             <a routerLink="voti" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Pagelle</a>
           } @else {
-            <a routerLink="." [routerLinkActiveOptions]="{ exact: true }" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Lista</a>
+            <a routerLink="." [routerLinkActiveOptions]="activeExact" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Lista</a>
+            <!-- ordinamento dell'elenco che si sta guardando (titolari, riserve…), solo con la scheda Lista aperta -->
+            <!-- fuori dalla Lista resta il suo posto vuoto, così le schede non si spostano -->
+            <button type="button" class="sort-tab" [class.gone]="!listSort.active() || tools()" [disabled]="!listSort.active() || tools()"
+                    aria-label="Ordina i giocatori" aria-haspopup="menu" [attr.aria-expanded]="!!sortAt()" (click)="openSort($event)">
+              <app-icon name="sort" [size]="18" />
+            </button>
             <a routerLink="squadre" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Squadre</a>
           }
           <a routerLink="chat" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Chat
@@ -159,6 +176,23 @@ import { haptic } from '../core/haptics';
     .tabs .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); }
     .tabs.off a { opacity: 0.4; pointer-events: none; }
     .tabs.off a.on::after { opacity: 0; }
+    /* ordinamento accanto a «Lista»: icona senza fondo, alta quanto la riga del testo (non sposta niente) */
+    .sort-tab { flex: none; position: relative; align-self: flex-end; display: inline-flex; align-items: center; margin: 0 4px 0 -10px; padding: 8px 2px 10px;
+      height: calc(1.2em + 18px); box-sizing: border-box; border: 0; background: none; color: inherit; cursor: pointer; line-height: 1.2; font-size: var(--step-0); }
+    .sort-tab app-icon { display: block; }
+    .sort-tab::after { content: ''; position: absolute; inset: 0 -8px; }
+    .sort-tab.gone { visibility: hidden; }
+    .sort-tab[aria-expanded='true'] { color: var(--chalk); }
+    .sort-tab:focus-visible { outline: 3px solid var(--chalk); outline-offset: -2px; border-radius: 6px; }
+    .sort-shield { position: fixed; inset: 0; z-index: 30; }
+    .sort-menu { position: fixed; z-index: 31; width: 220px; padding: 6px; display: flex; flex-direction: column; color: var(--ink);
+      box-shadow: 0 14px 34px rgb(0 0 0 / 28%); }
+    .sort-menu button { appearance: none; border: 0; background: none; color: inherit; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px;
+      border-radius: 10px; font: 600 var(--step--1)/1.2 var(--font-body); text-align: left; cursor: pointer; }
+    .sort-menu button:hover, .sort-menu button:focus-visible { background: var(--surface-2); }
+    .sort-menu button[aria-checked='true'] { color: var(--turf); }
+    .sort-menu .grow { flex: 1; }
+    @media (prefers-reduced-motion: no-preference) { .sort-menu { animation: sort-in 160ms ease-out both; } @keyframes sort-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } } }
     /* interruttore degli strumenti: spento trasparente, acceso pieno */
     .tools-btn { position: relative; flex: none; margin: 0 4px 6px auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
                  color: inherit; background: rgb(255 255 255 / 14%); transition: background 200ms, color 200ms; }
@@ -180,6 +214,20 @@ export class MatchPage {
   readonly id = input.required<string>();
   protected readonly store = inject(MatchStore);
   protected readonly branding = inject(Branding);
+  protected readonly listSort = inject(ListSort);
+  /** «Lista» resta segnata anche con le scelte nell'indirizzo (?elenco=, ?ordine=): conta solo il percorso */
+  protected readonly activeExact: IsActiveMatchOptions = { paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' };
+  /** menu dell'ordinamento: posizione fissa sotto il pulsante (la riga delle schede taglia ciò che sborda) */
+  protected readonly sortAt = signal<{ top: number; left: number } | null>(null);
+  protected openSort(e: Event): void {
+    if (this.sortAt()) { this.sortAt.set(null); return; }
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    this.sortAt.set({ top: Math.round(r.bottom + 6), left: Math.round(Math.max(8, Math.min(r.left, innerWidth - 228))) });
+  }
+  protected pickSort(id: string): void {
+    this.sortAt.set(null);
+    this.listSort.pick(id);
+  }
 
   protected readonly day = computed(() => (this.store.match() ? fmtDayLong(this.store.match()!.starts_at) : ''));
 

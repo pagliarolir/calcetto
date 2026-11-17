@@ -5,11 +5,12 @@ import { Empty } from '../ui/empty';
 import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
-import { fmtWeekday, fmtWhen } from '../core/format';
+import { fmtWeekday } from '../core/format';
 import { BoardRow, Choice, Team } from '../core/models';
 import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
+import { ListSort } from '../core/list-sort';
 import { Figurina } from '../ui/figurina';
 import { MatchStore } from './match-store';
 import { Reprimand } from '../ui/reprimand';
@@ -37,30 +38,16 @@ const FIG_MIN = 50;
         <!-- La mia risposta -->
         <section class="section" aria-labelledby="me-h">
           <header class="tab-head">
-            <h2 id="me-h" appFitText>{{ myHeadline() }}</h2>
-            @if (infoLines().length) {
-              <button type="button" class="info-i" aria-label="Come funzionano le prenotazioni" [attr.aria-expanded]="infoOpen()" (click)="infoOpen.set(!infoOpen())">
-                <app-icon name="info" [size]="20" />
-              </button>
-              @if (infoOpen()) {
-                <div class="pop-shield" aria-hidden="true" (click)="infoOpen.set(false)"></div>
-                <div class="info-pop panel" role="note"><ul>@for (l of infoLines(); track $index) { <li>{{ l }}</li> }</ul></div>
+            <!-- titolo e chevron nello stesso blocco: lo chevron sta subito dopo il testo -->
+            <div class="me-title">
+              <h2 id="me-h" appFitText>{{ myHeadline() }}</h2>
+              @if (canChange()) {
+                <button type="button" class="chev-b" [class.pop]="popChev()" [class.up]="choiceOpen()" aria-controls="my-choice" [attr.aria-expanded]="choiceOpen()"
+                        [attr.aria-label]="choiceOpen() ? 'Chiudi le risposte' : 'Cambia la tua risposta'" (click)="choiceOpen.set(!choiceOpen())">
+                  <app-icon name="chevron" [size]="18" />
+                </button>
               }
-            }
-            <!-- ordinamento delle liste -->
-            <span class="sortw">
-              <button type="button" class="sort-b" aria-label="Ordina i giocatori" [attr.aria-expanded]="sortOpen()" (click)="sortOpen.set(!sortOpen())"><app-icon name="sort" [size]="18" /></button>
-              @if (sortOpen()) {
-                <div class="pop-shield" aria-hidden="true" (click)="sortOpen.set(false)"></div>
-                <div class="sort-menu panel" role="menu">
-                  @for (o of sortOptions(); track o.id) {
-                    <button type="button" role="menuitemradio" [attr.aria-checked]="effSort() === o.id" (click)="setSort(o.id)">
-                      <span class="grow">{{ o.label }}</span>@if (effSort() === o.id) { <app-icon name="check" [size]="16" /> }
-                    </button>
-                  }
-                </div>
-              }
-            </span>
+            </div>
             @if (statusPill(); as sp) { <span class="spill" [class]="'spill ' + sp.cls" role="status">{{ sp.label }}</span> }
           </header>
           @if (m.status === 'cancelled') {
@@ -79,7 +66,8 @@ const FIG_MIN = 50;
             </div>
           } @else if (!canBook()) {
           } @else {
-            <div class="choice" role="group" aria-label="La tua presenza">
+            <div class="choice-wrap" [class.shut]="shut()" [attr.inert]="shut() || null">
+            <div class="choice" id="my-choice" role="group" aria-label="La tua presenza">
               <button [attr.aria-pressed]="store.mine()?.choice === 'present'" (click)="book('present')">
                 Ci sono
               </button>
@@ -91,6 +79,7 @@ const FIG_MIN = 50;
               <button class="absent" [attr.aria-pressed]="store.mine()?.choice === 'absent'" (click)="book('absent')">
                 Assente
               </button>
+            </div>
             </div>
           }
           @if (m.status === 'scheduled' && !store.t()?.started) {
@@ -197,12 +186,6 @@ const FIG_MIN = 50;
   styles: `
     /* risposta appena data, in attesa del server */
     app-figurina.arriving { opacity: 0.55; transition: opacity 200ms; }
-    .sortw { margin-left: auto; position: relative; flex: none; }
-    .sort-b { width: 32px; height: 32px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
-    .sort-b[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
-    .sort-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; min-width: 240px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
-    .sort-menu button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step--1)/1.2 var(--font-body); text-align: left; cursor: pointer; }
-    .sort-menu button[aria-checked='true'] { color: var(--turf); }
     .spill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px;
              font: 700 0.72rem/1 var(--font-body); white-space: nowrap; }
     .spill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
@@ -211,10 +194,28 @@ const FIG_MIN = 50;
     .spill.soon::before { background: var(--armband); }
     .spill.closed { background: var(--surface-2); color: var(--muted); }
     .spill.live { background: var(--danger-soft); color: var(--danger); }
-    /* «i» vicina al titolo: cerchio piccolo, area di tocco comunque comoda */
-    .info-i { width: 32px; height: 32px; margin-left: 0; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; }
-    .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
-    .pop-shield { position: fixed; inset: 0; z-index: 5; }
+    /* titolo della risposta con lo chevron subito dopo il testo (0,5 rem) */
+    .me-title { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 0.5rem; }
+    .me-title > h2 { flex: 0 1 auto; min-width: 0; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .me-title > h2::before { content: ''; display: inline-block; vertical-align: -0.08em; width: 4px; height: 0.9em; margin-right: 10px; border-radius: 2px; background: var(--turf); }
+    .tab-head > .spill { margin-left: auto; }
+    /* chevron: riapre i pulsanti di risposta */
+    .chev-b { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+      display: grid; place-items: center; cursor: pointer; position: relative; }
+    .chev-b::after { content: ''; position: absolute; inset: -6px; }
+    .chev-b app-icon { display: grid; transform: rotate(90deg); }
+    .chev-b.up app-icon { transform: rotate(-90deg); }
+    .chev-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    /* tendina dei pulsanti: si chiude verso l'alto e si riapre verso il basso */
+    .choice-wrap { display: grid; grid-template-rows: 1fr; }
+    .choice-wrap > .choice { min-height: 0; overflow: hidden; }
+    .choice-wrap.shut { grid-template-rows: 0fr; opacity: 0; margin-top: -10px; }
+    @media (prefers-reduced-motion: no-preference) {
+      .choice-wrap { transition: grid-template-rows 360ms ease-in-out, opacity 300ms ease-in-out, margin-top 360ms ease-in-out; }
+      .chev-b app-icon { transition: transform 260ms var(--ease-spring, ease); }
+      .chev-b.pop { animation: chev-pop 380ms var(--ease-spring, ease) both; }
+      @keyframes chev-pop { from { transform: scale(0.3); opacity: 0; } to { transform: none; opacity: 1; } }
+    }
     .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 14px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
     .info-pop ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
     /* le schede restano a portata di dito mentre si scorre l'elenco */
@@ -257,9 +258,21 @@ export class BookingTab {
   private readonly reprimand = inject(Reprimand);
 
   protected readonly busy = signal(false);
-  protected readonly when = fmtWhen;
 
   protected readonly amLeaderTitular = computed(() => this.session.me()?.titular_leader === this.session.uid());
+
+  /** pulsanti di risposta chiusi a tendina per chi ha già risposto e può ancora cambiare; lo chevron li riapre */
+  protected readonly choiceOpen = signal(false);
+  /** dopo un tocco i pulsanti restano aperti finché non compare l'esito, poi si chiudono */
+  private readonly holdOpen = signal(false);
+  protected readonly shut = computed(() => this.canChange() && !this.choiceOpen() && !this.holdOpen());
+  /** lo chevron compare con un piccolo ingrandimento solo dopo una risposta (non al primo disegno) */
+  protected readonly popChev = signal(false);
+  protected readonly canChange = computed(() => {
+    const m = this.store.match(), t = this.store.t();
+    return !!this.store.mine()?.choice && !!m && m.status === 'scheduled' && !t?.started && this.canBook()
+      && !(t?.bookingClosed && !this.amLeaderTitular());
+  });
 
   protected readonly canBook = computed(() => {
     const t = this.store.t();
@@ -338,6 +351,10 @@ export class BookingTab {
       });
       if (!ok) return;
     }
+    // i pulsanti restano aperti fino all'esito; poi si chiudono a tendina (se il server rifiuta, ricompaiono)
+    this.holdOpen.set(true);
+    this.choiceOpen.set(false);
+    this.popChev.set(true);
     // risposta immediata: la scelta si vede subito, il posto vero lo decide il server; se rifiuta si torna a prima
     const before = this.store.board();
     const guess = this.guessBoard(before, choice);
@@ -352,6 +369,7 @@ export class BookingTab {
       try {
         res = await this.api.book(this.store.match()!.id, choice);
       } catch (e) {
+        this.holdOpen.set(false);
         if (this.store.board() === guess) this.store.board.set(before);
         else await this.store.reload('bookings');
         throw e;
@@ -359,10 +377,12 @@ export class BookingTab {
       await this.store.reload('bookings');
       // con «sceglie il Leader» i posti non sono numerati
       const n = res.slot ? ` con il numero ${res.slot}` : '';
-      if (res.list === 'team') this.toasts.show(`Sei dentro${n}.`);
-      else if (res.list === 'reserve') this.toasts.show(`Sei tra le riserve${n}.`);
-      else if (res.list === 'pending') this.toasts.show('Sei tra i disponibili: titolari e riserve li sceglie il Leader.');
-      else this.toasts.show('Segnato come assente.');
+      // esito in basso, su una riga: verde tenue se ci sei, rosso tenue se non ci sei; subito dopo si chiude la tendina
+      if (res.list === 'team') this.toasts.show(`Ci sei: sei dentro${n}.`, 'good');
+      else if (res.list === 'reserve') this.toasts.show(`Sei tra le riserve${n}.`, 'good');
+      else if (res.list === 'pending') this.toasts.show('Ci sei: sei tra i disponibili.', 'good');
+      else this.toasts.show('Non ci sei: segnato come assente.', 'bad');
+      setTimeout(() => this.holdOpen.set(false), 180);
     });
   }
 
@@ -414,7 +434,15 @@ export class BookingTab {
       return 'alpha';
     }
   }
-  protected readonly sortOpen = signal(false);
+  /** il pulsante dell'ordinamento sta accanto a «Lista», nell'intestazione della partita (core/list-sort.ts) */
+  private readonly listSort = inject(ListSort);
+  private readonly sortBridge = (() => {
+    this.listSort.pick = (id) => this.setSort(id as SortMode);
+    this.listSort.active.set(true);
+    inject(DestroyRef).onDestroy(() => { this.listSort.active.set(false); this.listSort.pick = () => {}; });
+    effect(() => { this.listSort.options.set(this.sortOptions()); this.listSort.current.set(this.effSort()); });
+    return true;
+  })();
   /** modi disponibili per la lista che si sta guardando */
   protected readonly sortOptions = computed(() => {
     const out: { id: 'alpha' | 'ovr' | 'form' | 'insert' | 'team'; label: string }[] = [
@@ -439,7 +467,6 @@ export class BookingTab {
    * della partita invece di restare dentro l'area che scorre. Toccare il modo già attivo non fa nulla.
    */
   protected setSort(id: SortMode): void {
-    this.sortOpen.set(false);
     if (id === this.effSort()) return;
     try { localStorage.setItem(BookingTab.SORT_KEY, id); } catch { /* resta solo per questa visita */ }
     void this.listRouter.navigate([], { relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge', queryParams: { ordine: id === 'alpha' ? null : id } });
@@ -554,7 +581,12 @@ export class BookingTab {
     const avail = Math.max(240, Math.floor(sc.clientHeight - top - 6));
     panel.style.maxHeight = `${avail}px`;
     panel.style.setProperty('--avail', `${avail}px`);
-    this.fitCards(panel, avail);
+    // le figurine si misurano sempre come con i pulsanti di risposta aperti: aprendoli o chiudendoli
+    // (anche durante l'animazione) restano della stessa altezza, cambia solo lo spazio libero in fondo
+    const wrap = host.querySelector('.choice-wrap') as HTMLElement | null;
+    const choice = wrap?.querySelector('.choice') as HTMLElement | null;
+    const hidden = wrap && choice ? Math.max(0, choice.scrollHeight - wrap.getBoundingClientRect().height - (parseFloat(getComputedStyle(wrap).marginTop) || 0)) : 0;
+    this.fitCards(panel, Math.max(240, sc.clientHeight - top - 6 - hidden));
   }
 
   /**
@@ -580,27 +612,8 @@ export class BookingTab {
     if (fit) panel.style.setProperty('--fig-h', `${h}px`);
   }
 
-  /** informazioni sulle prenotazioni, nel fumetto della «i» accanto al titolo */
-  protected readonly infoOpen = signal(false);
   private readonly hostEl = inject(ElementRef);
   private readonly injector = inject(Injector);
-  protected readonly infoLines = computed(() => {
-    const m = this.store.match();
-    if (!m || m.status !== 'scheduled' || this.store.t()?.started) return [];
-    const t = this.store.t();
-    const out: string[] = [];
-    if (t?.bookingOpen) out.push(`Le prenotazioni si chiudono ${this.when(m.bookings_close_at)}.`);
-    else if (t?.bookingClosed) out.push(`Le prenotazioni si sono chiuse ${this.when(m.bookings_close_at)}. Se non avevi risposto puoi ancora metterti tra le riserve.`);
-    else out.push(`Le prenotazioni aprono ${this.when(m.bookings_open_at)}.`);
-    if (this.store.free()) {
-      if (!m.lists_confirmed_at) out.push('Titolari e riserve li sceglie il Leader dopo la chiusura delle prenotazioni, e ti avvisa.');
-      out.push('Disponibili: hanno detto che ci sono, il Leader sceglierà chi gioca.');
-      out.push('Riserve: senza ordine, se si libera un posto decide il Leader.');
-    } else {
-      out.push('Riserve: entrano in ordine quando si libera un posto.');
-    }
-    return out;
-  });
   protected readonly listTabs = computed(() => {
     const out: { id: 'team' | 'pending' | 'reserve' | 'out'; label: string; count: string }[] = [
       { id: 'team', label: 'Titolari', count: `${this.store.team().length}/${this.store.size()}` },
