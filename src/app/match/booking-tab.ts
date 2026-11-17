@@ -581,7 +581,12 @@ export class BookingTab {
     const avail = Math.max(240, Math.floor(sc.clientHeight - top - 6));
     panel.style.maxHeight = `${avail}px`;
     panel.style.setProperty('--avail', `${avail}px`);
-    this.fitCards(panel, avail);
+    // le figurine si misurano sempre come con i pulsanti di risposta aperti: aprendoli o chiudendoli
+    // (anche durante l'animazione) restano della stessa altezza, cambia solo lo spazio libero in fondo
+    const wrap = host.querySelector('.choice-wrap') as HTMLElement | null;
+    const choice = wrap?.querySelector('.choice') as HTMLElement | null;
+    const hidden = wrap && choice ? Math.max(0, choice.scrollHeight - wrap.getBoundingClientRect().height - (parseFloat(getComputedStyle(wrap).marginTop) || 0)) : 0;
+    this.fitCards(panel, Math.max(240, sc.clientHeight - top - 6 - hidden));
   }
 
   /**
