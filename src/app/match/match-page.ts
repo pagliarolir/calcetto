@@ -79,13 +79,16 @@ import { haptic } from '../core/haptics';
             <a routerLink="risultato" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Risultato</a>
             <a routerLink="voti" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Pagelle</a>
           } @else {
-            <a routerLink="." [routerLinkActiveOptions]="activeExact" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Lista</a>
-            <!-- ordinamento dell'elenco che si sta guardando (titolari, riserve…), solo con la scheda Lista aperta -->
-            <!-- fuori dalla Lista resta il suo posto vuoto, così le schede non si spostano -->
-            <button type="button" class="sort-tab" [class.gone]="!listSort.active() || tools()" [disabled]="!listSort.active() || tools()"
-                    aria-label="Ordina i giocatori" aria-haspopup="menu" [attr.aria-expanded]="!!sortAt()" (click)="openSort($event)">
-              <app-icon name="sort" [size]="16" />
-            </button>
+            <!-- «Lista» con le frecce dell'ordinamento come parte della scheda: stessa riga, stessa lineetta sotto.
+                 Le frecce ordinano l'elenco che si sta guardando; da un'altra scheda portano alla Lista e aprono il menu -->
+            <span class="tab-group" [class.on]="rla.isActive">
+              <a routerLink="." [routerLinkActiveOptions]="activeExact" routerLinkActive="on" #rla="routerLinkActive"
+                 [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Lista</a>
+              <button type="button" class="sort-tab" [disabled]="tools()"
+                      aria-label="Ordina i giocatori" aria-haspopup="menu" [attr.aria-expanded]="!!sortAt()" (click)="openSort($event)">
+                <app-icon name="sort" [size]="16" />
+              </button>
+            </span>
             <a routerLink="squadre" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Squadre</a>
           }
           <a routerLink="chat" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Chat
@@ -176,12 +179,19 @@ import { haptic } from '../core/haptics';
     .tabs .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); }
     .tabs.off a { opacity: 0.4; pointer-events: none; }
     .tabs.off a.on::after { opacity: 0; }
-    /* ordinamento accanto a «Lista»: icona senza fondo, alta quanto la riga del testo (non sposta niente) */
-    .sort-tab { flex: none; position: relative; align-self: flex-end; display: inline-flex; align-items: center; margin: 0 4px 0 -10px; padding: 8px 2px 10px;
-      height: calc(1.2em + 18px); box-sizing: border-box; border: 0; background: none; color: inherit; cursor: pointer; line-height: 1.2; font-size: var(--step-0); }
-    .sort-tab app-icon { display: block; }
-    .sort-tab::after { content: ''; position: absolute; inset: 0 -8px; }
-    .sort-tab.gone { visibility: hidden; }
+    /* «Lista» + frecce: un'unica scheda (la lineetta sotto va da «Lista» alle frecce) */
+    .tab-group { flex: none; position: relative; display: inline-flex; align-items: flex-end; }
+    .tab-group > a { padding-right: 0; }
+    .tab-group > a.on::after { content: none; }
+    .tab-group.on::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--chalk); }
+    .tabs.off .tab-group.on::after { opacity: 0; }
+    .tabs.off .sort-tab { opacity: 0.4; }
+    /* frecce come un carattere della parola: stessa riga (1.2em), centrate sul testo, spazio come tra parola e pallino */
+    .sort-tab { flex: none; position: relative; display: inline-flex; align-items: center; padding: 10px 12px 8px 6px; height: calc(1.2em + 18px); box-sizing: border-box;
+      border: 0; background: none; color: inherit; cursor: pointer; font-size: var(--step-0); line-height: 1.2; }
+    /* area di tocco ≥ 44 px: si allarga sopra, sotto e nello spazio prima di «Squadre» */
+    .sort-tab::after { content: ''; position: absolute; z-index: 1; inset: -4px -10px -4px -2px; }
+    .sort-tab app-icon ::ng-deep svg { display: block; width: 1em; height: 1em; }
     .sort-tab[aria-expanded='true'] { color: var(--chalk); }
     .sort-tab:focus-visible { outline: 3px solid var(--chalk); outline-offset: -2px; border-radius: 6px; }
     .sort-shield { position: fixed; inset: 0; z-index: 30; }
@@ -219,10 +229,19 @@ export class MatchPage {
   protected readonly activeExact: IsActiveMatchOptions = { paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' };
   /** menu dell'ordinamento: posizione fissa sotto il pulsante (la riga delle schede taglia ciò che sborda) */
   protected readonly sortAt = signal<{ top: number; left: number } | null>(null);
-  protected openSort(e: Event): void {
+  protected async openSort(e: Event): Promise<void> {
     if (this.sortAt()) { this.sortAt.set(null); return; }
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    this.sortAt.set({ top: Math.round(r.bottom + 6), left: Math.round(Math.max(8, Math.min(r.left, innerWidth - 228))) });
+    const btn = e.currentTarget as HTMLElement;
+    // da un'altra scheda: prima si torna alla Lista, poi il menu si apre appena l'elenco è pronto
+    if (!this.listSort.active()) {
+      const m = this.store.match();
+      if (!m) return;
+      await this.router.navigate(['/partita', m.id]);
+      for (let i = 0; i < 40 && !this.listSort.active(); i++) await new Promise((r) => setTimeout(r, 50));
+      if (!this.listSort.active()) return;
+    }
+    const r = btn.getBoundingClientRect();
+    this.sortAt.set({ top: Math.round(r.bottom + 6), left: Math.round(Math.max(8, Math.min(r.left - 40, innerWidth - 228))) });
   }
   protected pickSort(id: string): void {
     this.sortAt.set(null);
