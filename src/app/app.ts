@@ -72,7 +72,7 @@ import { Prefetch } from './core/prefetch';
       <app-changes-notice />
       <app-update-notice />
       @for (t of toasts.items(); track t.id) {
-        <button class="toast enter-fade" [class.error]="t.tone === 'error'" (click)="toasts.dismiss(t.id)">{{ t.text }}</button>
+        <button class="toast enter-fade" [class.error]="t.tone === 'error'" [class.good]="t.tone === 'good'" [class.bad]="t.tone === 'bad'" (click)="toasts.dismiss(t.id)">{{ t.text }}</button>
       }
     </div>
   `,
@@ -142,6 +142,14 @@ import { Prefetch } from './core/prefetch';
       box-shadow: 0 8px 24px rgb(0 0 0 / 20%); text-align: left;
     }
     .toast.error { background: var(--danger); color: var(--danger-ink); }
+    /* esito tenue di una scelta: fondo appena verde (ci sei) o rosso (non ci sei), testo del tema per la leggibilità */
+    .toast.good, .toast.bad { font-weight: 600; color: var(--ink); box-shadow: 0 8px 22px rgb(0 0 0 / 16%);
+      max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 8px; }
+    .toast.good::before, .toast.bad::before { content: ''; flex: none; width: 10px; height: 10px; border-radius: 50%; }
+    .toast.good { background: color-mix(in srgb, var(--turf) 16%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--turf) 70%, var(--surface)); }
+    .toast.good::before { background: var(--turf); }
+    .toast.bad { background: color-mix(in srgb, var(--danger) 14%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--danger) 70%, var(--surface)); }
+    .toast.bad::before { background: var(--danger); }
     .toasts.above-net { bottom: calc(var(--tabbar-total) + 64px); }
     .net { position: absolute; z-index: 55; left: 0; right: 0; bottom: var(--tabbar-total); pointer-events: none; }
     .net.no-tabs { bottom: env(safe-area-inset-bottom, 0px); }

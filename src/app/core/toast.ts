@@ -4,7 +4,8 @@ import { PAY_PUNISHMENT_MESSAGE, PUNISHMENT_MESSAGE, Reprimand } from '../ui/rep
 export interface Toast {
   id: number;
   text: string;
-  tone: 'ok' | 'error' | 'info';
+  /** good/bad: esito di una scelta (verde o rosso tenue), es. la risposta alla partita */
+  tone: 'ok' | 'error' | 'info' | 'good' | 'bad';
 }
 
 @Injectable({ providedIn: 'root' })
