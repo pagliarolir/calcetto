@@ -14,6 +14,7 @@ const PATHS: Record<string, string> = {
   check: 'M5 12l5 5l9-10',
   x: 'M6 6l12 12 M18 6L6 18',
   plus: 'M12 5v14 M5 12h14',
+  minus: 'M5 12h14',
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4',
   list: 'M8 6h12 M8 12h12 M8 18h12 M4 6h.01 M4 12h.01 M4 18h.01',
   shirt: 'M8 3l-5 3l2 4l3-1v12h8V9l3 1l2-4l-5-3a4 4 0 0 1-8 0z',
@@ -53,6 +54,12 @@ const PATHS: Record<string, string> = {
   pin: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z M12 9.5m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0',
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
   lock: 'M7 11V8a5 5 0 0 1 10 0v3 M5 11h14v10H5z M12 15v2',
+  /* lucchetto aperto: mercato aperto */
+  unlock: 'M7 11V8a5 5 0 0 1 9.6-2 M5 11h14v10H5z M12 15v2',
+  search: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M16 16l4.5 4.5',
+  /* frecce piene piccole: quota salita o scesa */
+  up: 'M12 6l6 8H6z',
+  down: 'M12 18l-6-8h12z',
   camera: 'M4 8h3l2-3h6l2 3h3v11H4z M12 16.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7z',
   pencil: 'M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4',
   euro: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M15 8.6a4 4 0 1 0 0 6.8 M7.5 11h5.5 M7.5 13.2h5.5',

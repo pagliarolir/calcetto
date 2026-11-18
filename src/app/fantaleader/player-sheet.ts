@@ -24,17 +24,17 @@ import { Sheet } from '../ui/sheet';
           <div class="grow">
             <h2 id="fls-h">{{ session.name(id) }}</h2>
             @if (fl.rankOf().get(id); as r) {
-              <p class="small muted">{{ r.pos }}° in classifica · {{ fmt(r.total) }} punti · prossimo coefficiente ×{{ fmt(r.next_coef) }}</p>
+              <p class="small muted">{{ r.pos }}° in classifica, {{ fmt(r.total) }} punti@if (r.next_coef !== 1) {, prossima giornata ×{{ fmt(r.next_coef) }}}</p>
             }
           </div>
         </header>
 
         @if (fl.rankOf().get(id); as r) {
           <div class="prices">
-            <div><span class="small muted">Quotazione iniziale</span><strong>{{ r.price_initial }}</strong></div>
-            <div><span class="small muted">Quotazione attuale</span>
-              <strong [class.up]="r.price_current > r.price_initial" [class.down]="r.price_current < r.price_initial">
-                {{ r.price_current }}@if (r.price_current !== r.price_initial) { <small>{{ r.price_current > r.price_initial ? '▲' : '▼' }}</small> }
+            <div><span class="small muted">Quota iniziale</span><strong class="num">{{ r.price_initial }}</strong></div>
+            <div><span class="small muted">Quota attuale</span>
+              <strong class="num" [class.up]="r.price_current > r.price_initial" [class.down]="r.price_current < r.price_initial">
+                {{ r.price_current }}@if (r.price_current !== r.price_initial) { <app-icon [name]="r.price_current > r.price_initial ? 'up' : 'down'" [size]="16" /> }
               </strong></div>
           </div>
         }
@@ -43,13 +43,15 @@ import { Sheet } from '../ui/sheet';
         @if (fl.skillsOf(id).length) {
           <section class="stack-s">
             <h3>Skill</h3>
-            @for (s of fl.skillsOf(id); track s.id) {
-              <div class="skill" [class.neg]="s.kind === 'neg'" [class.off]="!s.active">
-                <span class="sign">{{ s.kind === 'pos' ? '+' : '−' }}</span>
-                <div><strong>{{ s.name }}</strong>@if (!s.active) { <span class="small muted"> (non attiva)</span> }
-                  <p class="small">{{ s.description }}</p></div>
-              </div>
-            }
+            <ul class="skills">
+              @for (s of fl.skillsOf(id); track s.id) {
+                <li [class.neg]="s.kind === 'neg'" [class.off]="!s.active">
+                  <span class="sign" [attr.aria-label]="s.kind === 'pos' ? 'Bonus' : 'Malus'"><app-icon [name]="s.kind === 'pos' ? 'plus' : 'minus'" [size]="14" /></span>
+                  <div><strong>{{ s.name }}</strong>@if (!s.active) { <span class="small muted"> (non attiva)</span> }
+                    <p class="small muted">{{ s.description }}</p></div>
+                </li>
+              }
+            </ul>
           </section>
         } @else {
           <p class="small muted">Nessuna skill assegnata.</p>
@@ -63,7 +65,7 @@ import { Sheet } from '../ui/sheet';
             @if (stats(); as s) {
               <div class="grid">
                 <div><strong>{{ s.played }}</strong><span class="small muted">partite</span></div>
-                <div><strong>{{ s.wins }}–{{ s.draws }}–{{ s.losses }}</strong><span class="small muted">V–N–P</span></div>
+                <div><strong>{{ s.wins }}-{{ s.draws }}-{{ s.losses }}</strong><span class="small muted">vinte, pari, perse</span></div>
                 <div><strong>{{ s.goals }}</strong><span class="small muted">gol</span></div>
                 <div><strong>{{ s.avg_vote !== null ? fmt(+s.avg_vote) : 'n.d.' }}</strong><span class="small muted">media voto</span></div>
               </div>
@@ -78,10 +80,11 @@ import { Sheet } from '../ui/sheet';
             @for (p of points(); track p.match_id) {
               <details class="day">
                 <summary>
-                  <span class="grow">{{ p.matches ? day(p.matches.starts_at) : '' }} @if (!p.played) { <span class="small muted">· non ha giocato</span> }
+                  <span class="grow">{{ p.matches ? day(p.matches.starts_at) : '' }} @if (!p.played) { <span class="small muted">(non ha giocato)</span> }
                     @if (p.status === 'provisional') { <span class="tag">provvisorio</span> }</span>
                   @if (p.coef !== 1) { <span class="small muted">×{{ fmt(p.coef) }}</span> }
                   <strong class="num">{{ fmt(p.total) }}</strong>
+                  <app-icon name="chevron" [size]="16" class="chev" />
                 </summary>
                 <ul>
                   @for (b of p.breakdown; track $index) { <li><span>{{ b.label }}</span><span class="num">{{ fmt(b.value) }}</span></li> }
@@ -99,28 +102,31 @@ import { Sheet } from '../ui/sheet';
     </dialog>
   `,
   styles: `
-    .head { display: flex; align-items: center; gap: 12px; }
+    .head { display: flex; align-items: center; gap: 16px; padding-right: 48px; }
     .head h2 { font-size: var(--step-1); }
-    .x { border: 0; background: var(--surface-2); color: var(--muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; flex: none; }
     .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .prices div { display: flex; flex-direction: column; gap: 2px; padding: 12px 12px; border-radius: 12px; background: var(--surface-2); }
-    .prices strong { font: 800 var(--step-2)/1 var(--font-display); }
-    .prices .up { color: var(--turf); } .prices .down { color: var(--danger); }
-    .prices small { font-size: 0.7em; }
+    .prices div { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border-radius: var(--r-m); background: var(--surface-2); }
+    .prices strong { display: inline-flex; align-items: center; gap: 4px; font: 600 var(--step-2)/1 var(--font-display); }
+    .prices .up { color: color-mix(in srgb, var(--turf) 70%, var(--ink)); } .prices .down { color: var(--danger); }
     .desc { margin: 0; line-height: 1.45; font-style: italic; color: var(--muted); }
     h3 { font-size: var(--step-0); margin: 0; }
-    .skill { display: flex; gap: 12px; align-items: flex-start; padding: 8px 12px; border-radius: 12px; background: var(--turf-soft); }
-    .skill.neg { background: color-mix(in srgb, var(--danger) 12%, transparent); }
-    .skill.off { opacity: 0.6; }
-    .skill p { margin: 2px 0 0; }
-    .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
-    .skill.neg .sign { background: var(--danger); color: var(--danger-ink); }
+    /* skill: elenco sobrio, il segno + o − dice se è un bonus o un malus */
+    .skills { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-m); }
+    .skills li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; }
+    .skills li + li { border-top: 1px solid var(--line); }
+    .skills li.off { opacity: 0.6; }
+    .skills p { margin: 4px 0 0; }
+    .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--turf-soft); color: color-mix(in srgb, var(--turf) 70%, var(--ink)); }
+    .neg .sign { background: var(--danger-soft); color: var(--danger); }
     .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .grid div { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px; background: var(--surface-2); text-align: center; }
-    .grid strong { font: 800 var(--step-1)/1.1 var(--font-display); }
+    .grid div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 12px; background: var(--surface-2); text-align: center; }
+    .grid strong { font: 600 var(--step-1)/1.1 var(--font-display); }
+    .grid .small { font-size: 0.7rem; line-height: 1.2; }
     .day { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
-    .day summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; }
+    .day summary { display: flex; align-items: center; gap: 8px; min-height: 48px; cursor: pointer; list-style: none; }
     .day summary::-webkit-details-marker { display: none; }
+    .day .chev { color: var(--muted); rotate: 90deg; transition: rotate 200ms var(--ease); display: grid; }
+    .day[open] .chev { rotate: -90deg; }
     .day ul { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--step--1); }
     .day li { display: flex; justify-content: space-between; gap: 12px; }
     .tag { margin-left: 8px; }

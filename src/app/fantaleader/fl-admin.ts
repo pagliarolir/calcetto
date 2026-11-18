@@ -7,33 +7,33 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
 import { Icon } from '../ui/icon';
+import { InfoTip } from '../ui/info-tip';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
 
 /** Area del Leader: mercato, schede del documento, giocatori, skill, ricalcoli e registro. */
 @Component({
   selector: 'app-fl-admin',
-  imports: [Sheet, FormsModule, Avatar, Icon],
+  imports: [Sheet, FormsModule, Avatar, Icon, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let st = fl.settings()!;
-    <section class="panel stack">
-      <div class="spread">
-        <div><h3>Mercato</h3><p class="small muted">{{ st.market_open ? 'Aperto: si creano e si cambiano le fantasquadre.' : 'Chiuso: le fantasquadre sono bloccate.' }}</p></div>
-        <button class="btn" [class.primary]="!st.market_open" [class.danger]="st.market_open" [disabled]="busy()" (click)="toggleMarket()">
-          {{ st.market_open ? 'Chiudi il mercato' : 'Apri il mercato' }}</button>
-      </div>
+    <!-- il «momento» della Gestione: il mercato, l'unico interruttore che tutti sentono -->
+    <section class="panel market" [class.open]="st.market_open">
+      <app-icon [name]="st.market_open ? 'unlock' : 'lock'" [size]="22" />
+      <span class="grow two"><strong>{{ st.market_open ? 'Mercato aperto' : 'Mercato chiuso' }}</strong>
+        <small class="muted">{{ st.market_open ? 'Si creano e si cambiano le fantasquadre' : 'Le fantasquadre sono bloccate' }}</small></span>
+      <button class="btn small" [class.primary]="!st.market_open" [disabled]="busy()" (click)="toggleMarket()">{{ st.market_open ? 'Chiudi' : 'Apri' }}</button>
     </section>
 
-    <section class="panel stack-s">
-      <h3>Chi vede FantaLeader</h3>
-      <label class="check"><input type="checkbox" [ngModel]="st.public" (ngModelChange)="setPublic($event)" [disabled]="busy()" /> Visibile a tutti</label>
+    <details class="panel fold">
+      <summary><h3>Chi vede FantaLeader</h3><app-info-tip [lines]="['In anteprima lo vedono solo il Leader e le persone scelte qui.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
+      <label class="switch"><span>Visibile a tutti</span><input type="checkbox" role="switch" [checked]="st.public" (change)="setPublic($any($event.target).checked)" [disabled]="busy()" /></label>
       @if (!st.public) {
-        <p class="small muted">In anteprima: lo vedono solo il Leader e queste persone.</p>
         <ul class="chips">
           @for (u of st.preview_users; track u) {
             <li><app-avatar [userId]="u" [size]="24" /> {{ session.name(u) }}
-              <button type="button" class="rm" [attr.aria-label]="'Togli ' + session.name(u)" [disabled]="busy()" (click)="removePreview(u)">✕</button></li>
+              <button type="button" class="rm" [attr.aria-label]="'Togli ' + session.name(u)" [disabled]="busy()" (click)="removePreview(u)"><app-icon name="x" [size]="14" /></button></li>
           } @empty { <li class="small muted">Nessuno oltre al Leader.</li> }
         </ul>
         <select class="input" [ngModel]="''" (ngModelChange)="addPreview($event)" aria-label="Aggiungi all'anteprima" [disabled]="busy()">
@@ -41,11 +41,11 @@ import { Sheet } from '../ui/sheet';
           @for (m of members(); track m.id) { @if (!st.preview_users.includes(m.id)) { <option [value]="m.id">{{ session.name(m.id) }}</option> } }
         </select>
       }
-    </section>
+    </details>
 
     @if (checks(); as c) {
-      <section class="panel stack-s">
-        <h3>Stato dei calcoli</h3>
+      <details class="panel fold">
+        <summary><h3>Stato dei calcoli</h3>@if (c['homologated_without_points'] > 0 || c['without_votes'] > 0) { <span class="warn-dot" aria-label="Da controllare"></span> }<app-icon name="chevron" [size]="18" class="chev" /></summary>
         <ul class="facts">
           <li><span>Giocatori acquistabili</span><strong>{{ c['eligible'] }}</strong></li>
           <li><span>Fantasquadre</span><strong>{{ c['teams'] }}</strong></li>
@@ -54,19 +54,17 @@ import { Sheet } from '../ui/sheet';
           <li [class.warn]="c['without_votes'] > 0"><span>Giornate chiuse con meno di 2 votanti (voto d'ufficio 6)</span><strong>{{ c['without_votes'] }}</strong></li>
           <li><span>Revisioni dopo correzioni</span><strong>{{ c['revisions'] }}</strong></li>
         </ul>
-        <button class="btn small" [disabled]="busy()" (click)="recompute()">Ricalcola tutte le giornate</button>
-      </section>
+        <button class="btn small" [disabled]="busy()" (click)="recompute()"><app-icon name="undo" [size]="16" /> Ricalcola tutte le giornate</button>
+      </details>
     }
 
     <details class="panel fold">
-      <summary><h3>Schede del documento</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-      <p class="small muted">Collega ogni scheda al profilo del giocatore: gli dà quotazione iniziale, descrizione e skill.</p>
+      <summary><h3>Schede del documento</h3><app-info-tip [lines]="['Collega ogni scheda al profilo del giocatore: gli dà quotazione iniziale, descrizione e skill.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
       <ul class="rows">
         @for (p of fl.presets(); track p.code) {
           @let linked = linkedTo(p.code);
           <li>
-            <span class="grow"><strong>{{ p.name }}</strong> <span class="small muted">Q.i. {{ p.price }}</span>
-              @if (linked) { <span class="small"> → {{ session.name(linked) }}</span> }</span>
+            <span class="grow"><strong>{{ p.name }}</strong><span class="small muted">quota {{ p.price }}@if (linked) {, collegata a {{ session.name(linked) }}}</span></span>
             <select class="input sm" [ngModel]="linked ?? ''" (ngModelChange)="link(p.code, $event)" [attr.aria-label]="'Profilo di ' + p.name">
               <option value="">{{ linked ? 'Cambia…' : 'Scegli…' }}</option>
               @for (m of members(); track m.id) { <option [value]="m.id">{{ session.name(m.id) }}</option> }
@@ -84,20 +82,19 @@ import { Sheet } from '../ui/sheet';
           <li>
             <app-avatar [userId]="m.id" [size]="32" />
             <span class="grow"><strong>{{ session.name(m.id) }}</strong>
-              <span class="small muted">@if (p) { {{ p.eligible ? 'Q.i. ' + p.price_initial : 'non acquistabile' }} · {{ fl.skillsOf(m.id).length }} skill } @else { non nel FantaLeader }</span></span>
-            <button class="btn small" (click)="edit(m.id)">{{ p ? 'Modifica' : 'Aggiungi' }}</button>
+              <span class="small muted">@if (p) { {{ p.eligible ? 'quota ' + p.price_initial : 'non acquistabile' }}, {{ fl.skillsOf(m.id).length }} skill } @else { non nel FantaLeader }</span></span>
+            <button class="ib" (click)="edit(m.id)" [attr.aria-label]="(p ? 'Modifica ' : 'Aggiungi ') + session.name(m.id)"><app-icon [name]="p ? 'pencil' : 'plus'" [size]="18" /></button>
           </li>
         }
       </ul>
     </details>
 
     <details class="panel fold">
-      <summary><h3>Catalogo delle skill ({{ fl.skills().length }})</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
-      <p class="small muted">Puoi cambiare nome, descrizione, importo e soglie, e attivarle o disattivarle. Le modifiche valgono dal prossimo ricalcolo.</p>
+      <summary><h3>Catalogo delle skill</h3><span class="count">{{ fl.skills().length }}</span><app-info-tip [lines]="['Puoi cambiare nome, descrizione, importo e soglie, e attivarle o disattivarle.', 'Le modifiche valgono dal prossimo ricalcolo.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
       @for (s of fl.skills(); track s.id) {
         <details class="skill">
-          <summary><span class="sign" [class.neg]="s.kind === 'neg'">{{ s.kind === 'pos' ? '+' : '−' }}</span>
-            <span class="grow"><strong>{{ s.name }}</strong>@if (!s.active) { <span class="small muted"> · non attiva</span> }<br /><span class="small muted">{{ rule(s.rule) }}</span></span></summary>
+          <summary><span class="sign" [class.neg]="s.kind === 'neg'"><app-icon [name]="s.kind === 'pos' ? 'plus' : 'minus'" [size]="14" /></span>
+            <span class="grow two"><strong>{{ s.name }}@if (!s.active) { <span class="small muted"> (non attiva)</span> }</strong><span class="small muted">{{ rule(s.rule) }}</span></span></summary>
           <div class="stack-s edit">
             <label class="field"><span>Nome</span><input class="input" [(ngModel)]="draft(s).name" maxlength="60" /></label>
             <label class="field"><span>Descrizione</span><textarea class="input" rows="2" [(ngModel)]="draft(s).description"></textarea></label>
@@ -106,7 +103,7 @@ import { Sheet } from '../ui/sheet';
                 <label class="field"><span>{{ labels[k] }}</span><input class="input" type="number" step="0.25" [(ngModel)]="draft(s).rule[k]" /></label>
               }
             </div>
-            <label class="check"><input type="checkbox" [(ngModel)]="draft(s).active" /> Attiva</label>
+            <label class="switch"><span>Attiva</span><input type="checkbox" role="switch" [(ngModel)]="draft(s).active" /></label>
             <button class="btn small primary" [disabled]="busy()" (click)="saveSkill(s)">Salva la skill</button>
           </div>
         </details>
@@ -116,7 +113,7 @@ import { Sheet } from '../ui/sheet';
     <details class="panel fold" (toggle)="loadAudit($event)">
       <summary><h3>Registro delle modifiche</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
       <ul class="log">
-        @for (a of audit(); track a.id) { <li><span class="small muted">{{ when(a.at) }} · {{ a.actor ? session.name(a.actor) : 'sistema' }}</span><br />{{ a.action }}</li> }
+        @for (a of audit(); track a.id) { <li><span>{{ a.action }}</span><span class="small muted">{{ when(a.at) }}, {{ a.actor ? session.name(a.actor) : 'sistema' }}</span></li> }
         @empty { <li class="small muted">Nessuna operazione registrata.</li> }
       </ul>
     </details>
@@ -127,12 +124,12 @@ import { Sheet } from '../ui/sheet';
       <button type="button" class="x-close" (click)="ed.close()" aria-label="Chiudi"><span><app-icon name="x" [size]="16" /></span></button>
       @if (editId(); as id) {
         <h3 id="ed-h">{{ session.name(id) }}</h3>
-        <label class="check"><input type="checkbox" [(ngModel)]="form.eligible" /> Acquistabile nel FantaLeader</label>
+        <label class="switch"><span>Acquistabile nel FantaLeader</span><input type="checkbox" role="switch" [(ngModel)]="form.eligible" /></label>
         <label class="field"><span>Quotazione iniziale (euroLeader)</span><input class="input" type="number" min="1" max="1000" [(ngModel)]="form.price" /></label>
         <label class="field"><span>Descrizione</span><textarea class="input" rows="4" maxlength="2000" [(ngModel)]="form.description"></textarea></label>
         <fieldset class="skills"><legend class="small muted">Skill</legend>
           @for (s of fl.skills(); track s.id) {
-            <label class="check"><input type="checkbox" [checked]="form.skills.has(s.id)" (change)="toggleSkill(s.id)" /> {{ s.kind === 'pos' ? '+' : '−' }} {{ s.name }}</label>
+            <label class="check"><input type="checkbox" [checked]="form.skills.has(s.id)" (change)="toggleSkill(s.id)" /><span class="sg" [class.neg]="s.kind === 'neg'">{{ s.kind === 'pos' ? '+' : '−' }}</span> {{ s.name }}</label>
           }
         </fieldset>
         <div class="row">
@@ -147,7 +144,19 @@ import { Sheet } from '../ui/sheet';
     h3 { font-size: var(--step-0); margin: 0; }
     .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
     .chips li { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 999px; background: var(--surface-2); font-size: var(--step--1); }
-    .rm { border: 0; background: none; color: var(--muted); cursor: pointer; width: 24px; height: 24px; }
+    .rm { border: 0; background: none; color: var(--muted); cursor: pointer; width: 28px; height: 28px; display: grid; place-items: center; }
+    .two { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .market { display: flex; align-items: center; gap: 12px; }
+    .market > app-icon { color: var(--muted); display: grid; }
+    .market.open { box-shadow: inset 4px 0 0 var(--turf); }
+    .market.open > app-icon { color: color-mix(in srgb, var(--turf) 70%, var(--ink)); }
+    .market .grow { flex: 1; }
+    .count { min-width: 24px; height: 20px; padding: 0 4px; border-radius: 10px; display: inline-grid; place-items: center; background: var(--surface-2); color: var(--muted); font: 600 0.75rem/1 var(--font-body); }
+    .warn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+    .ib { flex: none; width: 44px; height: 44px; border-radius: 12px; border: 0; background: none; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+    .ib:active { background: var(--surface-2); }
+    .sg { width: 12px; text-align: center; font-weight: 600; color: color-mix(in srgb, var(--turf) 70%, var(--ink)); }
+    .sg.neg { color: var(--danger); }
     .facts, .rows, .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .facts li { display: flex; justify-content: space-between; gap: 12px; font-size: var(--step--1); }
     .facts li.warn strong { color: var(--danger); }
@@ -158,12 +167,13 @@ import { Sheet } from '../ui/sheet';
     .skill { border-top: 1px solid var(--line); }
     .skill summary { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; cursor: pointer; list-style: none; }
     .skill summary::-webkit-details-marker { display: none; }
-    .sign { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
-    .sign.neg { background: var(--danger); color: var(--danger-ink); }
-    .edit { padding: 0 0 12px 32px; }
+    .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--turf-soft); color: color-mix(in srgb, var(--turf) 70%, var(--ink)); }
+    .sign.neg { background: var(--danger-soft); color: var(--danger); }
+    .edit { padding: 0 0 12px 36px; }
     .nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
     .check { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
-    .log li { font-size: var(--step--1); }
+    .log li { display: flex; flex-direction: column; gap: 2px; font-size: var(--step--1); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .log li:last-child { border-bottom: 0; }
     .skills { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; max-height: 240px; overflow-y: auto; }
   `,
 })

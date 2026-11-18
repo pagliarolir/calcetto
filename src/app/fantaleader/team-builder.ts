@@ -5,48 +5,56 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
+import { Icon } from '../ui/icon';
+import { InfoTip } from '../ui/info-tip';
 
 /** La mia fantasquadra: vista (punti, capitano, spesa) e, a mercato aperto, creazione o modifica. */
 @Component({
   selector: 'app-fl-team',
-  imports: [Avatar, FormsModule],
+  imports: [Avatar, FormsModule, Icon, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let st = fl.settings()!;
     @if (!editing()) {
       @if (fl.myTeam(); as t) {
-        <section class="panel stack">
+        <!-- il «momento» della scheda: la squadra, con il fondo dell'intestazione -->
+        <section class="hero-card">
           <div class="spread">
-            <div><p class="small muted">La tua fantasquadra · allenatore {{ session.name(t.owner_id) }}</p><h2>{{ t.name }}</h2></div>
-            <div class="big"><strong class="num">{{ fmt(t.total) }}</strong><span class="small muted">{{ t.pos }}° posto</span></div>
+            <span class="two"><span class="lbl">Allenatore {{ session.name(t.owner_id) }}</span><h2>{{ t.name }}</h2></span>
+            <span class="score"><strong class="num">{{ fmt(t.total) }}</strong><small>{{ t.pos }}° posto</small></span>
           </div>
-          <div class="budget"><span>Spesi <strong>{{ t.spent }}</strong></span><span>Residui <strong>{{ st.budget - t.spent }}</strong></span><span>Ultima giornata <strong>{{ fmt(t.last_points) }}</strong></span></div>
-          <ul class="mine">
+          <div class="facts">
+            <span><small>Spesi</small><strong class="num">{{ t.spent }}</strong></span>
+            <span><small>Residui</small><strong class="num">{{ st.budget - t.spent }}</strong></span>
+            <span><small>Ultima</small><strong class="num">{{ fmt(t.last_points) }}</strong></span>
+          </div>
+        </section>
+        <section class="section">
+          <header><h2>Giocatori</h2>@if (t.provisional) { <app-info-tip [lines]="['Alcuni punti sono provvisori finché le pagelle sono aperte.']" /> }</header>
+          <ul class="list">
             @for (u of t.members; track u; let i = $index) {
-              <li>
-                <button type="button" class="who" (click)="openPlayer.emit(u)">
-                  <span class="av"><app-avatar [userId]="u" [size]="40" />@if (u === t.captain_id) { <span class="cap" aria-label="Capitano">C</span> }</span>
-                  <span class="grow"><strong>{{ session.name(u) }}</strong><span class="small muted">pagato {{ fl.myVersion()?.prices?.[i] ?? '–' }} · {{ fmt(fl.rankOf().get(u)?.total) }} punti</span></span>
-                </button>
-              </li>
+              <li><button type="button" class="list-item" (click)="openPlayer.emit(u)">
+                <span class="av"><app-avatar [userId]="u" [size]="40" />@if (u === t.captain_id) { <span class="cap" aria-label="Capitano">C</span> }</span>
+                <span class="grow two"><span class="ellipsis"><strong>{{ session.name(u) }}</strong></span><small class="muted">pagato {{ fl.myVersion()?.prices?.[i] ?? '–' }}</small></span>
+                <strong class="num pts">{{ fmt(fl.rankOf().get(u)?.total) }}</strong>
+              </button></li>
             }
           </ul>
-          @if (t.provisional) { <p class="small muted">Alcuni punti sono provvisori finché le pagelle sono aperte.</p> }
         </section>
         @if (st.market_open) {
-          <button class="btn block" (click)="startEdit()">Modifica la fantasquadra</button>
-          <p class="small muted">Il mercato è aperto: ogni giocatore si paga alla quotazione attuale.</p>
+          <button class="btn block" (click)="startEdit()"><app-icon name="pencil" [size]="18" /> Modifica la fantasquadra
+            <app-info-tip [lines]="['Il mercato è aperto: ogni giocatore si paga alla quotazione attuale.']" /></button>
         } @else {
-          <p class="note">Il mercato è chiuso: la squadra si potrà cambiare quando lo riaprirà il Leader.</p>
+          <p class="note"><app-icon name="lock" [size]="16" /> Mercato chiuso: la squadra si potrà cambiare quando lo riaprirà il Leader.</p>
         }
       } @else if (st.market_open) {
         <section class="panel stack">
           <h2>Crea la tua fantasquadra</h2>
-          <p class="muted">Scegli {{ st.team_size }} giocatori con {{ st.budget }} euroLeader e nomina il capitano. Partecipi come {{ session.name(session.uid()) }}.</p>
-          <button class="btn primary block" (click)="startEdit()">Inizia</button>
+          <p class="muted">Scegli {{ st.team_size }} giocatori con {{ st.budget }} euroLeader e nomina il capitano.</p>
+          <button class="btn primary block" (click)="startEdit()"><app-icon name="plus" [size]="18" /> Inizia</button>
         </section>
       } @else {
-        <p class="note">Il mercato è chiuso: potrai creare la tua fantasquadra quando lo aprirà il Leader.</p>
+        <p class="note"><app-icon name="lock" [size]="16" /> Mercato chiuso: potrai creare la tua fantasquadra quando lo aprirà il Leader.</p>
       }
     } @else {
       <!-- ============================== costruttore -->
@@ -62,10 +70,10 @@ import { Avatar } from '../ui/avatar';
           <span>Spesi <strong>{{ spent() }}</strong></span>
           <span [class.over]="spent() > st.budget">Residui <strong>{{ st.budget - spent() }}</strong></span>
           <span>Capitano <strong>{{ captain() ? session.name(captain()) : '–' }}</strong></span>
-          <button type="button" class="zero" [disabled]="!picked().length" (click)="reset()">Azzera</button>
+          <button type="button" class="zero" [disabled]="!picked().length" (click)="reset()" aria-label="Azzera la squadra"><app-icon name="undo" [size]="16" /> Azzera</button>
         </div>
-        <input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" />
-        <p class="small muted">Tu non puoi far parte della tua fantasquadra.</p>
+        <label class="search"><app-icon name="search" [size]="18" /><input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" />
+          <app-info-tip class="tip" [lines]="['Tu non puoi far parte della tua fantasquadra.', 'Tocca il prezzo per prendere un giocatore, la «C» per nominare il capitano.']" /></label>
         <ul class="pick">
           @for (p of list(); track p.user_id) {
             @let sel = picked().includes(p.user_id);
@@ -73,8 +81,8 @@ import { Avatar } from '../ui/avatar';
               <button type="button" class="who" (click)="openPlayer.emit(p.user_id)" [attr.aria-label]="'Scheda di ' + session.name(p.user_id)">
                 <app-avatar [userId]="p.user_id" [size]="36" />
                 <span class="grow"><strong>{{ session.name(p.user_id) }}</strong>
-                  <span class="small muted">{{ fmt(fl.rankOf().get(p.user_id)?.total) }} punti · Q.i. {{ fl.rankOf().get(p.user_id)?.price_initial ?? '–' }}
-                    @if (delta(p.user_id); as d) { <span [class.up]="d > 0" [class.down]="d < 0">{{ d > 0 ? '+' : '' }}{{ d }}</span> }</span></span>
+                  <span class="small muted">{{ fmt(fl.rankOf().get(p.user_id)?.total) }} punti
+                    @if (delta(p.user_id); as d) { <span [class.up]="d > 0" [class.down]="d < 0">, quota {{ d > 0 ? '+' : '' }}{{ d }}</span> }</span></span>
               </button>
               @if (sel) {
                 <button type="button" class="c" [class.on]="captain() === p.user_id" (click)="captain.set(p.user_id)"
@@ -96,35 +104,56 @@ import { Avatar } from '../ui/avatar';
     }
   `,
   styles: `
-    h2 { font-size: var(--step-1); }
-    .big { display: flex; flex-direction: column; align-items: flex-end; }
-    .big strong { font: 800 var(--step-3)/1 var(--font-display); }
+    :host { display: flex; flex-direction: column; gap: 24px; }
+    h2 { font-size: var(--step-1); margin: 0; }
+    .two { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .grow { flex: 1; }
+    .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* la squadra: fondo dell'intestazione, punti sul gesso */
+    .hero-card { display: flex; flex-direction: column; gap: 16px; padding: 20px; border-radius: var(--r-l); background: var(--hero-bg); color: var(--hero-ink); }
+    .hero-card h2 { font: 500 var(--step-2)/1.1 var(--font-display); color: inherit; overflow-wrap: anywhere; }
+    .hero-card .lbl { font-size: var(--step--1); opacity: 0.85; }
+    .hero-card .score { display: flex; flex-direction: column; align-items: center; flex: none; min-width: 72px; padding: 8px 12px; border-radius: var(--r-m);
+      background: var(--chalk, #f4f7f2); color: var(--on-chalk); }
+    .hero-card .score strong { font: 600 var(--step-3)/1 var(--font-display); }
+    .hero-card .score small { font-size: 0.7rem; }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .facts span { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border-radius: var(--r-m); background: rgb(255 255 255 / 12%); }
+    .facts small { font-size: 0.72rem; opacity: 0.85; }
+    .facts strong { font: 600 var(--step-1)/1 var(--font-display); }
+    .section > header { align-items: center; }
+    .list-item { min-height: 56px; padding: 8px 16px; }
+    .pts { font: 600 var(--step-1)/1 var(--font-display); }
+    .note { display: flex; align-items: center; gap: 8px; }
+    .btn app-info-tip { margin-left: 4px; }
     .budget, .bar { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: var(--step--1); color: var(--muted); }
     .budget strong, .bar strong { color: var(--ink); }
-    .bar { position: sticky; top: 0; z-index: 2; padding: 12px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 6px 14px -10px rgb(0 0 0 / 30%); }
+    .bar { position: sticky; top: 0; z-index: 2; align-items: center; padding: 12px 16px; border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--line); }
     .bar .over strong { color: var(--danger); }
-    .bar { align-items: center; }
-    .zero { margin-left: auto; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px;
-            font: 600 var(--step--1)/1.2 var(--font-body); cursor: pointer; }
+    .zero { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 0 12px;
+            font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; }
     .zero:disabled { opacity: 0.4; cursor: not-allowed; }
-    .up { color: var(--turf); font-weight: 700; } .down { color: var(--danger); font-weight: 700; }
+    .search { position: relative; display: block; }
+    .search > app-icon { position: absolute; left: 12px; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; display: grid; }
+    .search .input { padding-left: 40px; padding-right: 48px; }
+    .search .tip { position: absolute; right: 4px; top: 50%; translate: 0 -50%; }
+    .up { color: color-mix(in srgb, var(--turf) 70%, var(--ink)); font-weight: 600; } .down { color: var(--danger); font-weight: 600; }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    ul.list { gap: 0; }
     .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; border: 0; background: none; padding: 0; text-align: left; color: inherit; cursor: pointer; }
     .who .grow { min-width: 0; display: flex; flex-direction: column; }
     .who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mine li { padding: 8px 0; border-bottom: 1px solid var(--line); }
-    .mine li:last-child { border-bottom: 0; }
-    .av { position: relative; display: inline-grid; }
+    .av { position: relative; display: inline-grid; flex: none; }
     .cap { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
-           background: var(--armband); color: var(--armband-ink); font: 800 0.72rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); }
-    .pick li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
-    .pick li.sel { box-shadow: 0 0 0 2px var(--turf); background: var(--turf-soft); }
-    .price { flex: none; min-width: 52px; height: 36px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
-             font: 800 var(--step-0)/1 var(--font-display); cursor: pointer; }
+           background: var(--armband); color: var(--armband-ink); font: 600 0.72rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); }
+    .pick li { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 8px 8px 8px 12px; border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--line); }
+    .pick li.sel { background: var(--turf-soft); border-color: transparent; }
+    .price { flex: none; min-width: 52px; height: 40px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+             font: 600 var(--step-0)/1 var(--font-display); cursor: pointer; }
     .price.on { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
     .price:disabled { opacity: 0.35; cursor: not-allowed; }
-    .c { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1.5px dashed var(--armband); background: none; color: var(--armband-ink); font: 800 0.85rem/1 var(--font-display); cursor: pointer; }
-    .c.on { border-style: solid; background: var(--armband); }
+    .c { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1.5px dashed var(--muted); background: none; color: var(--ink); font: 600 0.85rem/1 var(--font-display); cursor: pointer; }
+    .c.on { border: 0; background: var(--armband); color: var(--armband-ink); }
     .actions { position: sticky; bottom: 0; padding: 12px 0 4px; background: var(--bg); }
   `,
 })
