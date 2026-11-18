@@ -648,13 +648,6 @@ router-outlet + * { display: block; animation: page-in 160ms var(--ease) both; }
 }
 .avatar.has-photo.white { box-shadow: 0 0 0 2px var(--team-a), 0 0 0 3px var(--line); }
 .avatar.has-photo.black { box-shadow: 0 0 0 2px var(--team-b), 0 0 0 3px var(--line); }
-/* in campo le foto prendono il colore della propria squadra (duotono): il campo resta l'unico «momento» colorato
-   della pagina e le due squadre si distinguono a colpo d'occhio. Con una divisa bianca o nera resta in bianco e nero. */
-.pitch-photo.has-photo { position: relative; isolation: isolate; }
-.pitch-photo.has-photo img { filter: grayscale(1) contrast(1.12) brightness(1.04); }
-.pitch-photo.has-photo::after { content: ''; position: absolute; inset: 0; border-radius: inherit; mix-blend-mode: color; opacity: 0.75; pointer-events: none; }
-.pitch-photo.has-photo.white::after { background: var(--team-a); }
-.pitch-photo.has-photo.black::after { background: var(--team-b); }
 
 /* Tendine (strumenti del Leader, Gestione): titolo e freccia che ruota */
 details.fold > summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; min-height: 44px; }
