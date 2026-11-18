@@ -38,13 +38,16 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
   template: `
     <div class="page-head">
       <div class="head-in">
-      <h1 class="sr-only">Il tuo profilo</h1>
+      <header class="titlebar"><h1>Profilo</h1></header>
       <div class="me-box">
-        <div class="me-av" [class.pun]="!!session.punishment()">
-          @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="96" /> }
-          @if (session.punishment()) {
-            <app-info-tip class="pun-badge" [card]="true" label="Sei in punizione" [lines]="punLines()" />
-          }
+        <div class="me-id">
+          <div class="me-av" [class.pun]="!!session.punishment()">
+            @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="88" /> }
+            @if (session.punishment()) {
+              <app-info-tip class="pun-badge" [card]="true" label="Sei in punizione" [lines]="punLines()" />
+            }
+          </div>
+          @if (shownName(); as n) { <p class="me-name">{{ n }}</p> }
         </div>
         <div class="me-right">
           <nav class="ptabs" role="tablist" aria-label="Profilo">
@@ -377,7 +380,11 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     .lead-area > app-icon:first-child { color: var(--turf); }
     .lead-area .grow { display: flex; flex-direction: column; gap: 2px; }
     .me-box { display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: var(--r-m, 16px); background: var(--surface-2); }
+    .me-id { flex: none; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .me-av { position: relative; flex: none; display: grid; }
+    .me-name { margin: 0; max-width: 100%; overflow: hidden; text-align: center; overflow-wrap: anywhere; text-wrap: balance;
+               display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+               font: 500 var(--step--1)/1.25 var(--font-body); color: var(--ink); }
     /* in punizione: foto spenta, filo rosso e cartellino che spiega fino a quando */
     .me-av.pun app-avatar { filter: grayscale(1); opacity: 0.75; }
     .me-av.pun::before { content: ''; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 0 2px var(--danger); pointer-events: none; }
@@ -462,6 +469,12 @@ export class ProfilePage {
     { id: 'aspetto', label: 'Aspetto', icon: 'palette' },
     { id: 'sicurezza', label: 'Sicurezza', icon: 'key' },
   ];
+  /** il nome come lo vedono gli altri: il soprannome se il nome è nascosto */
+  protected readonly shownName = computed(() => {
+    const p = this.session.profile();
+    if (!p) return '';
+    return (p.visibility?.first_name === false && p.nickname?.trim()) ? p.nickname.trim() : p.first_name;
+  });
   /** spiegazione del lucchetto sulla foto (stesse frasi del rimprovero) */
   protected readonly punLines = computed(() => {
     const p = this.session.punishment();
