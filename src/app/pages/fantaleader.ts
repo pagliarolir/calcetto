@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, viewChild } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Api } from '../core/api';
 import { FantaLeader, FlParams, fmtPts } from '../core/fantaleader';
 import { fmtWhen } from '../core/format';
 import { Match } from '../core/models';
@@ -264,7 +264,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
 export class FantaLeaderPage implements OnInit {
   protected readonly fl = inject(FantaLeader);
   protected readonly session = inject(Session);
-  private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -335,7 +335,7 @@ export class FantaLeaderPage implements OnInit {
     if (t && this.tabs().some((x) => x.id === t)) this.tab.set(t);
     if (qp.get('vista') === 'giocatori') this.view.set('giocatori');
     void this.fl.load().catch((e) => this.toasts.error(errorMessage(e)));
-    void this.api.matches(10).then((ms) => this.next.set(
+    void this.shared.recentMatches(10).then((ms) => this.next.set(
       ms.filter((m) => m.status === 'scheduled' && m.starts_at > new Date().toISOString()).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] ?? null,
     )).catch(() => undefined);
   }

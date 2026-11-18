@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, OnDestroy, signal, untracked } from '@angular/core';
+import { inForeground, onForeground } from '../core/foreground';
 import { RouterLink } from '@angular/router';
 import { Achievements } from '../core/achievements';
 import { Session } from '../core/session';
@@ -64,8 +65,9 @@ export class AchievementBanner implements OnDestroy {
   protected readonly lpShown = computed(() => this.lpRecent().filter((x) => !this.lpSeen().has(x.id)).slice(0, 3));
   protected readonly session = inject(Session);
   private readonly seen = signal<Set<string>>(this.readSeen());
-  private readonly timer = setInterval(() => void this.refresh(), 5 * 60 * 1000);
-  private readonly onVisible = () => { if (document.visibilityState === 'visible') void this.refresh(); };
+  /** ogni 5 minuti, ma solo con l'app davanti agli occhi; tornando dopo una pausa si controlla subito */
+  private readonly timer = setInterval(() => { if (inForeground()) void this.refresh(); }, 5 * 60 * 1000);
+  private readonly stopForeground = onForeground(() => void this.refresh());
   /** un avviso per sticker (chi l'ha vinto nelle ultime 24 ore e non è ancora stato visto), al massimo 3, dal più recente */
   protected readonly shown = computed(() => {
     const groups = new Map<string, { achievement_id: string; users: string[] }>();
@@ -86,7 +88,6 @@ export class AchievementBanner implements OnDestroy {
   }
 
   constructor() {
-    document.addEventListener('visibilitychange', this.onVisible);
     effect(() => {
       if (this.session.uid()) untracked(() => void this.refresh());
     });
@@ -94,7 +95,7 @@ export class AchievementBanner implements OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.timer);
-    document.removeEventListener('visibilitychange', this.onVisible);
+    this.stopForeground();
   }
 
   private async refresh(): Promise<void> {

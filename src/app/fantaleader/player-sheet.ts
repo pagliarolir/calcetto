@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { Icon } from '../ui/icon';
-import { Api } from '../core/api';
 import { FantaLeader, FlPoints, fmtPts, ruleSummary } from '../core/fantaleader';
 import { fmtWhen } from '../core/format';
 import { StatsRow } from '../core/models';
@@ -166,7 +166,7 @@ import { Sheet } from '../ui/sheet';
 export class FlPlayerSheet {
   protected readonly fl = inject(FantaLeader);
   protected readonly session = inject(Session);
-  private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly dlg = viewChild<ElementRef<HTMLDialogElement>>('dlg');
   protected readonly userId = signal<string | null>(null);
   protected readonly tabs = [
@@ -178,19 +178,25 @@ export class FlPlayerSheet {
   protected readonly loaded = signal(false);
   protected readonly points = signal<FlPoints[]>([]);
   protected readonly stats = signal<StatsRow | null>(null);
+  private readonly seen = new Map<string, { points: FlPoints[]; stats: StatsRow | null }>();
   protected readonly fmt = fmtPts;
   protected readonly rule = ruleSummary;
 
   async open(userId: string): Promise<void> {
     this.userId.set(userId);
     this.tab.set('skill');
-    this.loaded.set(false);
+    // un giocatore già aperto si rivede subito, poi i dati si aggiornano (solo in memoria, finché l'app è aperta)
+    const seen = this.seen.get(userId);
+    this.points.set(seen?.points ?? []);
+    this.stats.set(seen?.stats ?? null);
+    this.loaded.set(!!seen);
     queueMicrotask(() => { const d = this.dlg()?.nativeElement; if (d && !d.open) d.showModal(); });
-    const [pts, rows] = await Promise.all([this.fl.pointsOf(userId).catch(() => []), this.api.stats(null, null).catch(() => [])]);
+    const [pts, rows] = await Promise.all([this.fl.pointsOf(userId).catch(() => null), this.shared.allTimeStats().catch(() => null)]);
     if (this.userId() !== userId) return;
-    this.points.set(pts);
-    this.stats.set(rows.find((r) => r.user_id === userId) ?? null);
+    if (pts) this.points.set(pts);
+    if (rows) this.stats.set(rows.find((r) => r.user_id === userId) ?? null);
     this.loaded.set(true);
+    if (pts && rows) this.seen.set(userId, { points: this.points(), stats: this.stats() });
   }
 
   protected close(): void {

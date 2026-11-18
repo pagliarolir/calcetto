@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
  * Scheletri di caricamento: la stessa forma del contenuto che arriverà, così la pagina non «salta».
- * kind: 'match' (contenuto della partita), 'table' (classifica), 'player' (scheda giocatore), 'lines' (righe).
+ * kind: 'match' (contenuto della partita), 'table' (classifica), 'player' (scheda giocatore), 'chat' (fumetti della chat),
+ * 'votes' (pagelle: selettore e righe con il voto), 'lines' (righe).
  */
 @Component({
   selector: 'app-skeleton',
@@ -28,6 +29,17 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         <div class="sk line w40 h24"></div>
         @for (i of n(4); track i) { <div class="sk h56"></div> }
       }
+      @case ('chat') {
+        <!-- fumetti alternati: quelli degli altri con la foto a sinistra, i propri a destra -->
+        @for (i of n(5); track i) {
+          @if (i % 3 === 2) { <div class="bub mine"><div class="sk b" [style.width.%]="44 + (i * 7) % 20"></div></div> }
+          @else { <div class="bub"><div class="sk av"></div><div class="sk b" [style.width.%]="40 + (i * 11) % 26"></div></div> }
+        }
+      }
+      @case ('votes') {
+        <div class="sk h44 seg"></div>
+        @for (i of n(rows()); track i) { <div class="vrow"><div class="sk av"></div><div class="sk line w40"></div><div class="sk pill right"></div></div> }
+      }
       @default {
         @for (i of n(rows()); track i) { <div class="sk h56"></div> }
       }
@@ -41,7 +53,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .tabs3 .t { width: 22%; }
     .h60 { height: 60px; border-radius: 16px; }
     :host { display: flex; flex-direction: column; gap: 12px; }
-    .sk { border-radius: 12px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 40%, var(--surface-2) 55%);
+    /* il riflesso è una sfumatura della superficie verso il testo: in Figurina e Alto contrasto --line è il colore del testo */
+    .sk { border-radius: 12px; background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--surface-2) 90%, var(--ink)) 40%, var(--surface-2) 55%);
           background-size: 300% 100%; animation: sk 1.3s ease-in-out infinite; }
     .line { height: 14px; border-radius: 7px; }
     .h20 { height: 20px; } .h24 { height: 24px; } .h48 { height: 48px; } .h56 { height: 56px; } .h64 { height: 64px; }
@@ -53,12 +66,18 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .tbl { display: flex; flex-direction: column; gap: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
     .trow { display: flex; align-items: center; gap: 12px; }
     .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; }
+    .bub { display: flex; align-items: flex-end; gap: 8px; } .bub.mine { justify-content: flex-end; }
+    .av { width: 30px; height: 30px; border-radius: 50%; flex: none; }
+    .b { height: 40px; border-radius: 16px; }
+    .h44 { height: 44px; } .seg { border-radius: 14px; }
+    .vrow { display: flex; align-items: center; gap: 12px; min-height: 48px; }
+    .pill { width: 48px; height: 28px; border-radius: 14px; flex: none; }
     @keyframes sk { from { background-position: 100% 0; } to { background-position: 0 0; } }
     @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
   `,
 })
 export class Skeleton {
-  readonly kind = input<'match' | 'table' | 'player' | 'lines'>('lines');
+  readonly kind = input<'match' | 'table' | 'player' | 'chat' | 'votes' | 'lines'>('lines');
   readonly rows = input(8);
   protected n(k: number): number[] {
     return Array.from({ length: k }, (_, i) => i);

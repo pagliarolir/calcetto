@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
 import { Confirm } from '../core/confirm';
@@ -211,6 +212,7 @@ export class LeaderTools {
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
   protected readonly busy = signal(false);
   protected readonly priorityPick = signal(new Set<string>());
@@ -380,6 +382,7 @@ export class LeaderTools {
   protected async move(): Promise<void> {
     await this.run(async () => {
       await this.api.moveMatch(this.store.match()!.id, fromLocalInput(this.moveAt));
+      this.shared.invalidate();
       await this.store.reload('matches');
       this.toasts.show('Partita spostata, tutti avvisati.');
     });
@@ -389,6 +392,7 @@ export class LeaderTools {
     if (!(await this.confirmBox.ask({ title: 'Annullare la partita?', ok: 'Annulla la partita', danger: true }))) return;
     await this.run(async () => {
       await this.api.cancelMatch(this.store.match()!.id);
+      this.shared.invalidate();
       await this.store.reload('matches');
     });
   }

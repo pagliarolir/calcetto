@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, OnInit, signal, viewChild } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Api } from '../core/api';
@@ -509,6 +510,7 @@ export class PaymentsPage implements OnInit {
   protected readonly pay = inject(Payments);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
   private readonly reprimand = inject(Reprimand);
   private readonly confirm = inject(Confirm);
@@ -771,7 +773,7 @@ export class PaymentsPage implements OnInit {
     if (!this.pastMatches().length) {
       try {
         // stesse partite di «Dividi il campo» nel Risultato (fieldChoices)
-        this.pastMatches.set(fieldChoices(await this.api.matches(30), !!this.pay.data()?.boss));
+        this.pastMatches.set(fieldChoices(await this.shared.recentMatches(30), !!this.pay.data()?.boss));
       } catch { /* senza partite si inserisce a mano */ }
     }
     // partite che hanno già il campo nei Conti (si riguarda a ogni apertura: qualcuno può averlo appena diviso)

@@ -1,4 +1,5 @@
 import { effect, inject, Injectable, signal } from '@angular/core';
+import { onForeground } from './foreground';
 import { Api } from './api';
 import { Session } from './session';
 
@@ -9,6 +10,10 @@ export class Unread {
   private readonly session = inject(Session);
   readonly count = signal(0);
   private stop: (() => void) | null = null;
+  private burst: ReturnType<typeof setTimeout> | undefined;
+
+  /** avvisi arrivati con il telefono in standby: il tempo reale non li recupera, il contatore sì */
+  private readonly resync = onForeground(() => { if (this.session.uid()) void this.refresh().catch(() => undefined); }, 15_000);
 
   constructor() {
     effect(() => {
@@ -18,9 +23,13 @@ export class Unread {
       this.stop = null;
       if (uid && active) {
         void this.refresh();
+        // più avvisi insieme (es. a fine partita) = una sola rilettura
         this.stop = this.api.watchNotifications(uid, () => {
-          void this.refresh();
-          void this.session.refreshPunishment();
+          clearTimeout(this.burst);
+          this.burst = setTimeout(() => {
+            void this.refresh().catch(() => undefined);
+            void this.session.refreshPunishment();
+          }, 300);
         });
       } else {
         this.count.set(0);

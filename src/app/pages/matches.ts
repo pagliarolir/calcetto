@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
@@ -194,6 +195,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
 })
 export class MatchesPage implements OnInit {
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   protected readonly session = inject(Session);
   private readonly toasts = inject(Toasts);
 
@@ -330,6 +332,7 @@ export class MatchesPage implements OnInit {
     if (dates.length > 60) return this.toasts.error('Al massimo 60 partite alla volta.');
     await this.run(async () => {
       const res = await this.api.createMatches(dates, this.time, this.config()!, this.saveDefault);
+      this.shared.invalidate();
       const n = res.created.length;
       this.toasts.show(n === 0 ? 'Nessuna partita creata.' : n === 1 ? 'Partita creata.' : `${n} partite create.`, n ? 'ok' : 'info');
       if (res.skipped.length) {

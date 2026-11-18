@@ -1,4 +1,5 @@
 import { scrollAppTo } from '../core/scroller';
+import { SharedReads } from '../core/shared-reads';
 import { Ratings } from '../core/ratings';
 import { Compare } from '../ratings/compare';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
@@ -228,6 +229,7 @@ export class PlayerPage {
     queueMicrotask(() => this.ratingsDlg()?.nativeElement.showModal());
   }
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
 
   protected readonly roleLabel = ROLE_LABEL;
@@ -278,9 +280,9 @@ export class PlayerPage {
       this.loaded.set(true);
     } else this.loaded.set(false);
     const [rows, h, ms, info] = await Promise.all([
-      this.api.stats(null, null).catch(() => null),
+      this.shared.allTimeStats().catch(() => null),
       this.api.history(id, null, null).catch(() => null),
-      this.api.matches(300).catch(() => null),
+      this.shared.recentMatches(300).catch(() => null),
       this.api.statsResetInfo(id).catch(() => null),
     ]);
     if (this.id() !== id) return;   // nel frattempo si è aperto un altro giocatore
@@ -317,6 +319,7 @@ export class PlayerPage {
     this.busy.set(true);
     try {
       await fn();
+      this.shared.invalidate();
       this.toasts.show(ok);
       await this.load(this.id());
     } catch (e) {

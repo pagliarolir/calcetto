@@ -1,4 +1,5 @@
 import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, signal, untracked, viewChild } from '@angular/core';
+import { onForeground } from '../core/foreground';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -14,11 +15,13 @@ import { scrollAppTo } from '../core/scroller';
 import { Confirm } from '../core/confirm';
 import { haptic } from '../core/haptics';
 import { Icon } from '../ui/icon';
+import { Skeleton } from '../ui/skeleton';
+import { Cache } from '../core/cache';
 
 /** Chat di partita: aperta dalla creazione della partita fino a 24 ore dopo la fine. */
 @Component({
   selector: 'app-chat-tab',
-  imports: [FormsModule, Avatar, Empty, Icon],
+  imports: [FormsModule, Avatar, Empty, Icon, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -29,6 +32,7 @@ import { Icon } from '../ui/icon';
             @else { La chat è chiusa: puoi rileggere i messaggi. }
           </p>
         }
+        @if (!loaded()) { <app-skeleton kind="chat" /> }
         <ol class="msgs" #list aria-live="polite">
           @for (msg of messages(); track msg.id; let i = $index) {
             @if (newDay(i)) { <li class="day">{{ day(msg.created_at) }}</li> }
@@ -52,7 +56,7 @@ import { Icon } from '../ui/icon';
               </div>
             </li>
           } @empty {
-            @if (store.t()?.chatOpen) { <li class="empty"><app-empty icon="chat" text="Nessun messaggio. Rompi il ghiaccio." /></li> }
+            @if (loaded() && store.t()?.chatOpen) { <li class="empty"><app-empty icon="chat" text="Nessun messaggio. Rompi il ghiaccio." /></li> }
           }
         </ol>
         <dialog #menuDlg class="msg-menu" (click)="menuBackdrop($event)" (close)="menu.set(null)" aria-label="Azioni sul messaggio">
@@ -135,17 +139,28 @@ export class ChatTab implements OnDestroy {
   private readonly reprimand = inject(Reprimand);
   private readonly list = viewChild<ElementRef<HTMLElement>>('list');
 
+  private readonly cache = inject(Cache);
   protected readonly messages = signal<ChatMessage[]>([]);
+  /** messaggi arrivati (o già visti in questa sessione): prima c'è lo scheletro, mai «Nessun messaggio» provvisorio */
+  protected readonly loaded = signal(false);
   protected body = '';
   protected readonly when = fmtWhen;
   protected readonly time = fmtTime;
   protected readonly day = fmtDayShort;
   private stop: (() => void) | null = null;
   private loadedFor: string | null = null;
+  /** rientrando dopo una pausa si rileggono i messaggi: quelli arrivati con il telefono in standby non passano dal tempo reale */
+  private readonly stopForeground = onForeground(() => void this.fetch(), 15_000);
 
   protected readonly ids = computed(() => this.messages().map((m) => m.id));
 
   constructor() {
+    // la memoria della chat segue i messaggi confermati (quelli in invio non si salvano)
+    effect(() => {
+      const l = this.messages();
+      if (!this.loaded() || !this.loadedFor) return;
+      untracked(() => this.cache.set(`chat:${this.loadedFor}`, l.filter((x) => !x.state)));
+    });
     // con la chat aperta tutto quello che si vede è letto: il pallino della scheda si spegne
     effect(() => {
       const l = this.messages();
@@ -157,7 +172,11 @@ export class ChatTab implements OnDestroy {
       const m = this.store.match();
       if (!m || this.loadedFor === m.id) return;
       this.loadedFor = m.id;
-      void this.api.chat(m.id).then((list) => { this.messages.set(list); this.scroll(); });
+      // «mostra subito, poi aggiorna»: tornando sulla chat i messaggi già visti compaiono subito (solo in memoria)
+      const seen = this.cache.get<ChatMessage[]>(`chat:${m.id}`);
+      if (seen) { this.messages.set(seen); this.loaded.set(true); this.scroll(); }
+      else this.loaded.set(false);
+      void this.fetch();
       this.stop?.();
       this.stop = this.api.watchChat(
         m.id,
@@ -332,7 +351,28 @@ export class ChatTab implements OnDestroy {
     setTimeout(() => scrollAppTo('end'), 50);
   }
 
+  /** messaggi della partita aperta dal server; quelli ancora in invio restano in fondo finché il server non li conferma */
+  private async fetch(): Promise<void> {
+    const id = this.loadedFor;
+    if (!id) return;
+    try {
+      const list = await this.api.chat(id);
+      if (this.loadedFor !== id) return;
+      const before = this.messages().length;
+      const pending = this.messages().filter((x) => x.state === 'sending' || x.state === 'failed');
+      this.messages.set([...list, ...pending.filter((p) => !list.some((x) => x.id === p.id))]);
+      const first = !this.loaded();
+      this.loaded.set(true);
+      if (first || this.messages().length > before) this.scroll();
+    } catch (e) {
+      if (this.loadedFor !== id) return;
+      if (!this.loaded()) this.toasts.error(errorMessage(e));
+      this.loaded.set(true);
+    }
+  }
+
   ngOnDestroy(): void {
     this.stop?.();
+    this.stopForeground();
   }
 }

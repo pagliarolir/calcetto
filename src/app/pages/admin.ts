@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { WeightsEditor } from '../ratings/weights-editor';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -466,6 +467,7 @@ export class AdminPage implements OnInit {
   protected readonly newsList = signal<LeaderNewsAdmin[]>([]);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
 
   protected readonly roleLabel = ROLE_LABEL;
@@ -748,6 +750,7 @@ export class AdminPage implements OnInit {
     if (!(await this.confirmBox.ask({ title: 'Eliminare per sempre lo storico delle partite?', ok: 'Elimina', danger: true }))) return;
     await this.run(async () => {
       const n = await this.api.deleteAllStats(this.deleteAllText);
+      this.shared.invalidate();
       this.deleteAllText = '';
       this.toasts.show(n === 1 ? 'Eliminata 1 partita dallo storico.' : `Eliminate ${n} partite dallo storico.`, 'info');
     }, 'Storico eliminato: la classifica riparte da zero.');
@@ -873,6 +876,7 @@ export class AdminPage implements OnInit {
   private async run(fn: () => Promise<unknown>, ok: string): Promise<void> {
     try {
       await fn();
+      this.shared.invalidate();
       await this.session.refresh();
       this.toasts.show(ok);
     } catch (e) {
