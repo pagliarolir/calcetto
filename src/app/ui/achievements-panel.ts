@@ -29,9 +29,9 @@ import { Sheet } from './sheet';
                       [attr.aria-label]="'Sticker numero ' + a.number + ', ' + a.name + (ach.mine(a.id) ? ', sbloccato' : ', da sbloccare')">
                 <span class="pic" [class.shadowed]="!ach.mine(a.id) && !!a.image_path">
                   @if (ach.mine(a.id)) {
-                    @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" /> } @else { <span class="ph star" aria-hidden="true">★</span> }
+                    @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" loading="lazy" decoding="async" /> } @else { <span class="ph star" aria-hidden="true">★</span> }
                   } @else if (ach.imageUrl(a); as u) {
-                    <img class="sil" [src]="u" alt="" />
+                    <img class="sil" [src]="u" alt="" loading="lazy" decoding="async" />
                   } @else {
                     <span class="ph" aria-hidden="true"><app-icon name="lock" [size]="22" /></span>
                   }
@@ -53,7 +53,7 @@ import { Sheet } from './sheet';
               <a class="who" [routerLink]="['/giocatore', r.user_id]"><app-avatar [userId]="r.user_id" [size]="32" /><span class="ellipsis">{{ session.name(r.user_id) }}</span></a>
               <span class="minis" aria-hidden="true">
                 @for (a of ach.of(r.user_id).slice(0, 6); track a.id) {
-                  @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" [title]="a.name" /> } @else { <i [title]="a.name">★</i> }
+                  @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" [title]="a.name" loading="lazy" decoding="async" /> } @else { <i [title]="a.name">★</i> }
                 }
               </span>
               <span class="count num">{{ r.count }}/{{ ach.list().length }}</span>
@@ -85,9 +85,9 @@ import { Sheet } from './sheet';
         <div class="detail">
           <span class="pic big" [class.got]="!!ach.mine(a.id)" [class.shadowed]="!ach.mine(a.id) && !session.isLeader() && !!a.image_path">
             @if (ach.mine(a.id) || session.isLeader()) {
-              @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" /> } @else { <span class="ph star" aria-hidden="true">★</span> }
+              @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" loading="lazy" decoding="async" /> } @else { <span class="ph star" aria-hidden="true">★</span> }
             } @else if (ach.imageUrl(a); as u) {
-              <img class="sil" [src]="u" alt="" />
+              <img class="sil" [src]="u" alt="" loading="lazy" decoding="async" />
             } @else {
               <span class="ph" aria-hidden="true"><app-icon name="lock" [size]="34" /></span>
             }

@@ -1,4 +1,5 @@
 import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { Ratings, SlotKind, suggestTeams, valueAt } from '../core/ratings';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -282,6 +283,7 @@ export class LineupTab {
   protected readonly store = inject(MatchStore);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
   private readonly reprimand = inject(Reprimand);
 
@@ -349,7 +351,7 @@ export class LineupTab {
   private readonly avgVotes = signal<Map<string, number | null>>(new Map());
   protected readonly infoRows = computed(() => this.info()?.rays ?? []);
   protected openInfo(id: string, s: Spot): void {
-    if (!this.avgVotes().size) void this.api.stats(null, null).then((rows) => { this.avgVotes.set(new Map(rows.map((r) => [r.user_id, r.avg_vote]))); this.refreshInfo(); }).catch(() => undefined);
+    if (!this.avgVotes().size) void this.shared.allTimeStats().then((rows) => { this.avgVotes.set(new Map(rows.map((r) => [r.user_id, r.avg_vote]))); this.refreshInfo(); }).catch(() => undefined);
     this.infoSpot = { id, s };
     this.infoSeq++;                                     // nuova raggiera: le animazioni ripartono da capo
     this.infoClosing.set(false);

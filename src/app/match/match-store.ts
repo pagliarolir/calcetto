@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { onForeground } from '../core/foreground';
 import { Api, MatchBundle } from '../core/api';
 import { Cache } from '../core/cache';
 import { BoardRow, LineupRow, Match, Result, ResultReview, Scorer, Team } from '../core/models';
@@ -10,6 +11,9 @@ import { teamNames } from '../core/kits';
  * tornando sulla partita i dati si vedono subito (anche quelli salvati sul telefono, vedi core/cache.ts)
  * e si aggiornano in sottofondo; l'ascolto in tempo reale resta attivo anche mentre si guarda un'altra pagina.
  */
+/** finestra in cui più richieste di rilettura della stessa tabella diventano una sola */
+const RELOAD_GATHER_MS = 60;
+
 @Injectable({ providedIn: 'root' })
 export class MatchStore {
   private readonly api = inject(Api);
@@ -18,6 +22,11 @@ export class MatchStore {
   private stopWatch: (() => void) | null = null;
   private currentId: string | null = null;
   private ticker = setInterval(() => this.now.set(Date.now()), 30_000);
+  /**
+   * Con il telefono in standby il collegamento in tempo reale cade e gli eventi persi non tornano:
+   * rientrando nell'app dopo una pausa la partita aperta si rilegge (una chiamata, il bundle).
+   */
+  private readonly resync = onForeground(() => { if (this.currentId) void this.reloadAll().catch(() => undefined); }, 15_000);
 
   readonly now = signal(Date.now());
   readonly match = signal<Match | null>(null);
@@ -154,20 +163,47 @@ export class MatchStore {
     this.cache.set(`match:${m.id}`, snap, m.id === this.cache.get<string>('next-match'));
   }
 
-  async reload(table: string): Promise<void> {
+  /**
+   * Rilegge una tabella della partita. Le richieste ravvicinate si uniscono: un'azione che tocca molte righe
+   * (es. «Conferma le liste») fa arrivare un evento in tempo reale per riga, ma parte una sola lettura;
+   * se una lettura è già in corso, la successiva parte dopo, così l'ultima risposta è sempre la più fresca.
+   * La promessa si risolve quando i dati sono aggiornati (chi ha appena salvato può contarci).
+   */
+  reload(table: string): Promise<void> {
+    const queued = this.queued.get(table);
+    if (queued) return queued;
+    const p = new Promise<void>((resolve) => {
+      setTimeout(async () => {
+        this.queued.delete(table);
+        await this.inflight.get(table)?.catch(() => undefined);
+        const run = this.fetch(table);
+        this.inflight.set(table, run);
+        try { await run; } catch { /* resta il dato di prima; il prossimo evento o «Trascina per aggiornare» riprovano */ }
+        if (this.inflight.get(table) === run) this.inflight.delete(table);
+        resolve();
+      }, RELOAD_GATHER_MS);
+    });
+    this.queued.set(table, p);
+    return p;
+  }
+
+  private readonly queued = new Map<string, Promise<void>>();
+  private readonly inflight = new Map<string, Promise<void>>();
+
+  private async fetch(table: string): Promise<void> {
     // dati nuovi, orari nuovi: si riallinea subito l'ora usata per aperture e chiusure
     this.now.set(Date.now());
     const id = this.match()?.id;
     if (!id) return;
     switch (table) {
-      case 'matches': this.match.set(await this.api.match(id)); break;
-      case 'bookings': this.board.set(await this.api.board(id)); break;
-      case 'lineup': this.lineup.set(await this.api.lineup(id)); break;
-      case 'results': this.result.set(await this.api.result(id)); break;
-      case 'result_reviews': this.reviews.set(await this.api.reviews(id)); break;
-      case 'scorers': this.scorers.set(await this.api.scorers(id)); break;
-      case 'priority_windows': this.windows.set(await this.api.priorityWindows(id)); break;
-      case 'chat_messages': this.chatLast.set(await this.api.chatLast(id)); break;
+      case 'matches': { const v = await this.api.match(id); if (this.currentId === id) this.match.set(v); break; }
+      case 'bookings': { const v = await this.api.board(id); if (this.currentId === id) this.board.set(v); break; }
+      case 'lineup': { const v = await this.api.lineup(id); if (this.currentId === id) this.lineup.set(v); break; }
+      case 'results': { const v = await this.api.result(id); if (this.currentId === id) this.result.set(v); break; }
+      case 'result_reviews': { const v = await this.api.reviews(id); if (this.currentId === id) this.reviews.set(v); break; }
+      case 'scorers': { const v = await this.api.scorers(id); if (this.currentId === id) this.scorers.set(v); break; }
+      case 'priority_windows': { const v = await this.api.priorityWindows(id); if (this.currentId === id) this.windows.set(v); break; }
+      case 'chat_messages': { const v = await this.api.chatLast(id); if (this.currentId === id) this.chatLast.set(v); break; }
     }
     if (this.currentId === id) this.remember();
   }

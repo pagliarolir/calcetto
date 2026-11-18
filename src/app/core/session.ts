@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, Injector, signal } from '@angular/core';
+import { onForeground } from './foreground';
 import { Router } from '@angular/router';
 import type { Session as AuthSession } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
@@ -76,10 +77,8 @@ export class Session {
         this.punishment.set(null);
       }
     });
-    // riallinea "ultimo accesso" quando l'app torna in primo piano (regola dei 15 giorni)
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && this.auth()) void this.refresh();
-    });
+    // riallinea "ultimo accesso" quando l'app torna in primo piano (regola dei 15 giorni), dopo una pausa vera
+    onForeground(() => { if (this.auth()) void this.refresh(); });
   }
 
   /** dati salvati dell'utente collegato (core/cache.ts): la prossima partita si riprende subito */

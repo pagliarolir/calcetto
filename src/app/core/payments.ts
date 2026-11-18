@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { onForeground } from './foreground';
 import { Match } from './models';
 import { Session } from './session';
 import { Supabase } from './supabase';
@@ -80,7 +81,7 @@ export class Payments {
 
   constructor() {
     // tornando nell'app (da un'altra applicazione o dal telefono in standby) si ricontrolla: copre accessi scaduti e reti tornate
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.session.uid()) void this.checkVisible(); });
+    onForeground(() => { if (this.session.uid()) void this.checkVisible(); });
   }
 
   /**

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { SharedReads } from '../core/shared-reads';
 import { haptic } from '../core/haptics';
 import { FormsModule } from '@angular/forms';
 import { Api } from '../core/api';
@@ -287,6 +288,7 @@ export class ResultTab {
   protected readonly pay = inject(Payments);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
+  private readonly shared = inject(SharedReads);
   private readonly toasts = inject(Toasts);
   private readonly reprimand = inject(Reprimand);
 
@@ -398,7 +400,7 @@ export class ResultTab {
   private async checkSplit(id: string): Promise<void> {
     try {
       const boss = this.pay.data()?.boss ?? this.session.isLeader();
-      const [all, done] = await Promise.all([this.api.matches(30), this.pay.fieldMatches([id])]);
+      const [all, done] = await Promise.all([this.shared.recentMatches(30), this.pay.fieldMatches([id])]);
       this.splitState.set(done.has(id) ? 'done' : fieldChoices(all, boss).some((m) => m.id === id) ? 'ok' : boss ? 'old' : 'late');
     } catch { this.splitState.set(null); }
   }
@@ -494,6 +496,7 @@ export class ResultTab {
         const d = this.winner() === 'draw' ? 0 : this.winner() === 'white' ? this.margin() : -this.margin();
         await this.api.submitResult(id, d, null, null);
       }
+      this.shared.invalidate();
       await Promise.all([this.store.reload('results'), this.store.reload('result_reviews')]);
       this.toasts.show('Risultato salvato: gli altri riceveranno la richiesta di conferma.');
     });
@@ -503,6 +506,7 @@ export class ResultTab {
     if (this.reprimand.guard()) return;
     await this.run(async () => {
       await this.api.reviewResult(this.store.match()!.id, agree, agree ? null : this.note.trim() || null);
+      this.shared.invalidate();
       await Promise.all([this.store.reload('results'), this.store.reload('result_reviews')]);
       this.contesting.set(false);
       this.toasts.show(agree ? 'Conferma registrata.' : 'Contestazione inviata.');
@@ -512,6 +516,7 @@ export class ResultTab {
   protected async homologate(): Promise<void> {
     await this.run(async () => {
       await this.api.staffHomologate(this.store.match()!.id);
+      this.shared.invalidate();
       await this.store.reload('results');
       this.toasts.show('Risultato omologato.');
     });
@@ -571,6 +576,7 @@ export class ResultTab {
     this.busy.set(true);
     try {
       await this.api.saveScorers(this.store.match()!.id, rows);
+      this.shared.invalidate();
       await this.store.reload('scorers');
       this.toasts.show('Gol e assist salvati.');
       this.closeScorer();
@@ -603,6 +609,7 @@ export class ResultTab {
     const rows = [...this.lines()].filter(([user_id]) => this.editable(user_id)).map(([user_id, l]) => ({ user_id, ...l }));
     await this.run(async () => {
       await this.api.saveScorers(this.store.match()!.id, rows);
+      this.shared.invalidate();
       await this.store.reload('scorers');
       this.toasts.show('Gol e assist salvati.');
     });

@@ -14,10 +14,23 @@ import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 import { Confirm } from '../core/confirm';
 import { Sheet } from '../ui/sheet';
+import { Skeleton } from '../ui/skeleton';
+import { Cache } from '../core/cache';
+import { ActivatedRoute, Router } from '@angular/router';
+
+type Pane = 'vota' | 'medie' | 'miei' | 'tutti';
+/** quello che serve alle pagelle di una partita, ricordato per tornarci subito */
+interface VotesSeen {
+  summary: VoteSummary;
+  given: { id: string; score: number }[];
+  myMvp: { white: string | null; black: string | null };
+  canSee: boolean;
+  all: { votes: PlayerVote[]; mvp: MvpVote[] } | null;
+}
 
 @Component({
   selector: 'app-votes-tab',
-  imports: [Sheet, Avatar, VoteSlider, Icon],
+  imports: [Sheet, Avatar, VoteSlider, Icon, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -25,10 +38,14 @@ import { Sheet } from '../ui/sheet';
         <p class="empty">Le pagelle si aprono {{ when(m.votes_opens_at) }}.</p>
       } @else {
         <div class="stack-l">
+          @if (!loaded()) {
+            <!-- finché non arrivano medie e voti propri: stessa forma (selettore e righe), così le schede non cambiano sotto il dito -->
+            <app-skeleton kind="votes" [rows]="6" />
+          } @else {
           <!-- sotto-schede: niente pagine infinite da scorrere -->
           <div class="ui-seg" role="tablist" aria-label="Pagelle">
             @for (p of panes(); track p.id) {
-              <button role="tab" [attr.aria-selected]="pane() === p.id" [disabled]="p.disabled" (click)="pane.set(p.id)">
+              <button role="tab" [attr.aria-selected]="pane() === p.id" [disabled]="p.disabled" (click)="choose(p.id)">
                 {{ p.label }}@if (p.id === 'vota' && !p.disabled) { <span class="pip" aria-hidden="true"></span> }
                 @if (p.count) { <span class="ui-count" [attr.aria-label]="p.count === 1 ? '1 votante' : p.count + ' votanti'" [title]="p.count === 1 ? '1 votante' : p.count + ' votanti'">{{ p.count }}</span> }
               </button>
@@ -160,6 +177,7 @@ import { Sheet } from '../ui/sheet';
                 }
               </section>
             }
+          }
           }
 
           @if (store.t()?.votesClosed && !done() && (store.amParticipant() || session.isLeader())) {
@@ -297,7 +315,14 @@ export class VotesTab {
   protected readonly participants = computed(() => this.store.team().map((b) => b.user_id).filter((id) => id !== this.session.uid()));
   /** tutti quelli da votare (chi vota non vota sé stesso) */
   protected readonly toVote = this.participants;
-  protected readonly pane = signal<'vota' | 'medie' | 'miei' | 'tutti'>('medie');
+  protected readonly pane = signal<Pane>('medie');
+  /** medie e voti propri arrivati: prima lo scheletro (core/cache.ts li ricorda per la partita, solo in memoria) */
+  protected readonly loaded = signal(false);
+  private readonly cache = inject(Cache);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  /** sotto-scheda scelta a mano, nell'indirizzo (?pagelle=): «Indietro» e «Trascina per aggiornare» la ritrovano */
+  private readonly urlPane = this.route.snapshot.queryParamMap.get('pagelle') as Pane | null;
   protected readonly given = signal<{ id: string; score: number }[]>([]);
   protected readonly myMvp = signal<{ white: string | null; black: string | null }>({ white: null, black: null });
   /** ha già votato: i voti sono definitivi */
@@ -374,20 +399,53 @@ export class VotesTab {
   }
 
   private async load(matchId: string, uid: string): Promise<void> {
+    const key = `votes:${matchId}:${uid}`;
+    const seen = this.cache.get<VotesSeen>(key);
+    if (seen) this.apply(seen);
+    else this.loaded.set(false);
     try {
-      const [summary, mine, canSee] = await Promise.all([
+      // chi ha i poteri del Leader vede di sicuro tutti i voti: si chiedono insieme al resto, senza aspettare
+      const leader = this.session.isLeader();
+      const [summary, mine, canSee, all] = await Promise.all([
         this.api.voteSummary(matchId), this.api.myVotes(matchId, uid), this.api.canSeeVotes(matchId),
+        leader ? this.api.allVotes(matchId) : Promise.resolve(null),
       ]);
-      this.summary.set(summary);
-      this.given.set(mine.votes.map((v) => ({ id: v.target_id, score: Number(v.score) })));
-      this.myMvp.set({ white: mine.mvp?.white_pick ?? null, black: mine.mvp?.black_pick ?? null });
-      this.canSeeAll.set(canSee);
-      if (canSee) this.all.set(await this.api.allVotes(matchId));
-      // si apre su "Vota" se c'è da votare, altrimenti sulle medie
-      this.pane.set(this.canVote() ? 'vota' : 'medie');
+      const data: VotesSeen = {
+        summary,
+        given: mine.votes.map((v) => ({ id: v.target_id, score: Number(v.score) })),
+        myMvp: { white: mine.mvp?.white_pick ?? null, black: mine.mvp?.black_pick ?? null },
+        canSee,
+        all: canSee ? all ?? await this.api.allVotes(matchId) : null,
+      };
+      if (this.matchId() !== matchId) return;
+      this.cache.set(key, data);
+      this.apply(data);
     } catch (e) {
       this.toasts.error(errorMessage(e));
+      this.loaded.set(true);
     }
+  }
+
+  private apply(d: VotesSeen): void {
+    const first = !this.loaded();
+    this.summary.set(d.summary);
+    this.given.set(d.given);
+    this.myMvp.set(d.myMvp);
+    this.canSeeAll.set(d.canSee);
+    this.all.set(d.all);
+    // alla prima apertura: la scheda dell'indirizzo se c'è, altrimenti «Vota» se c'è da votare, altrimenti le medie
+    if (first) {
+      const wanted = this.urlPane && this.panes().some((p) => p.id === this.urlPane && !p.disabled) ? this.urlPane : null;
+      this.pane.set(wanted ?? (this.canVote() ? 'vota' : 'medie'));
+    } else if (!this.panes().some((p) => p.id === this.pane() && !p.disabled)) {
+      this.pane.set(this.canVote() ? 'vota' : 'medie');
+    }
+    this.loaded.set(true);
+  }
+
+  protected choose(p: Pane): void {
+    this.pane.set(p);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { pagelle: p }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   protected team(id: string): Team | undefined {

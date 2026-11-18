@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { SharedReads } from './shared-reads';
 import { SwUpdate } from '@angular/service-worker';
 import { Achievements } from './achievements';
 import { FantaLeader } from './fantaleader';
@@ -21,6 +22,7 @@ export class Refresher {
   private readonly fantaLeader = inject(FantaLeader);
   private readonly payments = inject(Payments);
   private readonly payCards = inject(PayCards);
+  private readonly shared = inject(SharedReads);
   /** cambia a ogni aggiornamento: la pagina corrente viene ricreata */
   readonly key = signal(0);
   readonly busy = signal(false);
@@ -37,6 +39,7 @@ export class Refresher {
         location.reload();
         return;
       }
+      this.shared.invalidate();
       if (this.session.uid()) {
         await Promise.all([
           this.session.refresh().catch(() => undefined),

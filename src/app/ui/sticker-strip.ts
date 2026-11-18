@@ -17,12 +17,12 @@ import { fmtWhen } from '../core/format';
           <span class="slot" role="listitem">
             <button type="button" class="st" [class.on]="open() === a.id" [attr.aria-expanded]="open() === a.id" [attr.aria-label]="a.name"
                     (click)="toggle(a.id, $event)">
-              @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" /> } @else { <i aria-hidden="true">★</i> }
+              @if (ach.imageUrl(a); as u) { <img [src]="u" alt="" loading="lazy" decoding="async" /> } @else { <i aria-hidden="true">★</i> }
             </button>
             @if (open() === a.id) {
               <div class="pop" role="dialog" [attr.aria-label]="a.name" [class.flip]="flip()" (click)="$event.stopPropagation()">
                 <div class="head">
-                  <span class="big">@if (ach.imageUrl(a); as u) { <img [src]="u" alt="" /> } @else { <i aria-hidden="true">★</i> }</span>
+                  <span class="big">@if (ach.imageUrl(a); as u) { <img [src]="u" alt="" loading="lazy" decoding="async" /> } @else { <i aria-hidden="true">★</i> }</span>
                   <strong>{{ a.name }}</strong>
                 </div>
                 @if (ach.missions().get(a.id); as m) { <p>{{ m }}</p> }
