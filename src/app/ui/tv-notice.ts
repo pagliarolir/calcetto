@@ -51,7 +51,7 @@ let nextId = 0;
     .close:focus-visible, .ok:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     .body { padding: 16px 48px 4px 16px; display: flex; flex-direction: column; gap: 16px; max-height: 42dvh; overflow-y: auto; }
     .actions { display: flex; justify-content: flex-end; padding: 4px 12px 12px; }
-    .ok { gap: 8px; min-height: 44px; padding: 0 16px; background: var(--tv-blue); color: #fff; border-color: transparent; font-weight: 700; }
+    .ok { gap: 8px; min-height: 44px; padding: 0 16px; background: var(--tv-blue) !important; color: #fff !important; border-color: transparent; font-weight: 700; }
     @media (prefers-reduced-motion: no-preference) {
       /* entra come in tv: prima la fascia blu, poi l'etichetta, la barra rossa e il testo */
       .banner { animation: tv-wipe 420ms var(--ease) both; }

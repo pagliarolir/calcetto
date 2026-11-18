@@ -103,7 +103,7 @@ import { Avatar } from './avatar';
     :host(.ta) .fn, :host(.tb) .fn { color: var(--tci); }
     .frm.eq { color: var(--muted); font: 800 1.15rem/1 var(--font-body); }
     .ovr { grid-column: 3; grid-row: 2; align-self: center; justify-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
-           font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); }
+           font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 27%); }
     .nrow { display: flex; align-items: center; gap: 4px; min-width: 0; }
     /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }

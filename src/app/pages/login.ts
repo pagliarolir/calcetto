@@ -76,7 +76,7 @@ import { errorMessage } from '../core/supabase';
     </main>
   `,
   styles: `
-    .login { min-height: 100dvh; display: flex; flex-direction: column; background: var(--turf); }
+    .login { min-height: 100dvh; display: flex; flex-direction: column; background: var(--hero-bg); }
     .hero {
       flex: 1; min-height: 34vh; position: relative; overflow: hidden;
       background:

@@ -252,6 +252,10 @@
 :root[data-theme='contrasto'] a { text-decoration: underline; text-underline-offset: 3px; }
 :root[data-theme='contrasto'] :focus-visible { outline: 3px solid #000 !important; outline-offset: 2px; box-shadow: 0 0 0 6px #ffd400 !important; }
 
+/* testo verde (o del colore principale) sopra un riquadro color gesso: nei temi chiari il principale è già scuro,
+   in quelli scuri è chiaro e sul gesso non si leggerebbe, quindi lo si scurisce (light-dark segue color-scheme del tema) */
+:root { --on-chalk: var(--turf); --on-chalk: light-dark(var(--turf), color-mix(in oklab, var(--turf) 45%, black)); }
+
 * { box-sizing: border-box; }
 
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
@@ -489,7 +493,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
   font-size: 0.75rem; font-weight: 600; white-space: nowrap;
   background: var(--surface-2); color: var(--muted);
 }
-.tag.turf { background: var(--turf-soft); color: var(--turf); }
+.tag.turf { background: var(--turf-soft); color: color-mix(in srgb, var(--turf) 70%, var(--ink)); }
 .tag.armband { background: var(--armband); color: var(--armband-ink); }
 .tag.danger { background: var(--danger-soft); color: var(--danger); }
 

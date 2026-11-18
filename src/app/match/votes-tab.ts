@@ -259,7 +259,7 @@ import { Sheet } from '../ui/sheet';
     }
     .star[aria-pressed='true'] { background: var(--armband); color: var(--armband-ink); border-color: var(--armband); transform: scale(1.06); }
 
-    .confirm { position: sticky; bottom: 8px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 6px 24px rgb(20 32 25 / 16%); }
+    .confirm { position: sticky; bottom: 8px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 6px 24px rgb(0 0 0 / 14%); }
 
 
     .voter summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; min-height: 36px; }
