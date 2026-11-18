@@ -61,6 +61,16 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 
 ## Regole del frontend
 
+- Unslop (decisione del proprietario): OGNI modifica visibile si controlla con il metodo di [unslop](https://github.com/heydamir/unslop) prima di mostrarla o pubblicarla, in tutti i temi (non solo Automatico). L'app è già disegnata: si corregge, non si reinventa (palette, caratteri e struttura restano). Criteri:
+  - niente bagliori o gradienti colorati (radiali, a due tinte), niente ombre grandi nei temi scuri: la profondità viene dai gradini di superficie e da un filo; le intestazioni sono una sfumatura dello stesso colore;
+  - un solo «momento» colorato per schermata, il resto sobrio. Momenti scelti dal proprietario: Lista = la propria risposta (capsula); Squadre = il campo; Strumenti = la tendina aperta; Risultato = il campetto col punteggio; Partite = la prossima partita; Obiettivi = l'album. Chat, Pagelle, Generale, Record, Coppie, Punti: nessun momento;
+  - niente pillole o etichette che ripetono ciò che si vede già, niente doppi segnali (fondo colorato + pallino), niente maiuscole spaziate su testo piccolo, niente emoji nelle etichette;
+  - titoli a peso 500 (la gerarchia la danno dimensione e colore); nomi corti (le schede della Classifica stanno su una riga);
+  - spaziature (padding, margini, gap) in multipli di 4 px; elementi uguali con spazi uguali;
+  - movimento: una sola curva `--ease`, niente rimbalzi; l'eccezione è l'`ease-in-out` della tendina della risposta;
+  - testo ≥ 4,5:1 in ogni tema; un testo sopra un riquadro color gesso usa `--on-chalk`, non `--turf`;
+  - le ombre non devono essere tagliate dai contenitori che scorrono: margine interno compensato da margini negativi (come `.list-panel` e `.choice-wrap`).
+
 - Novità degli aggiornamenti: `public/changelog.json` (più recente in cima, `id` che cresce di 1, frasi brevi in italiano per i giocatori). Ogni PR con un cambiamento visibile aggiunge o completa la voce in cima; niente cose in anteprima (FantaLeader) né come si ottengono gli sticker, né dettagli tecnici. Prima del riavvio c'è solo l'avviso «Nuova versione pronta» (`ui/update-notice.ts`), e solo se il changelog della nuova versione ha una voce nuova (`nextHasChanges()`): una PR senza voce nel changelog si installa in silenzio, senza avviso né Novità; alla prima apertura della nuova versione `ui/changes-notice.ts` mostra, come Leader News (stesso riquadro `ui/tv-notice.ts`, titolo «Leader News», etichetta gialla «Novità»), le voci con `id` più alto dell'ultimo visto sul telefono (`gdl-changes-seen`, chi non ha mai visto nulla riceve quelle degli ultimi 30 giorni), dopo l'eventuale Leader News.
 
 - Componenti standalone, `ChangeDetectionStrategy.OnPush`, signals, niente zone.js. Negli `effect` leggi solo i segnali che devono farlo ripartire; usa `untracked` per il resto (un effect che legge e scrive lo stesso segnale blocca l'app).
