@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { PlayerPage } from './player';
 import { PALETTE } from '../core/color';
-import { hasPalette, isNeu, Theme, ThemeChoice } from '../core/theme';
+import { hasPalette, isNeu, TEXT_FONTS, Theme, ThemeChoice } from '../core/theme';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
@@ -281,26 +281,35 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                   </div>
                 </div>
               }
-              <!-- testo: dimensione e spaziatura -->
-              <div class="panel stack text-ed">
-                <h3>Testo</h3>
-                <label class="rng">
-                  <span class="rl"><app-icon name="type" [size]="18" /><span class="grow">Dimensione</span><strong class="num">{{ theme.textScale() }}%</strong></span>
+              <!-- testo: carattere, dimensione e spaziatura; l'anteprima in alto cambia mentre si sceglie -->
+              <section class="panel text-ed" aria-labelledby="txt-h">
+                <div class="txt-head">
+                  <h3 id="txt-h">Testo</h3>
+                  @if (theme.textScale() !== 100 || theme.textSpacing() !== 0 || theme.textFont() !== 'tema') {
+                    <button type="button" class="btn ghost small" (click)="theme.resetText()"><app-icon name="undo" [size]="16" /> Ripristina</button>
+                  }
+                </div>
+                <div class="sample" aria-hidden="true">
+                  <strong>Giovedì alle 21:00</strong>
+                  <span>Centro Sportivo Aurora: rispondi entro mercoledì.</span>
+                </div>
+                <label class="trow">
+                  <span class="rl"><app-icon name="type" [size]="18" /><span class="grow">Carattere</span></span>
+                  <select class="input" [value]="theme.textFont()" (change)="theme.setFont($any($event.target).value)">
+                    @for (f of fonts; track f.id) { <option [value]="f.id" [selected]="theme.textFont() === f.id">{{ f.label }}</option> }
+                  </select>
+                </label>
+                <label class="trow">
+                  <span class="rl"><app-icon name="text-size" [size]="18" /><span class="grow">Dimensione</span><strong class="num">{{ theme.textScale() }}%</strong></span>
                   <input type="range" min="85" max="130" step="5" [value]="theme.textScale()" (input)="theme.setText(+$any($event.target).value, theme.textSpacing())"
                          aria-label="Dimensione del testo" [attr.aria-valuetext]="theme.textScale() + ' per cento'" />
-                  <span class="ends small muted"><span>A</span><span class="big">A</span></span>
                 </label>
-                <label class="rng">
+                <label class="trow">
                   <span class="rl"><app-icon name="spacing" [size]="18" /><span class="grow">Spaziatura</span><strong class="num">{{ spacingLabel() }}</strong></span>
                   <input type="range" min="0" max="100" step="25" [value]="theme.textSpacing()" (input)="theme.setText(theme.textScale(), +$any($event.target).value)"
                          aria-label="Spaziatura del testo" [attr.aria-valuetext]="spacingLabel()" />
-                  <span class="ends small muted"><span>normale</span><span>ampia</span></span>
                 </label>
-                <p class="sample">Giovedì alle 21:00 al Centro Sportivo Aurora: rispondi entro mercoledì.</p>
-                @if (theme.textScale() !== 100 || theme.textSpacing() !== 0) {
-                  <button type="button" class="btn ghost small" (click)="theme.resetText()">Ripristina</button>
-                }
-              </div>
+              </section>
             </section>
           }
           @case ('sicurezza') {
@@ -324,12 +333,17 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
              border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 44px; }
     .theme.on { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
     .theme.custom { width: 100%; }
-    .text-ed { gap: 16px; }
-    .rng { display: flex; flex-direction: column; gap: 8px; }
+    /* Testo: titolo con «Ripristina», anteprima, poi tre righe separate da un filo */
+    .text-ed { display: flex; flex-direction: column; gap: 0; }
+    .txt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+    .txt-head h3 { margin: 0; }
+    .sample { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 4px; padding: 12px 16px; border-radius: var(--r-m); background: var(--surface-2); }
+    .sample strong { font: 500 var(--step-1)/1.2 var(--font-display); }
+    .trow { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; }
+    .trow + .trow { border-top: 1px solid var(--line); }
+    .trow:last-child { padding-bottom: 4px; }
     .rl { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-    .rng input[type='range'] { width: 100%; min-height: 44px; accent-color: var(--turf); }
-    .ends { display: flex; justify-content: space-between; margin-top: -8px; } .ends .big { font-size: 1.3rem; }
-    .sample { margin: 0; padding: 12px 12px; border-radius: var(--r-m); background: var(--surface-2); }
+    .trow input[type='range'] { width: 100%; min-height: 44px; margin: -4px 0; accent-color: var(--turf); }
     .custom-ed { gap: 16px; }
     .lab { font: 700 var(--step--1)/1.2 var(--font-body); }
     .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--r-m); background: var(--surface-2); }
@@ -405,6 +419,7 @@ export class ProfilePage {
 
   protected readonly roleLabel = ROLE_LABEL;
   protected readonly theme = inject(Theme);
+  protected readonly fonts = TEXT_FONTS;
   protected readonly hasPalette = hasPalette;
   protected readonly isNeu = isNeu;
   protected readonly themeOptions: { id: ThemeChoice; label: string; icon: string; desc: string; bg: string; hero: string; primary: string; accent: string; soft: string; neu?: boolean }[] = [

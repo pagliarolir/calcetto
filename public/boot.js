@@ -35,6 +35,7 @@
     if (tx) {
       document.documentElement.style.setProperty('--text-scale', String((tx.scale || 100) / 100));
       document.documentElement.style.setProperty('--text-spacing', String((tx.spacing || 0) / 100));
+      if (tx.font && tx.font !== 'tema') document.documentElement.setAttribute('data-font', tx.font);
     }
   } catch (e) {}
 })();
