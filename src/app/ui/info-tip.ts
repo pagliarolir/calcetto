@@ -17,8 +17,8 @@ const EDGE = 8;  // margine dai bordi dello schermo
   imports: [Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <button #btn type="button" class="info-i" [attr.aria-label]="label()" [attr.aria-expanded]="open()" (click)="toggle($event)">
-      <app-icon name="info" [size]="size()" />
+    <button #btn type="button" class="info-i" [class.card]="card()" [attr.aria-label]="label()" [attr.aria-expanded]="open()" (click)="toggle($event)">
+      @if (card()) { <i class="mini-card" aria-hidden="true"></i> } @else { <app-icon [name]="icon()" [size]="size()" /> }
     </button>
     @if (open()) {
       <div #layer class="tip-layer" popover="manual" (click)="close($event)">
@@ -36,6 +36,10 @@ const EDGE = 8;  // margine dai bordi dello schermo
     /* area di tocco di 44 px */
     .info-i { position: relative; } .info-i::after { content: ''; position: absolute; inset: -6px; }
     .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
+    /* variante cartellino rosso (punizione sulla foto del Profilo): lo stesso del rimprovero, in piccolo */
+    .info-i.card, .info-i.card[aria-expanded='true'] { background: none; }
+    .mini-card { display: block; width: 20px; height: 28px; border-radius: 4px; transform: rotate(-9deg);
+                 background: linear-gradient(160deg, #ff4b4b, #c41d1d 70%); box-shadow: 0 0 0 2px var(--surface-2), 0 2px 4px rgb(0 0 0 / 25%); }
     /* livello trasparente a tutto schermo: tocco fuori = chiudi */
     .tip-layer { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
                  background: transparent; overflow: visible; cursor: default; z-index: 1000; }
@@ -61,6 +65,10 @@ export class InfoTip implements OnDestroy {
   readonly lines = input.required<string[]>();
   readonly label = input('Spiegazione');
   readonly size = input(18);
+  /** icona del pulsante (di norma la «i») */
+  readonly icon = input('info');
+  /** al posto dell'icona, il cartellino rosso del rimprovero */
+  readonly card = input(false);
   protected readonly open = signal(false);
   protected readonly pos = signal({ left: 0, top: 0, width: W, caret: 20, above: false });
   private readonly btn = viewChild.required<ElementRef<HTMLButtonElement>>('btn');

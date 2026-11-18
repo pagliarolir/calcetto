@@ -4,6 +4,7 @@ import { PALETTE } from '../core/color';
 import { hasPalette, isNeu, TEXT_FONTS, Theme, ThemeChoice } from '../core/theme';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { InfoTip } from '../ui/info-tip';
 import { Icon } from '../ui/icon';
 import { toSquareJpeg } from '../core/image';
 import { fmtWhen } from '../core/format';
@@ -32,34 +33,34 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
 
 @Component({
   selector: 'app-profile',
-  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
       <div class="head-in">
-      <header class="me">
-        @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="88" /> }
-        <div class="stack">
-          <h1>Il tuo profilo</h1>
-          @if (session.profile(); as p) { <p class="muted">{{ roleLabel[p.role] }}</p> }
-          @if (session.punishment(); as pu) {
-            <p class="tag danger">In punizione {{ pu.ends_at ? 'fino a ' + when(pu.ends_at) : 'fino a nuovo ordine' }}</p>
+      <h1 class="sr-only">Il tuo profilo</h1>
+      <div class="me-box">
+        <div class="me-av" [class.pun]="!!session.punishment()">
+          @if (session.uid(); as uid) { <app-avatar [userId]="uid" [size]="96" /> }
+          @if (session.punishment()) {
+            <app-info-tip class="pun-badge" [card]="true" label="Sei in punizione" [lines]="punLines()" />
           }
         </div>
-      </header>
-
+        <div class="me-right">
+          <nav class="ptabs" role="tablist" aria-label="Profilo">
+            @for (t of tabs; track t.id) {
+              <button role="tab" [id]="'ptab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'ppanel-' + t.id"
+                      [attr.aria-label]="t.label" [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">
+                <app-icon [name]="t.icon" [size]="20" /><span aria-hidden="true">{{ t.label }}</span>
+              </button>
+            }
+          </nav>
+        </div>
+      </div>
       @if (session.isStaff()) {
         <!-- Area Leader: la gestione del gruppo (non più nella barra in basso) -->
         <a class="lead-area" routerLink="/gestione"><app-icon name="whistle" [size]="20" /><span class="grow"><strong>Area Leader</strong><span class="small muted">Gestione del gruppo, partite e giocatori</span></span><app-icon name="chevron" [size]="18" /></a>
       }
-      <nav class="ptabs" role="tablist" aria-label="Profilo">
-        @for (t of tabs; track t.id) {
-          <button role="tab" [id]="'ptab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'ppanel-' + t.id"
-                  [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">
-            <app-icon [name]="t.icon" [size]="16" /><span>{{ t.label }}</span>
-          </button>
-        }
-      </nav>
       </div>
     </div>
     <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
@@ -326,7 +327,6 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
   `,
   styles: `
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
-    .me { display: flex; align-items: center; gap: 16px; }
     /* schede del profilo: icona sopra, nome sotto */
     .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .theme { appearance: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--r-m);
@@ -376,11 +376,18 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                  background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .lead-area > app-icon:first-child { color: var(--turf); }
     .lead-area .grow { display: flex; flex-direction: column; gap: 2px; }
-    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
+    .me-box { display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: var(--r-m, 16px); background: var(--surface-2); }
+    .me-av { position: relative; flex: none; display: grid; }
+    /* in punizione: foto spenta, filo rosso e cartellino che spiega fino a quando */
+    .me-av.pun app-avatar { filter: grayscale(1); opacity: 0.75; }
+    .me-av.pun::before { content: ''; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 0 2px var(--danger); pointer-events: none; }
+    .pun-badge { position: absolute; right: -6px; bottom: -2px; }
+    .me-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
     .ptabs button {
       appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
-      min-height: 44px; padding: 0 8px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;
-      font: 600 0.8rem/1 var(--font-body); transition: background 160ms, color 160ms;
+      min-height: 52px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      font: 600 0.6875rem/1 var(--font-body); transition: background 160ms var(--ease), color 160ms var(--ease);
     }
     .ptabs button[aria-selected='true'] { background: var(--surface); color: var(--turf); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
     .ppanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
@@ -455,6 +462,14 @@ export class ProfilePage {
     { id: 'aspetto', label: 'Aspetto', icon: 'palette' },
     { id: 'sicurezza', label: 'Sicurezza', icon: 'key' },
   ];
+  /** spiegazione del lucchetto sulla foto (stesse frasi del rimprovero) */
+  protected readonly punLines = computed(() => {
+    const p = this.session.punishment();
+    if (!p) return [];
+    if (!p.ends_at && p.reason?.startsWith('Quota del campo'))
+      return ['Sei in punizione per la quota del campo.', 'Puoi solo saldare in Conti: finisce appena chi riceve conferma il pagamento.'];
+    return ['Sei in punizione ' + (p.ends_at ? 'fino a ' + this.when(p.ends_at) : 'fino a nuovo ordine del Leader') + '.', ...(p.reason ? ['Motivo: ' + p.reason] : [])];
+  });
   protected readonly tab = signal<ProfileTab>(
     ((): ProfileTab => {
       const q = inject(ActivatedRoute).snapshot.queryParamMap.get('scheda') as ProfileTab | null;
