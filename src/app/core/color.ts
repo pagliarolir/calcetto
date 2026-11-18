@@ -108,7 +108,8 @@ export function deriveTheme(t: CustomTheme): Derived {
     while (alpha > 0 && contrast('#FFFFFF', mix(heroB, primary, alpha)) < 4.8) alpha -= 0.03;
     alpha = Math.max(0, alpha);
     heroA = mix(heroB, primary, alpha);
-    heroBg = `radial-gradient(120% 90% at 85% -10%, ${primary}${Math.round(alpha * 255).toString(16).padStart(2, '0')} 0%, transparent 55%), ${heroB}`;
+    // niente bagliore radiale (unslop): una sfumatura dello stesso colore, dal punto più chiaro alla base
+    heroBg = `linear-gradient(160deg, ${heroA} 0%, ${heroB} 100%)`;
   } else {
     heroA = ensureContrast(fromHsl([ph, ps, clamp(pl + 0.05, 0, 0.62)]), '#FFFFFF', 4.8).hex;
     heroB = ensureContrast(fromHsl([ph, ps, clamp(pl - 0.1, 0.06, 1)]), '#FFFFFF', 4.8).hex;
@@ -213,7 +214,7 @@ export function paletteVars(spec: ThemeSpec, hex: string): PaletteResult {
     let alpha = 0.34;
     while (alpha > 0 && contrast('#FFFFFF', mix(base, primary, alpha)) < 4.8) alpha -= 0.03;
     alpha = Math.max(0, alpha);
-    heroBg = `radial-gradient(120% 90% at 85% -10%, ${primary}${Math.round(alpha * 255).toString(16).padStart(2, '0')} 0%, transparent 55%), ${base}`;
+    heroBg = `linear-gradient(160deg, ${mix(base, primary, alpha)} 0%, ${base} 100%)`;
     bar = base; heroMin = contrast('#FFFFFF', mix(base, primary, alpha));
   } else if (spec.hero === 'dots') {
     // puntini bianchi al 18%: si parte da un colore più scuro perché il testo resti leggibile anche sopra i puntini
@@ -221,15 +222,11 @@ export function paletteVars(spec: ThemeSpec, hex: string): PaletteResult {
     heroBg = `radial-gradient(circle at 1px 1px, rgb(255 255 255 / 18%) 1.2px, transparent 1.6px) 0 0 / 10px 10px, ${c}`;
     bar = c; heroMin = contrast('#FFFFFF', mix(c, '#FFFFFF', 0.18));
   } else {
-    // come nei temi scuri: un bagliore più chiaro del principale in alto a destra che si mescola con la base
+    // una sfumatura dello stesso colore, senza bagliori (unslop)
     const a = ensureContrast(fromHsl([ph, ps, clamp(pl + 0.05, 0, 0.62)]), '#FFFFFF', 4.8).hex;
     const b = ensureContrast(fromHsl([ph, ps, clamp(pl - 0.1, 0.06, 1)]), '#FFFFFF', 4.8).hex;
-    const glow = fromHsl([ph, Math.min(1, ps + 0.1), clamp(pl + 0.25, 0, 0.85)]);
-    let alpha = 0.6;
-    while (alpha > 0 && contrast('#FFFFFF', mix(a, glow, alpha)) < 4.8) alpha -= 0.03;
-    alpha = Math.max(0, alpha);
-    heroBg = `radial-gradient(120% 90% at 85% -10%, ${glow}${Math.round(alpha * 255).toString(16).padStart(2, '0')} 0%, transparent 60%), linear-gradient(160deg, ${a} 0%, ${b} 100%)`;
-    bar = b; heroMin = Math.min(contrast('#FFFFFF', mix(a, glow, alpha)), contrast('#FFFFFF', b));
+    heroBg = `linear-gradient(160deg, ${a} 0%, ${b} 100%)`;
+    bar = b; heroMin = Math.min(contrast('#FFFFFF', a), contrast('#FFFFFF', b));
   }
   const vars: Record<string, string> = {
     '--bg': bg, '--surface': surface, '--surface-2': surface2, '--ink': ink, '--muted': muted, '--line': line,

@@ -139,7 +139,7 @@ import { haptic } from '../core/haptics';
     .status { font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
     /* biglietto: riquadro calendario a sinistra, data, orario e luogo a destra */
     .ticket { display: flex; gap: 16px; align-items: stretch; margin-top: 2px; }
-    .calbig { flex: none; width: 76px; border-radius: 16px; background: var(--chalk, #f4f7f2); color: var(--turf); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0;
+    .calbig { flex: none; width: 76px; border-radius: 16px; background: var(--chalk, #f4f7f2); color: var(--on-chalk); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0;
       box-shadow: 0 6px 16px rgb(0 0 0 / 20%); }
     .calbig b { font: 700 2.6rem/0.9 var(--font-display); }
     .calbig small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
@@ -206,7 +206,7 @@ import { haptic } from '../core/haptics';
     /* interruttore degli strumenti: spento trasparente, acceso pieno */
     .tools-btn { position: relative; flex: none; margin: 0 4px 8px auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
                  color: inherit; background: rgb(255 255 255 / 14%); transition: background 200ms, color 200ms; }
-    .tools-btn[aria-pressed='true'] { background: var(--chalk); color: var(--turf); }
+    .tools-btn[aria-pressed='true'] { background: var(--chalk); color: var(--on-chalk); }
     .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
     .tools-btn app-icon { display: grid; place-items: center; transition: transform 300ms var(--ease-spring); }
     .tools-btn[aria-pressed='true'] app-icon { transform: rotate(-45deg); }

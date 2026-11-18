@@ -161,7 +161,7 @@ import { Sheet } from './sheet';
     .album .ph { color: rgb(241 245 239 / 75%); }
     .album .sticker:not(.got) .sname { color: inherit; opacity: 0.8; }
     .snum { position: absolute; top: -4px; left: calc(50% + 20px); min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px;
-            display: grid; place-items: center; font: 600 0.68rem/1 var(--font-display); background: var(--chalk, #f1f5ef); color: var(--turf); }
+            display: grid; place-items: center; font: 600 0.68rem/1 var(--font-display); background: var(--chalk, #f1f5ef); color: var(--on-chalk); }
     .sticker { appearance: none; border: 0; background: none; color: var(--ink); cursor: pointer; width: 100%;
                display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; font: inherit; min-width: 0; }
     .pic { position: relative; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none;

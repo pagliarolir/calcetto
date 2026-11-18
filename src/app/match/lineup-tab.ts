@@ -179,7 +179,7 @@ interface Place { team: Team; slot: number | null }
     /* badge del valore sulla foto, dal rosso al verde */
     .ph { position: relative; display: block; }
     .ovb { position: absolute; right: -13px; top: -9px; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 11px; display: grid; place-items: center;
-           font: 800 0.7rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 36%); box-shadow: 0 0 0 2px #fff; }
+           font: 800 0.7rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 27%); box-shadow: 0 0 0 2px #fff; }
     .ovb.static { position: static; box-shadow: none; }
     /* nomi interi, mai troncati: la scritta può essere più larga del posto, resta centrata */
     .spot .name { white-space: nowrap; font-size: 0.72rem; max-width: none; overflow: visible; }

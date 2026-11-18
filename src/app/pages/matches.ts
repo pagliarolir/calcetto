@@ -180,11 +180,11 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
     .pinned { border: 0; background:
         radial-gradient(circle at 100% 50%, transparent 0 64px, rgb(241 245 239 / 28%) 65px 67px, transparent 68px),
         var(--hero-bg);
-      color: var(--hero-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 14%); }
+      color: var(--hero-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 14%) !important; }
     .pinned .list-item { padding-top: 16px; padding-bottom: 16px; }
     .pinned .muted { color: inherit; opacity: 0.82; }
     .pinned .day { font-size: var(--step-1); }
-    .pinned .cal.next { width: 56px; height: 60px; background: var(--chalk, #f4f7f2); color: var(--turf); }
+    .pinned .cal.next { width: 56px; height: 60px; background: var(--chalk, #f4f7f2); color: var(--on-chalk); }
     .pinned .cal.next b { font-size: 1.8rem; }
     .pinned .kits i { box-shadow: 0 0 0 1.5px rgb(241 245 239 / 55%); }
     .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }

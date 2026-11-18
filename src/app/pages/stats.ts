@@ -422,6 +422,7 @@ const RECORDS: Record[] = [
        e senza le linee attaccate sopra e sotto, che con gli angoli tondi stonavano */
     .lp-rank li.me { background: var(--turf-soft); margin-inline: -8px; padding-inline: 8px; border-radius: 12px; border-top-color: transparent; }
     .lp-rank li.me + li { border-top-color: transparent; }
+    .lp-rank li.me .muted { color: var(--ink); opacity: 0.8; }
     .lp-rank a { color: inherit; text-decoration: none; font-weight: 600; }
     .pos { width: 22px; text-align: center; color: var(--muted); font-weight: 700; }
     .lp-rank li.top .pos { color: var(--armband-ink, var(--ink)); background: var(--armband); border-radius: 50%; height: 22px; line-height: 22px; font-size: 0.8rem; }
