@@ -45,7 +45,8 @@ export const paymentsGuard: CanActivateFn = async () => {
   const pay = inject(Payments);
   const router = inject(Router);
   await s.whenReady();
-  return (await pay.checkVisible()) ? true : router.parseUrl('/');
+  // solo un «no» del server rimanda alla home; senza risposta si entra e la pagina mostra il suo errore
+  return (await pay.checkVisible()) === false ? router.parseUrl('/') : true;
 };
 
 /**
