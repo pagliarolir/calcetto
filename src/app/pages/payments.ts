@@ -55,7 +55,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
   template: `
     <div class="page stack-l pay-page">
       <header class="titlebar">
-        <h1 appFitText>Pagamenti</h1>
+        <h1 appFitText>Conti</h1>
         <app-info-tip label="Come funziona" [lines]="[
           'Chi paga una spesa la inserisce e sceglie tra chi dividerla.',
           'I conti si semplificano: ognuno fa meno passaggi possibili.',

@@ -13,6 +13,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Avatar } from '../ui/avatar';
 import { kit } from '../core/kits';
 import { Ball, Boot, KitShirt } from '../ui/match-marks';
+import { InfoTip } from '../ui/info-tip';
 import { Icon } from '../ui/icon';
 import { Sheet } from '../ui/sheet';
 import { RouterLink } from '@angular/router';
@@ -23,7 +24,7 @@ type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [Sheet, FormsModule, RouterLink, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet],
+  imports: [Sheet, FormsModule, RouterLink, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
@@ -108,9 +109,6 @@ type Field = keyof Line;
           <!-- Formazioni con gol (pallone bianco), autogol (pallone rosso) e assist (scarpino) -->
           @if (players('white').length || players('black').length) {
             <section class="section" aria-label="Formazioni e marcatori">
-              @if (canEditScorers()) {
-                <p class="small muted">{{ session.isLeader() ? 'Tocca un giocatore per inserire i suoi gol, assist e autogol.' : 'Tocca il tuo nome per inserire i tuoi gol, assist e autogol.' }}</p>
-              }
               <div class="rosters">
                 @for (t of teams; track t) {
                   <div class="roster" [class.right]="t === 'black'">
@@ -138,7 +136,8 @@ type Field = keyof Line;
                   </div>
                 }
               </div>
-              <p class="legend small muted"><app-ball [size]="13" /> gol <app-ball [own]="true" [size]="13" /> autogol <app-boot [size]="13" /> assist</p>
+              <p class="legend small muted"><app-ball [size]="13" /> gol <app-ball [own]="true" [size]="13" /> autogol <app-boot [size]="13" /> assist
+                @if (canEditScorers()) { <app-info-tip class="ltip" [lines]="[session.isLeader() ? 'Tocca un giocatore per inserire i suoi gol, assist e autogol.' : 'Tocca il tuo nome per inserire i tuoi gol, assist e autogol.']" /> }</p>
             </section>
           }
 
@@ -257,6 +256,7 @@ type Field = keyof Line;
     .legend { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; }
     .legend app-ball, .legend app-boot { margin-left: 8px; }
     .legend app-ball:first-child { margin-left: 0; }
+    .legend .ltip { margin-left: 4px; }
     /* pannello di inserimento */
     .sc-head { display: flex; align-items: center; gap: 12px; }
     .sc-row { display: flex; align-items: center; gap: 12px; min-height: 48px; border-top: 1px solid var(--line); }

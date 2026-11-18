@@ -101,14 +101,8 @@ const RECORDS: Record[] = [
 
       <!-- schede su due righe: la prima giustificata, la seconda centrata -->
       <nav class="stabs" role="tablist" aria-label="Statistiche">
-        <div class="srow first" role="none">
-          @for (t of tabs.slice(0, 3); track t.id) {
-            <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
-                  [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
-          }
-        </div>
         <div class="srow" role="none">
-          @for (t of tabs.slice(3); track t.id) {
+          @for (t of tabs; track t.id) {
             <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
                   [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
           }
@@ -409,13 +403,13 @@ const RECORDS: Record[] = [
     .cmp-list .dot { width: 14px; height: 14px; border-radius: 4px; flex: none; }
     .cmp-list .rm { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
     .cmp-add { display: flex; align-items: center; gap: 8px; color: var(--turf); margin-top: 12px; } .cmp-add select { flex: 1; }
-    /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
+    /* schede su una riga, nomi corti; se non ci stanno (testo molto grande) vanno a capo centrate */
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
     /* schede equidistanti, sopra e sotto */
-    .srow { display: flex; justify-content: space-evenly; }
+    .srow { display: flex; flex-wrap: wrap; justify-content: space-evenly; }
     .stabs button {
       flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
-      padding: 10px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
+      padding: 10px 8px 8px; min-height: 44px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
     }
     .stabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
     .tabpanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
@@ -546,10 +540,10 @@ export class StatsPage {
     this.viewport.set(window.innerWidth);
   }
   protected readonly tabs: { id: Tab; label: string }[] = [
-    { id: 'classifica', label: 'Classifica' },
+    { id: 'classifica', label: 'Generale' },
     { id: 'record', label: 'Record' },
-    { id: 'squadre', label: 'Squadre e coppie' },
-    { id: 'punti', label: 'Punti Leader' },
+    { id: 'squadre', label: 'Coppie' },
+    { id: 'punti', label: 'Punti' },
     { id: 'obiettivi', label: 'Obiettivi' },
   ];
   protected readonly tab = signal<Tab>('classifica');

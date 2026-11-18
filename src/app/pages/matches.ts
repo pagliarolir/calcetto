@@ -143,7 +143,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
         @for (m of shown(); track m.id) {
           <li>
             <a class="list-item" [routerLink]="['/partita', m.id]">
-              <span class="cal" [class.next]="m.status === 'scheduled'" [class.off]="m.status === 'cancelled'" aria-hidden="true">
+              <span class="cal" [class.off]="m.status === 'cancelled'" aria-hidden="true">
                 <b>{{ dnum(m.starts_at) }}</b><small>{{ mon(m.starts_at) }}</small>
               </span>
               <span class="grow"><span class="day">{{ weekdayName(m.starts_at) }} alle {{ time2(m.starts_at) }}</span><br />
@@ -151,7 +151,6 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
                 <span class="kits" aria-hidden="true"><i [style.background]="kitColor(m.team_a_kit)"></i><i [style.background]="kitColor(m.team_b_kit)"></i></span>
               </span>
               @if (m.results; as r) { <span class="num score">{{ text(r.diff, r.white_goals, r.black_goals, names(m)) }}</span> }
-              @else if (m.status === 'scheduled') { <span class="tag turf">in programma</span> }
             </a>
           </li>
         } @empty { <li class="empty"><app-empty icon="calendar" [text]="items().length ? 'Nessuna partita in questo periodo.' : 'Ancora nessuna partita.'" /></li> }
@@ -162,7 +161,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
   `,
   styles: `
     .day { font-weight: 600; display: inline-block; } .day::first-letter { text-transform: uppercase; }
-    /* riquadro calendario: giorno grande, mese sotto; verde per le partite in programma */
+    /* riquadro calendario: giorno grande, mese sotto; neutro (la prossima partita è già fissata in alto, in verde) */
     .cal {
       flex: none; width: 48px; height: 52px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: var(--surface-2); color: var(--ink); line-height: 1;

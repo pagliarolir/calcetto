@@ -11,6 +11,7 @@
 @import '@fontsource/inter/latin-600.css';
 @import '@fontsource/inter/latin-700.css';
 @import '@fontsource/space-grotesk/latin-500.css';
+@import '@fontsource/space-grotesk/latin-600.css';
 @import '@fontsource/space-grotesk/latin-700.css';
 @import '@fontsource/bebas-neue/latin-400.css';
 
@@ -273,16 +274,17 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* titoli: gerarchia da dimensione e colore, non dal peso (unslop) */
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.05;
   margin: 0;
   letter-spacing: 0.005em;
 }
 h1 { font-size: var(--step-3); }
 h2 { font-size: var(--step-2); }
-h3 { font-size: var(--step-1); font-weight: 600; }
+h3 { font-size: var(--step-1); font-weight: 500; }
 p { margin: 0; }
 
 a { color: inherit; }

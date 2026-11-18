@@ -139,7 +139,6 @@ interface Section { id: SectionId; label: string; rows: GroupRow[] }
     .info p, .info ul { margin: 0; line-height: 1.5; }
     .info ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
     .info textarea { min-height: 280px; font-size: 0.95rem; line-height: 1.45; }
-    .list-item.unread { background: var(--turf-soft); }
     .kind { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
     .kind.turf { background: var(--turf-soft); color: var(--turf); }
     .kind.gold { background: color-mix(in srgb, var(--armband) 22%, transparent); color: color-mix(in srgb, var(--armband) 70%, var(--ink)); }

@@ -150,7 +150,7 @@ import { haptic } from '../core/haptics';
     .logo-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 14px; box-shadow: 0 4px 12px rgb(0 0 0 / 22%); }
     .tmain { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
     /* la data resta su una riga (si rimpicciolisce sugli schermi stretti): l'altezza delle scritte non dipende dal logo */
-    .tmain h1 { font: 700 clamp(1.3rem, 5.4vw, 1.75rem)/1 var(--font-display); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tmain h1 { font: 500 clamp(1.3rem, 5.4vw, 1.75rem)/1 var(--font-display); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tmain h1::first-letter { text-transform: uppercase; }
     .flags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
     .flags .tag { font-size: 0.7rem; }
