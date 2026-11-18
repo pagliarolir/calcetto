@@ -22,7 +22,18 @@ const KEY = 'gdl-theme';
 const KEY_CUSTOM = 'gdl-custom';            // le scelte (base, principale, secondario)
 const KEY_VARS = 'gdl-custom-vars';         // i colori calcolati, che index.html applica prima dell'avvio
 const DEFAULT_CUSTOM: CustomTheme = { base: 'light', primary: '#1D4ED8', accent: 'auto' };
-const KEY_TEXT = 'gdl-text';               // dimensione (85-130) e spaziatura (0-100) del testo
+const KEY_TEXT = 'gdl-text';               // dimensione (85-130), spaziatura (0-100) e carattere del testo
+
+/** caratteri scelti nel Profilo → Aspetto; 'tema' = quelli del tema. Tutti gratuiti (@fontsource), il file si scarica solo se usato */
+export type TextFont = 'tema' | 'barlow' | 'inter' | 'leggibile' | 'arrotondato' | 'sistema';
+export const TEXT_FONTS: { id: TextFont; label: string }[] = [
+  { id: 'tema', label: 'Del tema' },
+  { id: 'barlow', label: 'Barlow, il classico del G.d.L.' },
+  { id: 'inter', label: 'Inter, moderno' },
+  { id: 'leggibile', label: 'Atkinson, il più leggibile' },
+  { id: 'arrotondato', label: 'Nunito, arrotondato' },
+  { id: 'sistema', label: 'Quello del telefono' },
+];
 
 /**
  * Tema dell'app: lo sceglie ognuno nel Profilo → Aspetto e resta su questo dispositivo.
@@ -54,17 +65,21 @@ export class Theme {
   /** dimensione scelta nel Profilo (100 = normale); «Automatico» riduce comunque tutto del 10% (data-auto) */
   readonly textScale = computed(() => this.savedScale() ?? 100);
   readonly textSpacing = signal(0);
+  readonly textFont = signal<TextFont>('tema');
 
   constructor() {
     try {
       const t = JSON.parse(localStorage.getItem(KEY_TEXT) ?? 'null') as { scale?: number; spacing?: number } | null;
       if (t?.scale) this.savedScale.set(Math.min(130, Math.max(85, t.scale)));
       if (t?.spacing) this.textSpacing.set(Math.min(100, Math.max(0, t.spacing)));
+      const f = (t as { font?: string } | null)?.font;
+      if (f && TEXT_FONTS.some((x) => x.id === f)) this.textFont.set(f as TextFont);
     } catch { /* valori predefiniti */ }
     effect(() => {
       const root = document.documentElement;
       root.style.setProperty('--text-scale', String(this.textScale() / 100));
       root.style.setProperty('--text-spacing', String(this.textSpacing() / 100));
+      if (this.textFont() === 'tema') root.removeAttribute('data-font'); else root.setAttribute('data-font', this.textFont());
     });
     this.dark?.addEventListener?.('change', (e) => this.systemDark.set(e.matches));
     effect(() => {
@@ -157,13 +172,23 @@ export class Theme {
   setText(scale: number, spacing: number): void {
     this.savedScale.set(Math.min(130, Math.max(85, Math.round(scale))));
     this.textSpacing.set(Math.min(100, Math.max(0, Math.round(spacing))));
-    this.save(KEY_TEXT, JSON.stringify({ scale: this.savedScale(), spacing: this.textSpacing() }));
+    this.saveText();
   }
 
-  /** «Ripristina»: torna alla dimensione e alla spaziatura normali */
+  setFont(f: TextFont): void {
+    this.textFont.set(f);
+    this.saveText();
+  }
+
+  private saveText(): void {
+    this.save(KEY_TEXT, JSON.stringify({ scale: this.savedScale(), spacing: this.textSpacing(), font: this.textFont() }));
+  }
+
+  /** «Ripristina»: torna a dimensione, spaziatura e carattere normali */
   resetText(): void {
     this.savedScale.set(null);
     this.textSpacing.set(0);
+    this.textFont.set('tema');
     try { localStorage.removeItem(KEY_TEXT); } catch { /* niente memoria: resta per questa volta */ }
   }
 

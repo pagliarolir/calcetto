@@ -28,6 +28,10 @@ const PATHS: Record<string, string> = {
   copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
   share: 'M12 3v12 M7 8l5-5l5 5 M5 14v6h14v-6',
   type: 'M4 7V5h16v2 M12 5v14 M9 19h6',
+  /* due A di grandezza diversa: dimensione del testo */
+  'text-size': 'M3 19l5-13l5 13 M4.8 14.5h6.4 M14 19l3.5-9l3.5 9 M15.2 16h4.6',
+  /* freccia che torna indietro: ripristina */
+  undo: 'M9 14L4 9l5-5 M4 9h10.5a5.5 5.5 0 0 1 0 11H11',
   spacing: 'M4 6h16 M4 12h16 M4 18h16 M2 9l2 3-2 3 M22 9l-2 3 2 3',
   sort: 'M7 4v16 M3 8l4-4 4 4 M17 20V4 M13 16l4 4 4-4',
   sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',

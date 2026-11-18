@@ -14,6 +14,12 @@
 @import '@fontsource/space-grotesk/latin-600.css';
 @import '@fontsource/space-grotesk/latin-700.css';
 @import '@fontsource/bebas-neue/latin-400.css';
+@import '@fontsource/atkinson-hyperlegible/latin-400.css';
+@import '@fontsource/atkinson-hyperlegible/latin-700.css';
+@import '@fontsource/nunito/latin-400.css';
+@import '@fontsource/nunito/latin-500.css';
+@import '@fontsource/nunito/latin-600.css';
+@import '@fontsource/nunito/latin-700.css';
 
 /* =====================================================================
    G.d.L. — sistema visivo
@@ -251,6 +257,13 @@
 :root[data-theme='contrasto'] .panel { border: 2px solid #000; box-shadow: none; }
 :root[data-theme='contrasto'] a { text-decoration: underline; text-underline-offset: 3px; }
 :root[data-theme='contrasto'] :focus-visible { outline: 3px solid #000 !important; outline-offset: 2px; box-shadow: 0 0 0 6px #ffd400 !important; }
+
+/* carattere scelto nel Profilo → Aspetto: vince sui caratteri del tema (html:root pesa più di :root[data-theme]) */
+html:root[data-font='barlow'] { --font-body: 'Barlow', 'Segoe UI', Roboto, system-ui, sans-serif; --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif; }
+html:root[data-font='inter'] { --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif; --font-display: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+html:root[data-font='leggibile'] { --font-body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif; --font-display: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif; }
+html:root[data-font='arrotondato'] { --font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif; --font-display: 'Nunito', 'Segoe UI', system-ui, sans-serif; }
+html:root[data-font='sistema'] { --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --font-display: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
 
 /* testo verde (o del colore principale) sopra un riquadro color gesso: nei temi chiari il principale è già scuro,
    in quelli scuri è chiaro e sul gesso non si leggerebbe, quindi lo si scurisce (light-dark segue color-scheme del tema) */
@@ -635,13 +648,6 @@ router-outlet + * { display: block; animation: page-in 160ms var(--ease) both; }
 }
 .avatar.has-photo.white { box-shadow: 0 0 0 2px var(--team-a), 0 0 0 3px var(--line); }
 .avatar.has-photo.black { box-shadow: 0 0 0 2px var(--team-b), 0 0 0 3px var(--line); }
-/* in campo le foto prendono il colore della propria squadra (duotono): il campo resta l'unico «momento» colorato
-   della pagina e le due squadre si distinguono a colpo d'occhio. Con una divisa bianca o nera resta in bianco e nero. */
-.pitch-photo.has-photo { position: relative; isolation: isolate; }
-.pitch-photo.has-photo img { filter: grayscale(1) contrast(1.12) brightness(1.04); }
-.pitch-photo.has-photo::after { content: ''; position: absolute; inset: 0; border-radius: inherit; mix-blend-mode: color; opacity: 0.75; pointer-events: none; }
-.pitch-photo.has-photo.white::after { background: var(--team-a); }
-.pitch-photo.has-photo.black::after { background: var(--team-b); }
 
 /* Tendine (strumenti del Leader, Gestione): titolo e freccia che ruota */
 details.fold > summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; min-height: 44px; }
