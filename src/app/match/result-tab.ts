@@ -37,6 +37,8 @@ type Field = keyof Line;
           <section class="section">
             @if (store.result(); as r) {
               <div class="panel stack result">
+                <!-- il «momento» della pagina: il punteggio su un campetto, con le stesse strisce e linee del campo delle Squadre -->
+                <span class="field" aria-hidden="true"></span>
                 <!-- «i»: chi ha inserito il risultato, omologazione, conferme -->
                 <button type="button" class="info-btn" [attr.aria-expanded]="infoOpen()" aria-label="Informazioni sul risultato" (click)="toggleInfo($event)">
                   <app-icon name="info" [size]="18" />
@@ -212,7 +214,15 @@ type Field = keyof Line;
     .fold[open] summary app-icon { transform: rotate(-90deg); }
     .fold-body { margin-top: 12px; }
     /* «i» in alto a destra nel riquadro del risultato e fumetto ancorato */
-    .result { position: relative; }
+    .result { position: relative; isolation: isolate; border: 0; padding: 28px 20px; color: #fff;
+      background: repeating-linear-gradient(90deg, #24774c 0 10%, #1f6b45 10% 20%); box-shadow: 0 6px 18px rgb(0 0 0 / 16%); }
+    .field { position: absolute; inset: 10px; z-index: -1; border: 2px solid rgb(255 255 255 / 70%); border-radius: 4px; pointer-events: none; }
+    .field::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 2px solid rgb(255 255 255 / 70%); }
+    .field::after { content: ''; position: absolute; left: 50%; top: 50%; width: 92px; aspect-ratio: 1; transform: translate(-50%, -50%);
+      border: 2px solid rgb(255 255 255 / 70%); border-radius: 50%; }
+    .result .score-mid h2 { color: #fff; text-shadow: 0 1px 2px rgb(0 0 0 / 35%); }
+    .result .score-mid .tag { background: rgb(0 0 0 / 28%); color: #fff; }
+    .result .score-mid { padding: 8px 12px; border-radius: 12px; background: #1f6b45; }
     /* sull'angolo del riquadro, a cavallo del bordo: non copre maglie e punteggio */
     .info-btn { position: absolute; top: -12px; right: -8px; z-index: 3; width: 32px; height: 32px; border-radius: 50%; border: 0; cursor: pointer;
                 display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(0 0 0 / 12%); }

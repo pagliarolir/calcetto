@@ -164,6 +164,10 @@ import { MatchStore } from './match-store';
     .tools { display: flex; flex-direction: column; gap: 0; border-radius: var(--r-m); overflow: hidden; box-shadow: 0 0 0 1px var(--line); background: var(--surface); }
     .tools > app-apply-dialog { padding: 12px 12px; }
     .tools details.fold { margin: 0; padding: 0 12px; border-radius: 0; box-shadow: none; border: 0; border-top: 1px solid var(--line); gap: 8px; background: none; animation: none; }
+    /* il «momento» è la tendina aperta: fondo leggermente rialzato e un filo verde a sinistra; le chiuse si fanno da parte */
+    .tools details.fold[open] { background: var(--surface-2); box-shadow: inset 4px 0 0 var(--turf); }
+    .tools details.fold[open] > summary { color: var(--turf); }
+    .tools:has(details.fold[open]) details.fold:not([open]) > summary { color: var(--muted); }
     .tools details.fold:first-of-type { border-top: 0; }
     /* titoli delle tendine al centro (la freccia resta a destra, la «i» accanto al titolo) e un po' più grandi */
     .tools details.fold > summary { min-height: 52px; justify-content: center; gap: 2px; position: relative; padding: 0 28px; }

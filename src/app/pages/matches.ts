@@ -175,7 +175,18 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
     .period { position: relative; flex: 0 1 auto; }
     .period select { min-height: 40px; padding-top: 8px; padding-bottom: 8px; font-weight: 600; max-width: 170px; }
     .lead-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -8px; }
-    .pinned .list-item { padding-top: 12px; padding-bottom: 12px; }
+    /* la prossima partita è il «momento» della pagina: lo stesso campo dell'intestazione della partita,
+       con la data in gesso e il cerchio di centrocampo; le altre righe restano neutre */
+    .pinned { border: 0; background:
+        radial-gradient(circle at 100% 50%, transparent 0 64px, rgb(241 245 239 / 28%) 65px 67px, transparent 68px),
+        var(--hero-bg);
+      color: var(--hero-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 14%); }
+    .pinned .list-item { padding-top: 16px; padding-bottom: 16px; }
+    .pinned .muted { color: inherit; opacity: 0.82; }
+    .pinned .day { font-size: var(--step-1); }
+    .pinned .cal.next { width: 56px; height: 60px; background: var(--chalk, #f4f7f2); color: var(--turf); }
+    .pinned .cal.next b { font-size: 1.8rem; }
+    .pinned .kits i { box-shadow: 0 0 0 1.5px rgb(241 245 239 / 55%); }
     .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
     .kits { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
     .kits i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); }

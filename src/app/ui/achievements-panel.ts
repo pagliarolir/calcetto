@@ -37,6 +37,7 @@ import { Sheet } from './sheet';
                   }
                 </span>
                 <span class="sname">{{ a.name }}</span>
+                <span class="snum" aria-hidden="true">{{ a.number }}</span>
               </button>
             </li>
           }
@@ -149,8 +150,18 @@ import { Sheet } from './sheet';
   styles: `
     .section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
     /* album: righe da 4, come le medaglie */
-    .album { list-style: none; margin: 0; padding: 16px 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 8px;
-             border-radius: 18px; background: linear-gradient(160deg, var(--surface), var(--surface-2)); box-shadow: inset 0 0 0 1px var(--line); }
+    /* l'album è il «momento» della pagina: una pagina da album di figurine sul verde del campo, con le caselle numerate */
+    .album { list-style: none; margin: 0; padding: 20px 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 8px;
+             border-radius: 18px; color: var(--hero-ink);
+             background: repeating-linear-gradient(180deg, rgb(255 255 255 / 4%) 0 44px, transparent 44px 88px), var(--hero-bg);
+             box-shadow: 0 6px 18px rgb(0 0 0 / 16%); }
+    .album .sticker { color: inherit; position: relative; }
+    .album .sticker:not(.got) .pic:not(.shadowed) { background: rgb(255 255 255 / 8%); box-shadow: none; outline: 2px dashed rgb(241 245 239 / 45%); outline-offset: -2px; }
+    .album .got .pic { outline: 0; }
+    .album .ph { color: rgb(241 245 239 / 75%); }
+    .album .sticker:not(.got) .sname { color: inherit; opacity: 0.8; }
+    .snum { position: absolute; top: -4px; left: calc(50% + 20px); min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px;
+            display: grid; place-items: center; font: 600 0.68rem/1 var(--font-display); background: var(--chalk, #f1f5ef); color: var(--turf); }
     .sticker { appearance: none; border: 0; background: none; color: var(--ink); cursor: pointer; width: 100%;
                display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; font: inherit; min-width: 0; }
     .pic { position: relative; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none;
