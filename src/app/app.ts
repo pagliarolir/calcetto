@@ -210,7 +210,8 @@ export class App {
     // dopo il primo disegno, quando l'app è libera: dati delle altre sezioni in anticipo
     this.prefetch.schedule();
     // chi può vedere FantaLeader: si chiede a ogni accesso (e a ogni «trascina per aggiornare»)
-    effect(() => { if (this.session.uid()) void this.fl.checkVisible(); else this.fl.visible.set(false); });
+    // FantaLeader: solo Bobbo, quindi serve il proprio profilo (nome e soprannome) prima di chiedere
+    effect(() => { if (this.session.uid() && this.session.profile()) void this.fl.checkVisible(); else this.fl.visible.set(false); });
     effect(() => { if (this.session.uid()) void this.pay.checkVisible(); else this.pay.visible.set(false); });
     // logo dell'app (icona e manifest): anche prima dell'accesso
     void this.branding.load();

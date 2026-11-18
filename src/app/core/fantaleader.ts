@@ -8,10 +8,18 @@ function must<T>(res: { data: T | null; error: unknown }): T {
 }
 
 /**
- * Interruttore temporaneo: con `false` FantaLeader è nascosto a tutti (niente voce «Fanta», la pagina rimanda alla home,
- * niente dati scaricati in anticipo). Server e dati restano intatti: per riaccenderlo basta rimettere `true`.
+ * Interruttore generale: con `false` FantaLeader è nascosto a tutti (niente voce «Fanta», la pagina rimanda alla home,
+ * niente dati scaricati in anticipo). Con `true` lo vede solo Bobbo (decisione del proprietario, 18/11/2026): neanche il
+ * Leader. Il server ripete il controllo in `fl_visible()` (migrazione 72); qui c'è anche il controllo sul proprio profilo,
+ * così vale subito, anche prima che la migrazione sia applicata.
  */
-export const FANTA_ENABLED = false;
+export const FANTA_ENABLED = true;
+
+/** «Bobbo» nel soprannome o nel nome (stesso controllo di pay_is_bobbo in SQL) */
+export function isBobbo(p: { nickname?: string | null; first_name?: string | null } | null | undefined): boolean {
+  const n = (x?: string | null) => (x ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  return !!p && (n(p.nickname) === 'bobbo' || n(p.first_name) === 'bobbo');
+}
 
 export interface FlSettings {
   market_open: boolean;
@@ -115,6 +123,8 @@ export class FantaLeader {
   async checkVisible(): Promise<boolean> {
     const uid = this.session.uid();
     if (!uid) { this.visible.set(false); this.visCheck = null; return false; }
+    // solo Bobbo: per tutti gli altri (Leader compreso) niente chiamata e niente voce
+    if (!isBobbo(this.session.profile())) { this.visible.set(false); return false; }
     if (this.visCheck && this.visCheck.uid === uid && Date.now() - this.visCheck.at < 30_000) return this.visCheck.p;
     const p = (async () => {
       const res = await this.sb.rpc('fl_visible');

@@ -14,31 +14,23 @@ import { FlPlayerSheet } from '../fantaleader/player-sheet';
 import { FlTeam } from '../fantaleader/team-builder';
 import { Avatar } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
+import { Icon } from '../ui/icon';
+import { InfoTip } from '../ui/info-tip';
 
 type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
 
 @Component({
   selector: 'app-fantaleader-page',
-  imports: [FormsModule, Avatar, Skeleton, FlTeam, FlPlayerSheet, FlAdmin, Empty],
+  imports: [FormsModule, Avatar, Skeleton, FlTeam, FlPlayerSheet, FlAdmin, Empty, Icon, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
       <div class="head-in">
-        <header class="titlebar">
-          <h1>FantaLeader</h1>
-          @if (fl.settings(); as st) { <span class="tag" [class.turf]="st.market_open">{{ st.market_open ? 'Mercato aperto' : 'Mercato chiuso' }}</span> }
-        </header>
+        <header class="titlebar"><h1>FantaLeader</h1></header>
         <nav class="stabs" role="tablist" aria-label="FantaLeader">
-          <div class="srow" role="none">
-            @for (t of tabs().slice(0, 3); track t.id) {
-              <button role="tab" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>
-            }
-          </div>
-          <div class="srow" role="none">
-            @for (t of tabs().slice(3); track t.id) {
-              <button role="tab" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>
-            }
-          </div>
+          @for (t of tabs(); track t.id) {
+            <button role="tab" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>
+          }
         </nav>
       </div>
     </div>
@@ -51,65 +43,75 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
           @switch (tab()) {
             @case ('home') {
               @let st = fl.settings()!;
-              <section class="panel stack-s" [class.open]="st.market_open">
-                <h2>{{ st.market_open ? 'Il mercato è aperto' : 'Il mercato è chiuso' }}</h2>
-                <p class="small muted">{{ st.market_open
-                  ? 'Puoi creare o cambiare la tua fantasquadra: ' + st.team_size + ' giocatori, ' + st.budget + ' euroLeader, un capitano.'
-                  : 'Le fantasquadre sono bloccate fino alla prossima apertura decisa dal Leader.' }}</p>
-                @if (st.market_changed_at) { <p class="small muted">Dal {{ when(st.market_changed_at) }}.</p> }
-              </section>
-
+              <!-- il «momento» della Home: la propria fantasquadra; lo stato del mercato è una riga sobria sotto -->
               @if (fl.myTeam(); as t) {
-                <button type="button" class="panel card" (click)="select('squadra')">
-                  <span class="grow"><span class="small muted">La tua fantasquadra</span><strong class="tn">{{ t.name }}</strong>
-                    <span class="small muted">{{ t.pos }}° posto · ultima giornata {{ fmt(t.last_points) }} · capitano {{ session.name(t.captain_id) }}</span></span>
-                  <strong class="big num">{{ fmt(t.total) }}</strong>
+                <button type="button" class="hero-card" (click)="select('squadra')">
+                  <span class="grow">
+                    <span class="lbl">La tua fantasquadra</span>
+                    <strong class="tn">{{ t.name }}</strong>
+                    <span class="sub">{{ t.pos }}° posto, capitano {{ session.name(t.captain_id) }}</span>
+                  </span>
+                  <span class="score"><strong class="num">{{ fmt(t.total) }}</strong><small>punti</small></span>
                 </button>
               } @else if (st.market_open) {
-                <button class="btn primary block" (click)="select('squadra')">Crea la tua fantasquadra</button>
+                <button class="btn primary block" (click)="select('squadra')"><app-icon name="plus" [size]="18" /> Crea la tua fantasquadra</button>
               }
-
+              <div class="market" [class.open]="st.market_open">
+                <app-icon [name]="st.market_open ? 'unlock' : 'lock'" [size]="18" />
+                <span class="grow">{{ st.market_open ? 'Mercato aperto' : 'Mercato chiuso' }}@if (st.market_changed_at) { <span class="muted"> dal {{ when(st.market_changed_at) }}</span> }</span>
+                <app-info-tip [lines]="st.market_open
+                  ? ['Puoi creare o cambiare la tua fantasquadra: ' + st.team_size + ' giocatori, ' + st.budget + ' euroLeader e un capitano.']
+                  : ['Le fantasquadre sono bloccate finché il Leader non riapre il mercato.']" />
+              </div>
               @if (next(); as m) {
-                <p class="note">Prossima giornata: {{ when(m.starts_at) }}. I punti arrivano quando il risultato è omologato e diventano definitivi alla chiusura delle pagelle.</p>
+                <div class="market">
+                  <app-icon name="calendar" [size]="18" />
+                  <span class="grow">Prossima giornata <span class="muted">{{ when(m.starts_at) }}</span></span>
+                  <app-info-tip [lines]="['I punti arrivano quando il risultato è omologato.', 'Diventano definitivi alla chiusura delle pagelle.']" />
+                </div>
               }
 
               @if (fl.lastRound(); as lr) {
-                <section class="stack-s">
-                  <h2>Ultima giornata · {{ day(lr.starts_at) }}</h2>
+                <section class="section">
+                  <header><h2>Ultima giornata</h2><span class="small muted">{{ day(lr.starts_at) }}</span></header>
                   <div class="last">
-                    <div class="stack-s">
-                      <p class="small muted">Punti delle fantasquadre</p>
+                    <div class="stack-s"><h3 class="sub-h">Fantasquadre</h3>
+                    <ol class="list">
                       @for (t of lastTeams(); track t.team_id; let i = $index) {
-                        <div class="mini"><span class="pos num">{{ i + 1 }}</span><span class="grow"><strong>{{ t.name }}</strong></span><strong class="num">{{ fmt(t.last_points) }}</strong></div>
-                      } @empty { <p class="small muted">Nessuna fantasquadra.</p> }
-                    </div>
-                    <div class="stack-s">
-                      <p class="small muted">Punti portati dai giocatori</p>
-                      @for (r of lastPlayers(); track r.user_id; let i = $index) {
-                        <button type="button" class="mini" (click)="sheet()?.open(r.user_id)"><span class="pos num">{{ i + 1 }}</span><app-avatar [userId]="r.user_id" [size]="28" />
-                          <span class="grow"><strong>{{ session.name(r.user_id) }}</strong></span><strong class="num">{{ fmt(r.last_points) }}</strong></button>
+                        <li class="list-item"><span class="pos num">{{ i + 1 }}</span><span class="grow ellipsis">{{ t.name }}</span><strong class="num">{{ fmt(t.last_points) }}</strong></li>
+                      } @empty { <li class="list-item muted">Nessuna fantasquadra.</li> }
+                    </ol></div>
+                    <div class="stack-s"><h3 class="sub-h">Chi ha portato più punti</h3>
+                    <ol class="list">
+                      @for (r of lastPlayers().slice(0, 5); track r.user_id; let i = $index) {
+                        <li><button type="button" class="list-item" (click)="sheet()?.open(r.user_id)"><span class="pos num">{{ i + 1 }}</span><app-avatar [userId]="r.user_id" [size]="28" />
+                          <span class="grow ellipsis">{{ session.name(r.user_id) }}</span><strong class="num">{{ fmt(r.last_points) }}</strong></button></li>
                       }
-                    </div>
+                    </ol></div>
                   </div>
                 </section>
               }
 
-              <section class="stack-s">
-                <div class="spread"><h2>Classifica generale delle fantasquadre</h2><button class="link" (click)="select('classifiche', 'squadre')">Tutta</button></div>
-                @for (t of fl.teams().slice(0, 3); track t.team_id) {
-                  <div class="mini"><span class="pos num">{{ t.pos }}</span><span class="grow"><strong>{{ t.name }}</strong> <span class="small muted">{{ session.name(t.owner_id) }}</span></span><strong class="num">{{ fmt(t.total) }}</strong></div>
-                } @empty { <p class="small muted">Ancora nessuna fantasquadra.</p> }
+              <section class="section">
+                <header><h2>Fantasquadre</h2><button class="link" (click)="select('classifiche', 'squadre')">Tutte <app-icon name="chevron" [size]="16" /></button></header>
+                <ol class="list">
+                  @for (t of fl.teams().slice(0, 3); track t.team_id) {
+                    <li class="list-item"><span class="pos num">{{ t.pos }}</span><span class="grow two"><span class="ellipsis">{{ t.name }}</span><small class="muted">{{ session.name(t.owner_id) }}</small></span><strong class="num">{{ fmt(t.total) }}</strong></li>
+                  } @empty { <li class="list-item muted">Ancora nessuna fantasquadra.</li> }
+                </ol>
               </section>
-              <section class="stack-s">
-                <div class="spread"><h2>Classifica generale dei giocatori</h2><button class="link" (click)="select('classifiche', 'giocatori')">Tutta</button></div>
-                @for (r of fl.ranking().slice(0, 3); track r.user_id) {
-                  <button type="button" class="mini" (click)="sheet()?.open(r.user_id)"><span class="pos num">{{ r.pos }}</span><app-avatar [userId]="r.user_id" [size]="28" />
-                    <span class="grow"><strong>{{ session.name(r.user_id) }}</strong></span><strong class="num">{{ fmt(r.total) }}</strong></button>
-                }
+              <section class="section">
+                <header><h2>Giocatori</h2><button class="link" (click)="select('classifiche', 'giocatori')">Tutti <app-icon name="chevron" [size]="16" /></button></header>
+                <ol class="list">
+                  @for (r of fl.ranking().slice(0, 3); track r.user_id) {
+                    <li><button type="button" class="list-item" (click)="sheet()?.open(r.user_id)"><span class="pos num">{{ r.pos }}</span><app-avatar [userId]="r.user_id" [size]="28" />
+                      <span class="grow ellipsis">{{ session.name(r.user_id) }}</span><strong class="num">{{ fmt(r.total) }}</strong></button></li>
+                  }
+                </ol>
               </section>
 
               <details class="panel fold">
-                <summary><h2>Come si fanno i punti</h2></summary>
+                <summary><h3>Come si fanno i punti</h3><app-icon name="chevron" [size]="18" class="chev" /></summary>
                 @let pr = rules();
                 <ul class="rules small">
                   <li>Presenza {{ sg(pr.presence) }}, gol {{ sg(pr.goal) }}, autogol {{ sg(pr.own_goal) }}, migliore in campo {{ sg(pr.mvp) }}, voto = media della pagella ({{ pr.vote_default }} se ci sono meno di {{ pr.vote_min_voters }} votanti), vittoria {{ sg(pr.win) }}, sconfitta {{ sg(pr.loss) }}, pareggio {{ sg(pr.draw) }}, Punti Leader della settimana.</li>
@@ -125,23 +127,21 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
             @case ('squadra') { <app-fl-team (openPlayer)="sheet()?.open($event)" /> }
             @case ('giocatori') {
               <div class="tools">
-                <input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" />
+                <label class="search"><app-icon name="search" [size]="18" /><input class="input" type="search" [(ngModel)]="q" placeholder="Cerca un giocatore" aria-label="Cerca un giocatore" /></label>
                 <select class="input" [(ngModel)]="sortBy" aria-label="Ordina per">
-                  <option value="price">Quota attuale</option><option value="initial">Quotazione iniziale</option><option value="pos">Posizione</option><option value="name">Nome</option>
+                  <option value="price">Quota</option><option value="initial">Quota iniziale</option><option value="pos">Posizione</option><option value="name">Nome</option>
                 </select>
               </div>
-              <ul class="cat">
+              <ul class="list">
                 @for (r of catalog(); track r.user_id) {
                   @let d = r.price_current - r.price_initial;
-                  <li><button type="button" (click)="sheet()?.open(r.user_id)">
-                    <span class="pos num">{{ r.pos }}°</span>
+                  <li><button type="button" class="list-item" (click)="sheet()?.open(r.user_id)">
                     <app-avatar [userId]="r.user_id" [size]="40" />
-                    <span class="grow"><strong>{{ session.name(r.user_id) }}</strong>
-                      <span class="small muted">Quotazione {{ r.price_initial }} · {{ fmt(r.total) }} punti · {{ fl.skillsOf(r.user_id).length }} skill</span></span>
-                    <span class="q" [attr.aria-label]="'Quota attuale ' + r.price_current + (d ? ', ' + (d > 0 ? 'più ' : 'meno ') + (d > 0 ? d : -d) : '')">
-                      <span class="small muted">Q. att.</span>
-                      <strong class="num" [class.up]="d > 0" [class.down]="d < 0">{{ r.price_current }}</strong>
-                      @if (d !== 0) { <span class="delta" [class.up]="d > 0" [class.down]="d < 0">{{ d > 0 ? '+' : '' }}{{ d }}</span> }
+                    <span class="grow two"><span class="ellipsis"><strong>{{ session.name(r.user_id) }}</strong></span>
+                      <small class="muted">{{ r.pos }}° in classifica, {{ fmt(r.total) }} punti@if (fl.skillsOf(r.user_id).length; as n) {, {{ n }} skill}</small></span>
+                    <span class="q" [attr.aria-label]="'Quota ' + r.price_current + (d ? ', ' + (d > 0 ? 'più ' : 'meno ') + (d > 0 ? d : -d) : '')">
+                      <strong class="num">{{ r.price_current }}</strong>
+                      @if (d !== 0) { <small class="num" [class.up]="d > 0" [class.down]="d < 0"><app-icon [name]="d > 0 ? 'up' : 'down'" [size]="12" />{{ d > 0 ? d : -d }}</small> }
                     </span>
                   </button></li>
                 } @empty { <li class="empty"><app-empty icon="trophy" text="Nessun giocatore acquistabile: il Leader li prepara in Gestione." /></li> }
@@ -153,38 +153,41 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
                 <button role="tab" [attr.aria-selected]="view() === 'giocatori'" (click)="select('classifiche', 'giocatori')">Giocatori</button>
               </div>
               @if (view() === 'squadre') {
-                <ol class="rank">
+                <ol class="list">
                   @for (t of fl.teams(); track t.team_id) {
-                    <li>
+                    <li class="fold-row">
                       <details>
-                        <summary>
+                        <summary class="list-item">
                           <span class="pos num">{{ t.pos }}</span>
-                          <span class="grow"><strong>{{ t.name }}</strong><span class="small muted">{{ session.name(t.owner_id) }} · ultima {{ fmt(t.last_points) }}</span></span>
+                          <span class="grow two"><span class="ellipsis"><strong>{{ t.name }}</strong></span><small class="muted">{{ session.name(t.owner_id) }}, ultima giornata {{ fmt(t.last_points) }}</small></span>
                           <strong class="num">{{ fmt(t.total) }}</strong>
+                          <app-icon name="chevron" [size]="16" class="chev" />
                         </summary>
                         <div class="members">
                           @for (u of t.members; track u) {
-                            <button type="button" (click)="sheet()?.open(u)"><span class="av"><app-avatar [userId]="u" [size]="34" />@if (u === t.captain_id) { <span class="cap">C</span> }</span>
-                              <span class="small">{{ session.name(u) }}</span></button>
+                            <button type="button" (click)="sheet()?.open(u)"><span class="av"><app-avatar [userId]="u" [size]="36" />@if (u === t.captain_id) { <span class="cap" aria-label="Capitano">C</span> }</span>
+                              <span class="small ellipsis">{{ session.name(u) }}</span></button>
                           }
                         </div>
-                        <p class="small muted">Andamento: @for (x of trend(t.team_id); track x.match_id; let last = $last) { {{ fmt(x.points) }}@if (!last) { · } } @empty { nessuna giornata }</p>
+                        @if (trend(t.team_id).length > 1) {
+                          <p class="small muted trend">Giornate: @for (x of trend(t.team_id); track x.match_id; let last = $last) { {{ fmt(x.points) }}@if (!last) {, } }</p>
+                        }
                       </details>
                     </li>
                   } @empty { <li class="empty"><app-empty icon="trophy" text="Ancora nessuna fantasquadra." /></li> }
                 </ol>
               } @else {
-                <p class="small muted">Coefficiente: il moltiplicatore della prossima giornata. Punti provvisori finché le pagelle sono aperte.</p>
-                <ol class="rank">
+                <ol class="list">
                   @for (r of fl.ranking(); track r.user_id) {
-                    <li><button type="button" class="row-btn" (click)="sheet()?.open(r.user_id)">
+                    <li><button type="button" class="list-item" (click)="sheet()?.open(r.user_id)">
                       <span class="pos num">{{ r.pos }}</span><app-avatar [userId]="r.user_id" [size]="32" />
-                      <span class="grow"><strong>{{ session.name(r.user_id) }}</strong><span class="small muted">Q. {{ r.price_current }} · Q.i. {{ r.price_initial }} · ultima {{ fmt(r.last_points) }}</span></span>
-                      <span class="coef" [class.c125]="r.next_coef === 1.25" [class.c150]="r.next_coef === 1.5">×{{ fmt(r.next_coef) }}</span>
+                      <span class="grow two"><span class="ellipsis"><strong>{{ session.name(r.user_id) }}</strong></span><small class="muted">quota {{ r.price_current }}, ultima giornata {{ fmt(r.last_points) }}</small></span>
+                      @if (r.next_coef !== 1) { <span class="coef" [attr.aria-label]="'Coefficiente della prossima giornata ' + fmt(r.next_coef)">×{{ fmt(r.next_coef) }}</span> }
                       <strong class="num">{{ fmt(r.total) }}</strong>
                     </button></li>
                   }
                 </ol>
+                <p class="small muted foot"><app-info-tip [lines]="['Il «×» è il coefficiente della prossima giornata: moltiplica i punti di chi è più indietro.', 'I punti sono provvisori finché le pagelle sono aperte.']" /> Coefficiente e punti provvisori</p>
               }
             }
             @case ('gestione') { <app-fl-admin /> }
@@ -196,55 +199,66 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
   `,
   styles: `
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
-    .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
-    .srow { display: flex; justify-content: space-evenly; }
+    /* schede su una riga, come in Classifica */
+    .stabs { display: flex; flex-wrap: wrap; justify-content: space-evenly; border-bottom: 1px solid var(--line); }
     .stabs button { flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
-      padding: 12px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap; }
+      padding: 12px 8px 8px; min-height: 44px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap; }
     .stabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
-    /* selettore a due voci, come nelle Pagelle */
-    .seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
-    .seg::-webkit-scrollbar { display: none; }
-    .seg button {
-      flex: 1 0 auto; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer;
-      min-height: 38px; padding: 0 12px; border-radius: 10px; font: 600 var(--step--1)/1 var(--font-body); white-space: nowrap;
-    }
-    .seg button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
-    h2 { font-size: var(--step-0); margin: 0; }
-    .panel.open { box-shadow: 0 0 0 2px var(--turf); }
-    .card { display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer; border: 0; color: inherit; width: 100%; }
-    .card .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .tn { font: 700 var(--step-1)/1.1 var(--font-display); }
-    .big { font: 800 var(--step-3)/1 var(--font-display); }
-    .link { border: 0; background: none; color: var(--turf); font-weight: 600; cursor: pointer; padding: 8px 0; }
-    .mini { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line);
-            border: 0; width: 100%; text-align: left; color: inherit; cursor: pointer; }
-    .pos { width: 22px; text-align: center; font-weight: 800; color: var(--muted); flex: none; }
+    .seg { display: flex; gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
+    .seg button { flex: 1 0 auto; appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+      min-height: 40px; padding: 0 12px; border-radius: 12px; font: 600 var(--step--1)/1 var(--font-body); white-space: nowrap; }
+    .seg button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 12%); }
+    /* la propria fantasquadra: il «momento» della pagina, con il fondo dell'intestazione */
+    .hero-card { display: flex; align-items: center; gap: 16px; width: 100%; padding: 20px; border: 0; border-radius: var(--r-l); text-align: left; cursor: pointer;
+      background: var(--hero-bg); color: var(--hero-ink); }
+    .hero-card .grow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .hero-card .lbl, .hero-card .sub { font-size: var(--step--1); opacity: 0.85; }
+    .hero-card .tn { font: 500 var(--step-2)/1.1 var(--font-display); overflow-wrap: anywhere; }
+    .sub-h { margin: 0; font: 600 var(--step--1)/1.2 var(--font-body); color: var(--muted); }
+    .hero-card .score { display: flex; flex-direction: column; align-items: center; flex: none; min-width: 72px; padding: 8px 12px; border-radius: var(--r-m);
+      background: var(--chalk, #f4f7f2); color: var(--on-chalk); }
+    .hero-card .score strong { font: 600 var(--step-3)/1 var(--font-display); }
+    .hero-card .score small { font-size: 0.7rem; }
+    .market { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 4px 0 16px; border-radius: var(--r-m); background: var(--surface-2); color: var(--ink); }
+    .market > app-icon { color: var(--muted); }
+    .market.open > app-icon { color: var(--turf); }
+    .market .grow { min-width: 0; }
+    .link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; border: 0; background: none; color: color-mix(in srgb, var(--turf) 70%, var(--ink)); font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; padding: 0; }
+    .link app-icon { display: grid; }
+    .section > header { align-items: center; }
+    .list-item { min-height: 52px; padding: 8px 16px; gap: 12px; }
+    .list strong.num { font: 600 var(--step-1)/1 var(--font-display); }
+    .two { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .grow { flex: 1; }
+    .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pos { width: 20px; text-align: center; font-weight: 600; color: var(--muted); flex: none; }
     .last { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 560px) { .last { grid-template-columns: 1fr 1fr; } }
     .rules { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 8px; }
     .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-    .cat, .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    .cat button, .row-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 14px; border: 0; text-align: left; color: inherit; cursor: pointer;
-      background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
-    .cat .grow, .row-btn .grow, .rank summary .grow { min-width: 0; display: flex; flex-direction: column; }
-    .cat strong, .row-btn strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .q { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
-    .q strong { font: 800 var(--step-1)/1 var(--font-display); }
-    .q .delta { font: 800 0.75rem/1 var(--font-body); padding: 2px 4px; border-radius: 6px; background: var(--surface-2); }
-    .q .delta.up { background: var(--turf-soft); } .q .delta.down { background: color-mix(in srgb, var(--danger) 14%, transparent); }
-    .up { color: var(--turf); } .down { color: var(--danger); }
-    .rank details { border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); padding: 0 12px; }
-    .rank summary { display: flex; align-items: center; gap: 12px; min-height: 52px; cursor: pointer; list-style: none; }
-    .rank summary::-webkit-details-marker { display: none; }
-    .members { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 4px 0 8px; }
-    .members button { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: inherit; cursor: pointer; min-width: 0; }
-    .members .small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .search { position: relative; display: block; }
+    .search app-icon { position: absolute; left: 12px; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; display: grid; }
+    .search .input { padding-left: 40px; }
+    .q { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; }
+    .q strong { font: 600 var(--step-1)/1 var(--font-display); }
+    .q small { display: inline-flex; align-items: center; gap: 2px; font: 600 0.75rem/1 var(--font-body); }
+    .up { color: color-mix(in srgb, var(--turf) 70%, var(--ink)); } .down { color: var(--danger); }
+    .fold-row details > summary { list-style: none; cursor: pointer; }
+    .fold-row details > summary::-webkit-details-marker { display: none; }
+    .fold-row .chev { color: var(--muted); rotate: 90deg; transition: rotate 200ms var(--ease); display: grid; }
+    .fold-row details[open] .chev { rotate: -90deg; }
+    .fold-row:not(:last-child) { border-bottom: 1px solid var(--line); }
+    .fold-row .list-item { border-bottom: 0; }
+    .members { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 8px; padding: 4px 16px 16px; }
+    .members button { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: inherit; cursor: pointer; min-width: 0; min-height: 44px; }
+    .members .small { max-width: 100%; }
+    .trend { margin: -8px 16px 12px; }
     .av { position: relative; display: inline-grid; }
-    .cap { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
-           background: var(--armband); color: var(--armband-ink); font: 800 0.68rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); }
-    .coef { flex: none; font: 700 0.78rem/1 var(--font-body); padding: 4px 8px; border-radius: 8px; background: var(--surface-2); color: var(--muted); }
-    .coef.c125 { background: var(--turf-soft); color: var(--turf); }
-    .coef.c150 { background: color-mix(in srgb, var(--armband) 30%, transparent); color: var(--armband-ink); }
+    .cap { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+           background: var(--armband); color: var(--armband-ink); font: 600 0.7rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); }
+    .coef { flex: none; font: 600 0.8rem/1 var(--font-body); color: var(--armband-ink); background: color-mix(in srgb, var(--armband) 40%, var(--surface)); padding: 4px 8px; border-radius: 8px; }
+    .foot { display: flex; align-items: center; gap: 4px; margin: 0; }
+    .empty { list-style: none; }
   `,
 })
 export class FantaLeaderPage implements OnInit {
