@@ -53,25 +53,25 @@ import { HexChart, PitchChart, RatingRing } from './charts';
   `,
   styles: `
     /* due colonne: a sinistra cerchio, ruolo e medie per ruolo; a destra esagono e campo */
-    .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; gap: 8px; padding: 12px 10px; border-radius: 16px;
+    .card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; gap: 8px; padding: 12px 12px; border-radius: 16px;
             background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .ring { display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; min-width: 0; }
     .rl { text-align: center; }
-    .fchip { font-size: var(--step--1); padding: 3px 10px; gap: 4px; }
+    .fchip { font-size: var(--step--1); padding: 4px 12px; gap: 4px; }
     .fchip svg { width: 14px; height: 14px; display: block; }
     .defl { text-align: center; }
     /* medie in fondo, alte quanto il campo e allineate a lui (inizio e fine) */
     .avg { list-style: none; margin: auto 0 0; padding: 0; width: 100%; height: 116px; display: flex; flex-direction: column; justify-content: space-between; }
-    .avg li { display: flex; align-items: center; justify-content: space-between; gap: 6px; height: 26px; padding: 0 6px; border-radius: 8px; font-size: var(--step--1); }
+    .avg li { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 26px; padding: 0 8px; border-radius: 8px; font-size: var(--step--1); }
     .avg li .rn { color: var(--muted); min-width: 0; }
     .avg li strong { font-size: 1.05rem; }
     .avg li.mine { background: var(--turf-soft); } .avg li.mine .rn { color: var(--ink); font-weight: 600; }
-    .charts { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+    .charts { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
     .rl { display: inline-flex; align-items: center; gap: 2px; }
     .ri { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; }
     .ri[aria-expanded='true'] { color: var(--turf); }
     .pop-shield { position: fixed; inset: 0; z-index: 5; }
-    .tip { position: absolute; left: 0; top: 100%; z-index: 6; width: 220px; padding: 10px 12px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
+    .tip { position: absolute; left: 0; top: 100%; z-index: 6; width: 220px; padding: 12px 12px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
   `,
 })
 export class PlayerCard {

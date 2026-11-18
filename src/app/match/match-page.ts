@@ -127,7 +127,7 @@ import { haptic } from '../core/haptics';
     /* icona calendario: porta all'elenco delle partite */
     /* in alto a destra, fuori dalla colonna: le righe sotto (indirizzo) usano tutta la larghezza */
     .ticket.with-cal { position: relative; }
-    .ticket.with-cal .tmain h1, .ticket.with-cal .tmain .flags { padding-right: 38px; }
+    .ticket.with-cal .tmain h1, .ticket.with-cal .tmain .flags { padding-right: 40px; }
     /* stessa misura dell'icona di ordinamento (32 px); l'area di tocco resta 44 px con il margine invisibile */
     .cal-link { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
                 color: inherit; background: rgb(255 255 255 / 14%); }
@@ -136,10 +136,10 @@ import { haptic } from '../core/haptics';
     .cal-link app-icon ::ng-deep svg { display: block; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
     .link { display: inline-flex; align-items: center; gap: 4px; color: inherit; opacity: 0.85; font-size: var(--step--1); font-weight: 600; text-decoration: none; min-height: 36px; }
-    .status { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
+    .status { font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: rgb(255 255 255 / 14%); text-align: right; }
     /* biglietto: riquadro calendario a sinistra, data, orario e luogo a destra */
-    .ticket { display: flex; gap: 14px; align-items: stretch; margin-top: 2px; }
-    .calbig { flex: none; width: 76px; border-radius: 16px; background: var(--chalk, #f4f7f2); color: var(--turf); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 0;
+    .ticket { display: flex; gap: 16px; align-items: stretch; margin-top: 2px; }
+    .calbig { flex: none; width: 76px; border-radius: 16px; background: var(--chalk, #f4f7f2); color: var(--turf); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0;
       box-shadow: 0 6px 16px rgb(0 0 0 / 20%); }
     .calbig b { font: 700 2.6rem/0.9 var(--font-display); }
     .calbig small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; }
@@ -150,16 +150,16 @@ import { haptic } from '../core/haptics';
     .logo-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 14px; box-shadow: 0 4px 12px rgb(0 0 0 / 22%); }
     .tmain { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
     /* la data resta su una riga (si rimpicciolisce sugli schermi stretti): l'altezza delle scritte non dipende dal logo */
-    .tmain h1 { font: 700 clamp(1.3rem, 5.4vw, 1.75rem)/1 var(--font-display); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tmain h1 { font: 500 clamp(1.3rem, 5.4vw, 1.75rem)/1 var(--font-display); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tmain h1::first-letter { text-transform: uppercase; }
-    .flags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+    .flags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2px; }
     .flags .tag { font-size: 0.7rem; }
-    .line { display: flex; align-items: center; gap: 6px; font-size: var(--step--1); font-weight: 600; min-width: 0; min-height: 26px; color: inherit; text-decoration: none; }
+    .line { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); font-weight: 600; min-width: 0; min-height: 26px; color: inherit; text-decoration: none; }
     .line.time { font: 700 1.3rem/1 var(--font-display); letter-spacing: 0.01em; min-height: 28px; }
     .link-line span { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     /* l'indirizzo non si taglia: va a capo (al massimo due righe) */
     .link-line { align-items: flex-start; }
-    .link-line app-icon { margin-top: 5px; }
+    .link-line app-icon { margin-top: 4px; }
     .link-line .ellipsis { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.3; padding: 4px 0; }
     .mini { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(255 255 255 / 14%); color: inherit; flex: none; }
     /* schede con la lineetta sotto quella attiva; testo un po' più grande per vederle bene sul campo */
@@ -169,7 +169,7 @@ import { haptic } from '../core/haptics';
     }
     .tabs::-webkit-scrollbar { display: none; }
     .tabs a {
-      flex: none; position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px 10px; color: inherit; text-decoration: none;
+      flex: none; position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px 10px; color: inherit; text-decoration: none;
       font-weight: 500; font-size: var(--step-0); line-height: 1.2;
     }
     /* testo sempre pieno (leggibile su ogni intestazione): la scheda attiva si riconosce dal grassetto e dalla lineetta */
@@ -195,16 +195,16 @@ import { haptic } from '../core/haptics';
     .sort-tab[aria-expanded='true'] { color: var(--chalk); }
     .sort-tab:focus-visible { outline: 3px solid var(--chalk); outline-offset: -2px; border-radius: 6px; }
     .sort-shield { position: fixed; inset: 0; z-index: 30; }
-    .sort-menu { position: fixed; z-index: 31; width: 220px; padding: 6px; display: flex; flex-direction: column; color: var(--ink);
+    .sort-menu { position: fixed; z-index: 31; width: 220px; padding: 8px; display: flex; flex-direction: column; color: var(--ink);
       box-shadow: 0 14px 34px rgb(0 0 0 / 28%); }
-    .sort-menu button { appearance: none; border: 0; background: none; color: inherit; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px;
+    .sort-menu button { appearance: none; border: 0; background: none; color: inherit; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
       border-radius: 10px; font: 600 var(--step--1)/1.2 var(--font-body); text-align: left; cursor: pointer; }
     .sort-menu button:hover, .sort-menu button:focus-visible { background: var(--surface-2); }
     .sort-menu button[aria-checked='true'] { color: var(--turf); }
     .sort-menu .grow { flex: 1; }
-    @media (prefers-reduced-motion: no-preference) { .sort-menu { animation: sort-in 160ms ease-out both; } @keyframes sort-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } } }
+    @media (prefers-reduced-motion: no-preference) { .sort-menu { animation: sort-in 160ms var(--ease) both; } @keyframes sort-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } } }
     /* interruttore degli strumenti: spento trasparente, acceso pieno */
-    .tools-btn { position: relative; flex: none; margin: 0 4px 6px auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    .tools-btn { position: relative; flex: none; margin: 0 4px 8px auto; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
                  color: inherit; background: rgb(255 255 255 / 14%); transition: background 200ms, color 200ms; }
     .tools-btn[aria-pressed='true'] { background: var(--chalk); color: var(--turf); }
     .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
@@ -214,7 +214,7 @@ import { haptic } from '../core/haptics';
     @media (prefers-reduced-motion: no-preference) {
       .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
       .flip.flip-out { animation: flip-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
-      .flip.flip-in { animation: flip-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+      .flip.flip-in { animation: flip-in 260ms var(--ease); }
       @keyframes flip-out { from { transform: perspective(1400px) rotateY(0); } to { transform: perspective(1400px) rotateY(90deg); opacity: 0.6; } }
       @keyframes flip-in { from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.6; } to { transform: perspective(1400px) rotateY(0); opacity: 1; } }
     }

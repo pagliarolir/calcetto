@@ -94,7 +94,7 @@ import { Prefetch } from './core/prefetch';
     }
 
     @media (prefers-reduced-motion: no-preference) {
-      .app-scroller.page-in > :not(app-achievement-banner) { animation: page-in 150ms ease-out; }
+      .app-scroller.page-in > :not(app-achievement-banner) { animation: page-in 150ms var(--ease); }
       @keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
     }
     .app-scroller {
@@ -119,14 +119,14 @@ import { Prefetch } from './core/prefetch';
     /* icone a distanza fissa dal bordo superiore della barra */
     .tabbar a {
       flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
-      padding-top: 10px;
+      padding-top: 12px;
       text-decoration: none; color: var(--muted); font-size: 0.72rem; font-weight: 600;
     }
     .tabbar a[aria-current='page'] { color: var(--turf); }
     .tabbar a[aria-current='page'] .ico { background: var(--turf-soft); }
     .ico { position: relative; display: grid; place-items: center; width: 52px; height: 30px; border-radius: 999px; transition: background 180ms; }
     .badge {
-      position: absolute; top: -4px; right: 6px; min-width: 18px; height: 18px; padding: 0 5px;
+      position: absolute; top: -4px; right: 6px; min-width: 18px; height: 18px; padding: 0 4px;
       border-radius: 999px; background: var(--danger); color: var(--danger-ink);
       font: 700 0.68rem/18px var(--font-body); text-align: center;
     }
@@ -137,7 +137,7 @@ import { Prefetch } from './core/prefetch';
     }
     .toast {
       pointer-events: auto; appearance: none; border: 0; cursor: pointer;
-      max-width: 520px; padding: 12px 18px; border-radius: var(--r-m);
+      max-width: 520px; padding: 12px 20px; border-radius: var(--r-m);
       background: var(--ink); color: var(--bg); font: 500 var(--step--1)/1.35 var(--font-body);
       box-shadow: 0 8px 24px rgb(0 0 0 / 20%); text-align: left;
     }

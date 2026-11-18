@@ -11,6 +11,7 @@
 @import '@fontsource/inter/latin-600.css';
 @import '@fontsource/inter/latin-700.css';
 @import '@fontsource/space-grotesk/latin-500.css';
+@import '@fontsource/space-grotesk/latin-600.css';
 @import '@fontsource/space-grotesk/latin-700.css';
 @import '@fontsource/bebas-neue/latin-400.css';
 
@@ -68,8 +69,10 @@
   /* margine sotto le icone: quanto basta per restare sopra la lineetta Home dell'iPhone */
   --tabbar-pad: max(calc(env(safe-area-inset-bottom, 0px) - 16px), 6px);
   --tabbar-total: calc(var(--tabbar-h) + var(--tabbar-pad));
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* una sola curva per tutto il movimento (unslop): niente rimbalzi; --ease-out e --ease-spring restano come nomi */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: var(--ease);
+  --ease-spring: var(--ease);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -273,16 +276,17 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* titoli: gerarchia da dimensione e colore, non dal peso (unslop) */
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.05;
   margin: 0;
   letter-spacing: 0.005em;
 }
 h1 { font-size: var(--step-3); }
 h2 { font-size: var(--step-2); }
-h3 { font-size: var(--step-1); font-weight: 600; }
+h3 { font-size: var(--step-1); font-weight: 500; }
 p { margin: 0; }
 
 a { color: inherit; }
@@ -314,7 +318,7 @@ a { color: inherit; }
   background: var(--bg);
   box-shadow: 0 10px 12px -12px rgb(20 32 25 / 35%);
 }
-.page-head .head-in { max-width: 640px; margin: 0 auto; padding: 0 16px 10px; display: flex; flex-direction: column; gap: 14px; }
+.page-head .head-in { max-width: 640px; margin: 0 auto; padding: 0 16px 12px; display: flex; flex-direction: column; gap: 16px; }
 .scroll-area {
   /* riferimento anche per gli elementi nascosti posizionati, come .app-scroller (vedi CLAUDE.md) */
   position: relative;
@@ -330,7 +334,7 @@ a { color: inherit; }
    Dettaglio (pagine aperte da un'altra): .detail-bar con <app-back> (e l'eventuale ⋯ a destra), sotto il titolo. */
 .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
 .titlebar > h1 { margin: 0; min-width: 0; }
-.detail-bar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: -10px 0 -6px -8px; }
+.detail-bar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: -12px 0 -8px -8px; }
 .back-btn {
   appearance: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 8px; border: 0; border-radius: var(--r-s);
   background: none; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); cursor: pointer;
@@ -355,7 +359,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .stack-l { display: flex; flex-direction: column; gap: 24px; }
-.row { display: flex; align-items: center; gap: 10px; }
+.row { display: flex; align-items: center; gap: 12px; }
 .row-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
 .spread { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .grow { flex: 1; min-width: 0; }
@@ -364,7 +368,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .num { font-family: var(--font-display); font-variant-numeric: tabular-nums; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.section { display: flex; flex-direction: column; gap: 10px; }
+.section { display: flex; flex-direction: column; gap: 12px; }
 /* riga del titolo delle schede della partita: stessa altezza e posizione in tutte le schede,
    titolo sempre su una riga (appFitText lo rimpicciolisce se serve), icone e pillole a destra */
 .tab-head { display: flex; align-items: center; gap: 4px; height: calc(var(--step-2) * 1.05 + 12px); position: relative; flex: none; }
@@ -376,7 +380,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .section > header.tab-head > h2 { display: block; }
 .section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 /* il segno verde a sinistra dei titoli di sezione richiama le linee del campo */
-.section > header > h2 { display: inline-flex; align-items: center; gap: 10px; }
+.section > header > h2 { display: inline-flex; align-items: center; gap: 12px; }
 .section > header > h2::before { content: ''; width: 4px; height: 0.9em; border-radius: 2px; background: var(--turf); flex: none; }
 
 .panel {
@@ -388,7 +392,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 }
 
 .note {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--r-m);
   background: var(--turf-soft);
   font-size: var(--step--1);
@@ -411,7 +415,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
   justify-content: center;
   gap: 8px;
   min-height: 48px;
-  padding: 0 18px;
+  padding: 0 20px;
   border-radius: 999px;
   border: 1.5px solid var(--line);
   background: var(--surface);
@@ -429,7 +433,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 /* azione che non si può annullare (finestra di conferma) */
 .btn.danger-fill { background: var(--danger); border-color: var(--danger); color: var(--danger-ink); }
 .btn.ghost { border-color: transparent; background: transparent; }
-.btn.small { min-height: 36px; padding: 0 14px; font-size: var(--step--1); }
+.btn.small { min-height: 36px; padding: 0 16px; font-size: var(--step--1); }
 .btn.block { width: 100%; }
 
 .icon-btn {
@@ -448,7 +452,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .choice button {
   appearance: none;
   min-height: 48px;
-  padding: 0 6px;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -473,7 +477,7 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   appearance: none; flex: none;
-  min-height: 36px; padding: 0 14px; border-radius: 999px;
+  min-height: 36px; padding: 0 16px; border-radius: 999px;
   border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
   font: 500 var(--step--1) / 1 var(--font-body); cursor: pointer; white-space: nowrap;
 }
@@ -490,12 +494,12 @@ body:has(app-login)::before, body:has(app-match-page)::before { background: var(
 .tag.danger { background: var(--danger-soft); color: var(--danger); }
 
 /* --------------------------------------------------------------- form */
-.field { display: flex; flex-direction: column; gap: 6px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
 .field > span { font-size: var(--step--1); font-weight: 600; color: var(--muted); }
 .input, select.input, textarea.input {
   width: 100%;
   min-height: 48px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: var(--r-m);
   border: 1.5px solid var(--line);
   background: var(--surface);
@@ -511,7 +515,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 .switch {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 52px; padding: 6px 0; border-bottom: 1px solid var(--line); cursor: pointer;
+  min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer;
 }
 .switch:last-child { border-bottom: 0; }
 .switch input {
@@ -536,7 +540,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 
 /* ------------------------------------------------------------- liste */
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--surface); border-radius: 16px; border: 1px solid var(--line); overflow: hidden; box-shadow: 0 1px 2px rgb(20 32 25 / 5%); }
-.list-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); min-height: 56px; text-decoration: none; color: inherit; }
+.list-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); min-height: 56px; text-decoration: none; color: inherit; }
 .list-item:last-child { border-bottom: 0; }
 a.list-item:active, button.list-item:active { background: var(--surface-2); }
 button.list-item { appearance: none; width: 100%; border-left: 0; border-right: 0; border-top: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer; }
@@ -581,7 +585,7 @@ button.list-item { appearance: none; width: 100%; border-left: 0; border-right: 
 /* ------------------------------------------------------------- tabelle */
 .table-wrap { overflow-x: auto; border-radius: var(--r-m); border: 1px solid var(--line); background: var(--surface); }
 table.data { border-collapse: collapse; width: 100%; font-size: var(--step--1); font-variant-numeric: tabular-nums; }
-table.data th, table.data td { padding: 10px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+table.data th, table.data td { padding: 12px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
 table.data th:first-child, table.data td:first-child {
   text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1;
   box-shadow: 1px 0 0 var(--line);
@@ -610,7 +614,7 @@ table.data tr.me td { background: var(--turf-soft); }
 /* Ingresso delle pagine: solo opacità. Niente View Transitions e niente transform:
    su iPhone (app installata) farebbero saltare la barra in basso durante il cambio pagina. */
 @keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
-router-outlet + * { display: block; animation: page-in 160ms ease-out both; }
+router-outlet + * { display: block; animation: page-in 160ms var(--ease) both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
@@ -627,14 +631,21 @@ router-outlet + * { display: block; animation: page-in 160ms ease-out both; }
 }
 .avatar.has-photo.white { box-shadow: 0 0 0 2px var(--team-a), 0 0 0 3px var(--line); }
 .avatar.has-photo.black { box-shadow: 0 0 0 2px var(--team-b), 0 0 0 3px var(--line); }
+/* in campo le foto prendono il colore della propria squadra (duotono): il campo resta l'unico «momento» colorato
+   della pagina e le due squadre si distinguono a colpo d'occhio. Con una divisa bianca o nera resta in bianco e nero. */
+.pitch-photo.has-photo { position: relative; isolation: isolate; }
+.pitch-photo.has-photo img { filter: grayscale(1) contrast(1.12) brightness(1.04); }
+.pitch-photo.has-photo::after { content: ''; position: absolute; inset: 0; border-radius: inherit; mix-blend-mode: color; opacity: 0.75; pointer-events: none; }
+.pitch-photo.has-photo.white::after { background: var(--team-a); }
+.pitch-photo.has-photo.black::after { background: var(--team-b); }
 
 /* Tendine (strumenti del Leader, Gestione): titolo e freccia che ruota */
-details.fold > summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 44px; }
+details.fold > summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; min-height: 44px; }
 details.fold > summary::-webkit-details-marker { display: none; }
 details.fold > summary > h2, details.fold > summary > h3 { margin: 0; }
 details.fold > summary .chev { margin-left: auto; flex: none; color: var(--muted); transform: rotate(90deg); transition: transform 200ms var(--ease-out); }
 details.fold[open] > summary .chev { transform: rotate(-90deg); }
-details.fold[open] > summary { margin-bottom: 10px; }
+details.fold[open] > summary { margin-bottom: 12px; }
 details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
 
 /* =====================================================================
@@ -652,8 +663,8 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
 
 @media (prefers-reduced-motion: no-preference) {
   dialog[open] { animation: pop-in 200ms var(--ease-out); }
-  dialog.sheet[open] { animation: sheet-up 320ms cubic-bezier(0.2, 0.9, 0.25, 1); }
-  dialog[open]::backdrop { animation: backdrop-in 240ms ease-out; }
+  dialog.sheet[open] { animation: sheet-up 320ms var(--ease); }
+  dialog[open]::backdrop { animation: backdrop-in 240ms var(--ease); }
   /* chiusura (ui/sheet.ts): parte dalla posizione attuale, anche a metà trascinamento */
   dialog.sheet.closing { animation: sheet-down 220ms cubic-bezier(0.4, 0, 1, 1) forwards; }
   dialog.sheet.closing::backdrop { animation: backdrop-out 220ms ease-in forwards; }
@@ -661,9 +672,9 @@ details.fold.sec { border-top: 1px solid var(--line); padding-top: 4px; }
   .panel, .list > li, .list-item, .board > li, .people > li, ul.cat > li, ol.rank > li, .mini, .chips > li {
     animation: enter-up 280ms var(--ease-out) both;
   }
-  table.fit tbody tr { animation: enter-fade 260ms ease-out both; }
+  table.fit tbody tr { animation: enter-fade 260ms var(--ease) both; }
   /* scheda cambiata con il dito (ui/swipe-tabs.ts): solo dissolvenza, niente movimento */
-  .swiped > * { animation: enter-fade 200ms ease-out; }
+  .swiped > * { animation: enter-fade 200ms var(--ease); }
   /* a cascata: ogni elemento appena dopo il precedente (fino all'ottavo) */
   :is(.list, .board, .people, .cat, .rank) > li:nth-child(2), table.fit tbody tr:nth-child(2) { animation-delay: 30ms; }
   :is(.list, .board, .people, .cat, .rank) > li:nth-child(3), table.fit tbody tr:nth-child(3) { animation-delay: 60ms; }
@@ -707,30 +718,30 @@ dialog.sheet > .x-close + * { margin-right: 40px; }
 /* sempre tutte nello schermo: niente scorrimento laterale (era fastidioso trascinarle) */
 .ui-tabs { display: flex; border-bottom: 1px solid var(--line); overflow: hidden; touch-action: pan-y; }
 .ui-tabs > button {
-  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 6px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; background: none;
-  color: var(--muted); font: 600 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 4px; margin-bottom: -1px; border: 0; border-bottom: 3px solid transparent; background: none;
+  color: var(--muted); font: 600 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   cursor: pointer; white-space: nowrap; transition: color 160ms, border-color 160ms, background 160ms;
 }
 /* il nome si accorcia con i puntini solo se proprio non c'è spazio; il contatore resta sempre intero */
 .ui-tabs > button > :not(.ui-count) { overflow: hidden; text-overflow: ellipsis; }
 .ui-tabs > button .ui-count { flex: none; }
 /* quattro schede su un telefono stretto: il contatore va sotto il nome, così i nomi restano interi */
-@media (max-width: 380px) { .ui-tabs.four > button { flex-direction: column; gap: 3px; min-height: 54px; padding: 4px 2px; } }
+@media (max-width: 380px) { .ui-tabs.four > button { flex-direction: column; gap: 4px; min-height: 54px; padding: 4px 2px; } }
 /* schede e selettore non si «sollevano» né si selezionano con la pressione prolungata (iPhone) */
 .ui-tabs > button, .ui-seg > button { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-user-drag: none; }
 .ui-tabs > button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
 .ui-tabs > button:focus-visible { outline: none; border-bottom-color: var(--focus); background: var(--turf-soft); border-radius: 8px 8px 0 0; }
 .ui-tabs > button:disabled { opacity: 0.45; cursor: not-allowed; }
 .ui-count {
-  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center;
+  min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; display: inline-grid; place-items: center;
   font: 700 0.72rem/1 var(--font-body); background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
 }
 [aria-selected='true'] > .ui-count { background: var(--turf); color: var(--turf-ink); box-shadow: none; }
 /* Selettore: scegliere un'opzione. Pillola con l'opzione scelta in chiaro */
-.ui-seg { display: flex; gap: 3px; padding: 3px; border-radius: 14px; background: var(--surface-2); }
+.ui-seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
 .ui-seg > button {
   flex: 1; min-height: 44px; padding: 0 8px; border: 0; border-radius: 11px; background: none; color: var(--muted);
-  font: 600 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+  font: 600 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
   transition: background 160ms, color 160ms;
 }
 .ui-seg > button:is([aria-selected='true'], [aria-checked='true'], [aria-pressed='true']) { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 16%); }

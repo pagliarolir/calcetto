@@ -40,16 +40,16 @@ const EDGE = 8;  // margine dai bordi dello schermo
     .tip-layer { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
                  background: transparent; overflow: visible; cursor: default; z-index: 1000; }
     .tip-layer::backdrop { background: transparent; }
-    .info-pop { position: fixed; padding: 12px 14px; text-align: left; background: var(--surface); color: var(--ink);
+    .info-pop { position: fixed; padding: 12px 16px; text-align: left; background: var(--surface); color: var(--ink);
                 border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%);
                 font: 400 var(--step--1)/1.4 var(--font-body); text-transform: none; letter-spacing: normal; cursor: default; }
-    .info-pop ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .info-pop ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
     /* punta verso la «i» */
-    .tip-caret { position: absolute; top: -7px; width: 12px; height: 12px; margin-left: -6px; background: var(--surface);
+    .tip-caret { position: absolute; top: -7px; width: 12px; height: 12px; margin-left: -8px; background: var(--surface);
                  border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); border-top-left-radius: 3px; }
     .info-pop.above .tip-caret { top: auto; bottom: -7px; transform: rotate(225deg); }
     @media (prefers-reduced-motion: no-preference) {
-      .info-pop { animation: tip-in 140ms var(--ease-out, ease-out); transform-origin: var(--o, 50% 0); }
+      .info-pop { animation: tip-in 140ms var(--ease); transform-origin: var(--o, 50% 0); }
       @keyframes tip-in { from { opacity: 0; transform: scale(0.96) translateY(-3px); } }
       .info-pop.above { animation-name: tip-in-up; }
       @keyframes tip-in-up { from { opacity: 0; transform: scale(0.96) translateY(3px); } }

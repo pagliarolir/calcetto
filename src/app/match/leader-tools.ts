@@ -162,33 +162,37 @@ import { MatchStore } from './match-store';
   styles: `
     /* tendine attaccate: un unico blocco con i divisori, spaziature strette */
     .tools { display: flex; flex-direction: column; gap: 0; border-radius: var(--r-m); overflow: hidden; box-shadow: 0 0 0 1px var(--line); background: var(--surface); }
-    .tools > app-apply-dialog { padding: 10px 12px; }
+    .tools > app-apply-dialog { padding: 12px 12px; }
     .tools details.fold { margin: 0; padding: 0 12px; border-radius: 0; box-shadow: none; border: 0; border-top: 1px solid var(--line); gap: 8px; background: none; animation: none; }
+    /* il «momento» è la tendina aperta: fondo leggermente rialzato e un filo verde a sinistra; le chiuse si fanno da parte */
+    .tools details.fold[open] { background: var(--surface-2); box-shadow: inset 4px 0 0 var(--turf); }
+    .tools details.fold[open] > summary { color: var(--turf); }
+    .tools:has(details.fold[open]) details.fold:not([open]) > summary { color: var(--muted); }
     .tools details.fold:first-of-type { border-top: 0; }
     /* titoli delle tendine al centro (la freccia resta a destra, la «i» accanto al titolo) e un po' più grandi */
     .tools details.fold > summary { min-height: 52px; justify-content: center; gap: 2px; position: relative; padding: 0 28px; }
     .tools details.fold > summary > h3 { font-size: calc(var(--step-0) * 1.12); text-align: center; }
-    .tools details.fold > summary .chev { position: absolute; right: 0; top: 50%; margin: -9px 0 0; }
+    .tools details.fold > summary .chev { position: absolute; right: 0; top: 50%; margin: -8px 0 0; }
     /* campi data e ora larghi quanto serve, mai oltre lo schermo */
     .time-f { max-width: 160px; }
     .dt-f { max-width: 260px; }
     .time-f .input, .dt-f .input { width: 100%; min-width: 0; }
     /* le quattro risposte su una riga */
-    .acts4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .acts4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
     .acts4 .btn { padding-left: 4px; padding-right: 4px; min-width: 0; white-space: nowrap; }
     .tools details.fold[open] { padding-bottom: 12px; }
     .tools details.fold[open] > summary { margin-bottom: 2px; }
     .tools details.fold > :not(summary) + :not(summary) { margin-top: 8px; }
-    .tools .stack-l { gap: 10px; }
-    .pick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tools .stack-l { gap: 12px; }
+    .pick { display: flex; flex-wrap: wrap; gap: 8px; }
     .pick .chip { display: inline-flex; align-items: center; }
     .assign { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-    .assign li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); min-width: 0; }
+    .assign li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; }
     .seg { display: inline-flex; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; flex: none; }
     .seg button { appearance: none; border: 0; background: transparent; color: var(--ink); font: 600 var(--step--1)/1 var(--font-body); padding: 0 12px; min-height: 44px; cursor: pointer; }
     .seg button[aria-pressed='true'] { background: var(--turf); color: var(--turf-ink); }
     .empty { color: var(--muted); }
-    .lead-h { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: var(--step-1); }
+    .lead-h { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: var(--step-1); }
   `,
 })
 export class LeaderTools {

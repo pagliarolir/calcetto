@@ -20,13 +20,13 @@ import { Icon } from './icon';
   `,
   styles: `
     dialog.confirm {
-      border: 1px solid var(--line); border-radius: var(--r-l); padding: 22px 18px 18px; width: min(340px, calc(100vw - 32px));
+      border: 1px solid var(--line); border-radius: var(--r-l); padding: 24px 20px 20px; width: min(340px, calc(100vw - 32px));
       background: var(--surface); color: var(--ink); box-shadow: 0 16px 48px rgb(0 0 0 / 30%);
     }
     dialog.confirm::backdrop { background: var(--backdrop); }
     h2 { margin: 0 4px 20px; font: 600 var(--step-1) / 1.2 var(--font-display); text-wrap: balance; }
     .acts { display: flex; flex-wrap: wrap; gap: 8px; }
-    .acts .btn { flex: 1 1 120px; padding: 0 14px; line-height: 1.15; gap: 6px; }
+    .acts .btn { flex: 1 1 120px; padding: 0 16px; line-height: 1.15; gap: 8px; }
     .acts app-icon { flex: none; }
   `,
 })

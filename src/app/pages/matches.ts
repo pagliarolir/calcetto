@@ -143,7 +143,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
         @for (m of shown(); track m.id) {
           <li>
             <a class="list-item" [routerLink]="['/partita', m.id]">
-              <span class="cal" [class.next]="m.status === 'scheduled'" [class.off]="m.status === 'cancelled'" aria-hidden="true">
+              <span class="cal" [class.off]="m.status === 'cancelled'" aria-hidden="true">
                 <b>{{ dnum(m.starts_at) }}</b><small>{{ mon(m.starts_at) }}</small>
               </span>
               <span class="grow"><span class="day">{{ weekdayName(m.starts_at) }} alle {{ time2(m.starts_at) }}</span><br />
@@ -151,7 +151,6 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
                 <span class="kits" aria-hidden="true"><i [style.background]="kitColor(m.team_a_kit)"></i><i [style.background]="kitColor(m.team_b_kit)"></i></span>
               </span>
               @if (m.results; as r) { <span class="num score">{{ text(r.diff, r.white_goals, r.black_goals, names(m)) }}</span> }
-              @else if (m.status === 'scheduled') { <span class="tag turf">in programma</span> }
             </a>
           </li>
         } @empty { <li class="empty"><app-empty icon="calendar" [text]="items().length ? 'Nessuna partita in questo periodo.' : 'Ancora nessuna partita.'" /></li> }
@@ -162,7 +161,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
   `,
   styles: `
     .day { font-weight: 600; display: inline-block; } .day::first-letter { text-transform: uppercase; }
-    /* riquadro calendario: giorno grande, mese sotto; verde per le partite in programma */
+    /* riquadro calendario: giorno grande, mese sotto; neutro (la prossima partita è già fissata in alto, in verde) */
     .cal {
       flex: none; width: 48px; height: 52px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
       background: var(--surface-2); color: var(--ink); line-height: 1;
@@ -174,11 +173,22 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
     .score { font-size: var(--step-1); font-weight: 700; }
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .period { position: relative; flex: 0 1 auto; }
-    .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 170px; }
-    .lead-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -6px; }
-    .pinned .list-item { padding-top: 10px; padding-bottom: 10px; }
+    .period select { min-height: 40px; padding-top: 8px; padding-bottom: 8px; font-weight: 600; max-width: 170px; }
+    .lead-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -8px; }
+    /* la prossima partita è il «momento» della pagina: lo stesso campo dell'intestazione della partita,
+       con la data in gesso e il cerchio di centrocampo; le altre righe restano neutre */
+    .pinned { border: 0; background:
+        radial-gradient(circle at 100% 50%, transparent 0 64px, rgb(241 245 239 / 28%) 65px 67px, transparent 68px),
+        var(--hero-bg);
+      color: var(--hero-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 14%); }
+    .pinned .list-item { padding-top: 16px; padding-bottom: 16px; }
+    .pinned .muted { color: inherit; opacity: 0.82; }
+    .pinned .day { font-size: var(--step-1); }
+    .pinned .cal.next { width: 56px; height: 60px; background: var(--chalk, #f4f7f2); color: var(--turf); }
+    .pinned .cal.next b { font-size: 1.8rem; }
+    .pinned .kits i { box-shadow: 0 0 0 1.5px rgb(241 245 239 / 55%); }
     .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
-    .kits { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+    .kits { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
     .kits i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); }
   `,
 })

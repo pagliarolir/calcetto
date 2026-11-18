@@ -40,13 +40,13 @@ const LP_SEEN_KEY = 'gdl-punti-leader-visti';
     /* sovrapposto in cima all'app: non sposta la pagina */
     :host {
       position: fixed; z-index: 70; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; transform: translateX(-50%);
-      width: min(616px, calc(100% - 24px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+      width: min(616px, calc(100% - 24px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none;
     }
     :host:empty { display: none; }
-    .win { pointer-events: auto; animation: drop 260ms var(--ease-out, ease-out); }
+    .win { pointer-events: auto; animation: drop 260ms var(--ease); }
     @keyframes drop { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .win { animation: none; } }
-    .win { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 10px; border-radius: 16px; min-width: 0;
+    .win { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 12px; border-radius: 16px; min-width: 0;
            background: var(--armband); color: var(--armband-ink); box-shadow: 0 4px 14px rgb(0 0 0 / 22%), inset 0 0 0 1px rgb(0 0 0 / 8%); }
     .pic { width: 44px; height: 44px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; background: #fff; box-shadow: 0 0 0 2px var(--armband-ink); }
     .pic img { width: 100%; height: 100%; object-fit: contain; }

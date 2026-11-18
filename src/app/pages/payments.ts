@@ -55,7 +55,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
   template: `
     <div class="page stack-l pay-page">
       <header class="titlebar">
-        <h1 appFitText>Pagamenti</h1>
+        <h1 appFitText>Conti</h1>
         <app-info-tip label="Come funziona" [lines]="[
           'Chi paga una spesa la inserisce e sceglie tra chi dividerla.',
           'I conti si semplificano: ognuno fa meno passaggi possibili.',
@@ -362,11 +362,11 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .titlebar h1 { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .titlebar app-info-tip { flex: none; }
     .titlebar .push { margin-left: auto; }
-    .data-btn { position: relative; gap: 6px; white-space: nowrap; flex: none; min-height: 44px; }
+    .data-btn { position: relative; gap: 8px; white-space: nowrap; flex: none; min-height: 44px; }
     /* schermi stretti: l'etichetta va su due righe e il titolo resta intero */
     @media (max-width: 380px) { .data-btn { white-space: normal; max-width: 8.5em; line-height: 1.1; text-align: left; } }
     .data-btn .dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg); }
-    .add-data { gap: 6px; white-space: normal; text-align: left; line-height: 1.2; min-height: 44px; }
+    .add-data { gap: 8px; white-space: normal; text-align: left; line-height: 1.2; min-height: 44px; }
     /* titolo su una riga */
     .dati-head { display: flex; align-items: center; gap: 2px; padding-right: 48px; min-width: 0; }
     .dati-head h2 { padding-right: 0; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -377,18 +377,18 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
       background: var(--turf); color: var(--turf-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 28%), 0 0 0 3px var(--bg); }
     .fab:active { filter: brightness(0.92); }
     .fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-    .balance { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; }
+    .balance { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px; }
     .balance b { font-size: calc(var(--step-2) * 1.25); color: var(--ink); }
     .balance.owe b { color: var(--danger); }
     .balance.get b { color: var(--turf); }
     .list.flush { padding: 0; }
-    .list-item.confirm { flex-direction: column; align-items: stretch; gap: 10px; }
-    .list-item.tight { padding: 10px 14px; gap: 8px; }
+    .list-item.confirm { flex-direction: column; align-items: stretch; gap: 12px; }
+    .list-item.tight { padding: 12px 16px; gap: 8px; }
     .acts { justify-content: flex-end; flex-wrap: wrap; }
     .how { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; }
     .small.how { margin-left: 0; }
     /* le due colonne alte uguali; se una è vuota, la scritta sta al centro */
-    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; }
     .col > .none { margin: auto 0; flex: 1; display: grid; place-items: center; text-align: center; }
     /* riga «Da pagare»: avatar, nome e importo, tasto tondo */
     .debt.drow { flex-direction: row; align-items: center; gap: 8px; min-height: 52px; }
@@ -409,7 +409,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .pay-btn:active { filter: brightness(0.92); }
     .pay-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     .drow .wait { width: 24px; height: 36px; }
-    .wait-note { margin-top: -6px; }
+    .wait-note { margin-top: -8px; }
     /* foglio «Salda»: intestazione con importo, metodi in elenco */
     .phead { display: flex; align-items: center; gap: 12px; min-height: 48px; padding-right: 48px; }
     .pname { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -420,11 +420,11 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .amt-ed app-icon { color: var(--muted); }
     .amt-in { flex: none; display: inline-flex; align-items: center; gap: 4px; }
     .amt-in .input { width: 4.5em; height: 44px; font-size: var(--step-1); text-align: right; }
-    .mrows { list-style: none; margin: 14px 0 0; padding: 0; border-radius: 16px; background: var(--surface-2); overflow: hidden; }
-    .mrows > li { display: flex; align-items: center; min-height: 56px; padding-right: 6px; }
+    .mrows { list-style: none; margin: 16px 0 0; padding: 0; border-radius: 16px; background: var(--surface-2); overflow: hidden; }
+    .mrows > li { display: flex; align-items: center; min-height: 56px; padding-right: 8px; }
     .mrows > li + li { border-top: 1px solid var(--line); }
-    .mrows > li.sub { border-top: 0; padding: 0 6px 6px 50px; min-height: 0; }
-    .mpick { all: unset; box-sizing: border-box; flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0 6px 14px; cursor: pointer; }
+    .mrows > li.sub { border-top: 0; padding: 0 8px 8px 50px; min-height: 0; }
+    .mpick { all: unset; box-sizing: border-box; flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0 8px 16px; cursor: pointer; }
     .mpick:focus-visible, .mact:focus-visible { outline: 2px solid var(--turf); outline-offset: -2px; border-radius: 12px; }
     .rad { width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--muted); flex: none; display: grid; place-items: center; }
     .on .rad { border-color: var(--turf); background: var(--turf); color: var(--turf-ink); }
@@ -434,11 +434,11 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .mact { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--ink); background: none; border: 0; cursor: pointer; }
     .mact:active { background: var(--surface); }
     .sub .copy-row { width: 100%; padding: 4px 4px 4px 12px; background: var(--surface); }
-    .go { margin-top: 14px; gap: 8px; }
-    .foot { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 0 0; color: var(--muted); font-size: var(--step--1); text-align: center; }
-    .col { display: flex; flex-direction: column; gap: 10px; padding: 12px; min-width: 0; }
+    .go { margin-top: 16px; gap: 8px; }
+    .foot { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0 0; color: var(--muted); font-size: var(--step--1); text-align: center; }
+    .col { display: flex; flex-direction: column; gap: 12px; padding: 12px; min-width: 0; }
     .col h2 { margin: 0; font-size: var(--step-1); }
-    .debt { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .debt { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
     .amt { font-size: var(--step-2); line-height: 1.1; }
     .amt.owe { color: var(--danger); }
     .amt.get { color: var(--turf); }
@@ -450,8 +450,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     .bell:focus-visible { outline: 2px solid var(--turf); outline-offset: -2px; }
     .wait { flex: none; width: 44px; height: 44px; display: grid; place-items: center; color: var(--muted); }
     .none { margin: 0; }
-    .clear { margin-top: 10px; gap: 6px; }
-    .copy-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; border-radius: 10px; padding: 0 4px; }
+    .clear { margin-top: 12px; gap: 8px; }
+    .copy-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; border-radius: 10px; padding: 0 4px; }
     .copy-row:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .copy-row:active { background: var(--surface); }
     .sym { display: inline-grid; place-items: center; }
@@ -463,15 +463,15 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     details.cfold { padding: 0 12px; }
     details.cfold > summary { min-height: 52px; justify-content: center; gap: 2px; position: relative; padding: 0 28px; }
     details.cfold > summary > h3 { font-size: calc(var(--step-0) * 1.12); text-align: center; }
-    details.cfold > summary .chev { position: absolute; right: 0; top: 50%; margin: -9px 0 0; }
+    details.cfold > summary .chev { position: absolute; right: 0; top: 50%; margin: -8px 0 0; }
     details.cfold[open] { padding-bottom: 12px; }
-    .pre { display: flex; align-items: center; gap: 6px; }
+    .pre { display: flex; align-items: center; gap: 8px; }
     .pre .input { flex: 1; min-width: 0; }
     .amount .input { font-size: var(--step-1); max-width: 160px; }
     .mono, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
     code { font-size: var(--step--1); word-break: break-all; }
-    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .who-fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 14px; cursor: pointer;
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .who-fold > summary { list-style: none; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 16px; cursor: pointer;
       border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
     .who-fold > summary::-webkit-details-marker { display: none; }
     .who-fold > summary .grow { display: flex; flex-direction: column; gap: 2px; }
@@ -495,10 +495,10 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
     @media (prefers-reduced-motion: no-preference) {
       @supports (interpolate-size: allow-keywords) {
         .who-fold { interpolate-size: allow-keywords; }
-        .who-fold::details-content { block-size: 0; overflow: clip; transition: block-size 260ms var(--ease-out, ease-out), content-visibility 260ms allow-discrete; }
+        .who-fold::details-content { block-size: 0; overflow: clip; transition: block-size 260ms var(--ease), content-visibility 260ms allow-discrete; }
         .who-fold[open]::details-content { block-size: auto; }
       }
-      .who-fold[open] .who { animation: who-in 260ms var(--ease-out, ease-out); }
+      .who-fold[open] .who { animation: who-in 260ms var(--ease); }
       @keyframes who-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
     }
     .each b { font-size: calc(var(--step-2) * 1.2); color: var(--ink); line-height: 1.1; }

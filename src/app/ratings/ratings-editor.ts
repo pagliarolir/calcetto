@@ -32,14 +32,14 @@ import { Toasts } from '../core/toast';
     }
   `,
   styles: `
-    .grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
     @media (min-width: 520px) { .grid { grid-template-columns: 1fr 1fr; } }
     .row-v { display: grid; grid-template-columns: 1fr 64px; align-items: center; gap: 2px 8px; font-size: var(--step--1); }
     .row-v .num { min-height: 38px; padding: 4px 8px; text-align: center; }
     .bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
     .bar b { display: block; height: 100%; background: var(--turf); }
-    .gk { border: 0; padding: 0; margin: 4px 0; display: flex; flex-wrap: wrap; gap: 6px; }
-    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+    .gk { border: 0; padding: 0; margin: 4px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
   `,
 })
 export class RatingsEditor {

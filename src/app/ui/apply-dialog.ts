@@ -43,7 +43,7 @@ import { Match } from '../core/models';
   styles: `
     .apply { border: 2px solid var(--turf); }
     .plain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
-    .item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+    .item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); cursor: pointer; }
     .item input { width: 22px; height: 22px; accent-color: var(--turf); flex: none; }
     .day { font-weight: 600; }
     .day::first-letter { text-transform: uppercase; }

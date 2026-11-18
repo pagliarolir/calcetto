@@ -33,7 +33,7 @@ const MAX = 110;
     .ptr.on { opacity: 1; }
     .ptr.ready { color: var(--turf); }
     .ptr.busy svg { animation: spin 800ms linear infinite; color: var(--turf); }
-    .ptr:not(.on) { transition: opacity 120ms, transform 220ms ease-out; }
+    .ptr:not(.on) { transition: opacity 120ms, transform 220ms var(--ease); }
     @keyframes spin { to { rotate: 360deg; } }
     @media (prefers-reduced-motion: reduce) { .ptr.busy svg { animation-duration: 2s; } }
   `,

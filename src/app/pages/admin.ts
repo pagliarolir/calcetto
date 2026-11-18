@@ -429,10 +429,10 @@ import { LeaderNewsAdmin, LeaderNewsService } from '../core/leader-news';
     .member .go { flex: none; color: var(--muted); }
     .mem-head { display: flex; align-items: center; gap: 12px; }
     .mem-head h2 { margin: 0; font-size: var(--step-1); }
-    .mem-role { display: flex; flex-direction: column; gap: 6px; }
+    .mem-role { display: flex; flex-direction: column; gap: 8px; }
     .mem-role .ui-seg > button { flex: 1; min-height: 44px; }
     .acts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-    .acts button { appearance: none; width: 100%; display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 0 4px; border: 0;
+    .acts button { appearance: none; width: 100%; display: flex; align-items: center; gap: 16px; min-height: 48px; padding: 0 4px; border: 0;
                    border-top: 1px solid var(--line); background: none; color: var(--ink); font: 500 var(--step-0)/1.2 var(--font-body); text-align: left; cursor: pointer; }
     .acts li:first-child button { border-top: 0; }
     .acts button:disabled { opacity: 0.5; }

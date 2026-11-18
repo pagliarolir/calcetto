@@ -101,14 +101,8 @@ const RECORDS: Record[] = [
 
       <!-- schede su due righe: la prima giustificata, la seconda centrata -->
       <nav class="stabs" role="tablist" aria-label="Statistiche">
-        <div class="srow first" role="none">
-          @for (t of tabs.slice(0, 3); track t.id) {
-            <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
-                  [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
-          }
-        </div>
         <div class="srow" role="none">
-          @for (t of tabs.slice(3); track t.id) {
+          @for (t of tabs; track t.id) {
             <button role="tab" [id]="'tab-' + t.id" [attr.aria-selected]="tab() === t.id" [attr.aria-controls]="'panel-' + t.id"
                   [attr.tabindex]="tab() === t.id ? 0 : -1" (click)="selectTab(t.id)" (keydown)="tabKey($event)">{{ t.label }}</button>
           }
@@ -374,18 +368,18 @@ const RECORDS: Record[] = [
     /* la tabella prende 8 px per lato dai margini della pagina: più spazio a nomi e colonne */
     .fit-wrap { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-left: -8px; margin-right: -8px; }
     table.fit { table-layout: fixed; width: 100%; border-collapse: collapse; }
-    table.fit th, table.fit td { padding-top: 7px; padding-bottom: 7px; }
+    table.fit th, table.fit td { padding-top: 8px; padding-bottom: 8px; }
     table.fit th:first-child, table.fit td:first-child { width: var(--name-col, 124px); padding-left: 8px; padding-right: 4px; overflow: hidden; }
     table.fit th:not(:first-child), table.fit td:not(:first-child) { padding-left: 0; padding-right: 0; text-align: center; font-size: 0.9rem; }
-    table.fit th:last-child, table.fit td:last-child { padding-right: 6px; }
+    table.fit th:last-child, table.fit td:last-child { padding-right: 8px; }
     table.fit td.wide, table.fit th.wide { width: 60px; }
-    table.fit .who { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 0.92rem; }
+    table.fit .who { display: flex; align-items: center; gap: 4px; min-width: 0; font-size: 0.92rem; }
     table.fit .who .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     table.fit th button { font-size: 0.72rem; padding: 0; }
     .section > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .cols-btn { gap: 6px; }
+    .cols-btn { gap: 8px; }
     .period { position: relative; flex: 0 1 auto; }
-    .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 180px; }
+    .period select { min-height: 40px; padding-top: 8px; padding-bottom: 8px; font-weight: 600; max-width: 180px; }
     .cols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
     .cols li { border-top: 1px solid var(--line); }
     .cols li:first-child { border-top: 0; }
@@ -398,24 +392,24 @@ const RECORDS: Record[] = [
     details.cfold { padding: 0 12px; }
     details.cfold > summary { min-height: 52px; justify-content: center; gap: 2px; position: relative; padding: 0 28px; }
     details.cfold > summary > h3 { font-size: calc(var(--step-0) * 1.12); text-align: center; }
-    details.cfold > summary .chev { position: absolute; right: 0; top: 50%; margin: -9px 0 0; }
+    details.cfold > summary .chev { position: absolute; right: 0; top: 50%; margin: -8px 0 0; }
     details.cfold[open] { padding-bottom: 12px; }
     details.cfold[open] > summary { margin-bottom: 2px; }
-    .fold .pairs { margin-top: 10px; }
+    .fold .pairs { margin-top: 12px; }
     .cmp-chart { display: grid; place-items: center; }
     .cmp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-    .cmp-list li { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+    .cmp-list li { display: flex; align-items: center; gap: 12px; min-height: 44px; }
     .cmp-list .grow { display: flex; flex-direction: column; gap: 2px; }
     .cmp-list .dot { width: 14px; height: 14px; border-radius: 4px; flex: none; }
     .cmp-list .rm { width: 44px; height: 44px; border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
     .cmp-add { display: flex; align-items: center; gap: 8px; color: var(--turf); margin-top: 12px; } .cmp-add select { flex: 1; }
-    /* schede su due righe (3 sopra, giustificate; 2 sotto, centrate), larghe quanto la parola */
+    /* schede su una riga, nomi corti; se non ci stanno (testo molto grande) vanno a capo centrate */
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
     /* schede equidistanti, sopra e sotto */
-    .srow { display: flex; justify-content: space-evenly; }
+    .srow { display: flex; flex-wrap: wrap; justify-content: space-evenly; }
     .stabs button {
       flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
-      padding: 10px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
+      padding: 12px 8px 8px; min-height: 44px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap;
     }
     .stabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
     .tabpanel { display: flex; flex-direction: column; gap: var(--space-l, 24px); }
@@ -423,7 +417,7 @@ const RECORDS: Record[] = [
     .chip.neg[aria-pressed='true'] { background: var(--danger); border-color: var(--danger); }
     .award { border: 2px solid var(--armband); }
     .lp-rank, .lp-hist, .bars, .pairs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-    .lp-rank li, .lp-hist li, .pairs li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); min-width: 0; }
+    .lp-rank li, .lp-hist li, .pairs li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); min-width: 0; }
     /* la propria riga: una fascia che sporge di poco ai lati (il contenuto resta allineato alle altre righe)
        e senza le linee attaccate sopra e sotto, che con gli angoli tondi stonavano */
     .lp-rank li.me { background: var(--turf-soft); margin-inline: -8px; padding-inline: 8px; border-radius: 12px; border-top-color: transparent; }
@@ -434,7 +428,7 @@ const RECORDS: Record[] = [
     .pts { font: 700 var(--step-1)/1 var(--font-display); color: var(--turf); min-width: 48px; text-align: right; }
     .pts.neg { color: var(--danger); }
     .lp-hist .pts { min-width: 44px; text-align: left; font-size: var(--step-0); }
-    .bars li { display: grid; grid-template-columns: minmax(0, 1.1fr) 1fr auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+    .bars li { display: grid; grid-template-columns: minmax(0, 1.1fr) 1fr auto; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
     .bar { height: 8px; border-radius: 999px; background: var(--surface-2, rgb(0 0 0 / 8%)); overflow: hidden; }
     .bar i { display: block; height: 100%; background: var(--turf); border-radius: inherit; }
     .bar.rival i { background: var(--armband); }
@@ -546,10 +540,10 @@ export class StatsPage {
     this.viewport.set(window.innerWidth);
   }
   protected readonly tabs: { id: Tab; label: string }[] = [
-    { id: 'classifica', label: 'Classifica' },
+    { id: 'classifica', label: 'Generale' },
     { id: 'record', label: 'Record' },
-    { id: 'squadre', label: 'Squadre e coppie' },
-    { id: 'punti', label: 'Punti Leader' },
+    { id: 'squadre', label: 'Coppie' },
+    { id: 'punti', label: 'Punti' },
     { id: 'obiettivi', label: 'Obiettivi' },
   ];
   protected readonly tab = signal<Tab>('classifica');

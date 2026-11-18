@@ -135,24 +135,23 @@ interface Section { id: SectionId; label: string; rows: GroupRow[] }
     .itabs button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
     .info .b { font-weight: 700; }
     .info-title { font: 800 var(--step-2)/1.05 var(--font-display); letter-spacing: 0.01em; }
-    .info h3 { font-size: var(--step-1); margin-top: 6px; }
+    .info h3 { font-size: var(--step-1); margin-top: 8px; }
     .info p, .info ul { margin: 0; line-height: 1.5; }
     .info ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
     .info textarea { min-height: 280px; font-size: 0.95rem; line-height: 1.45; }
-    .list-item.unread { background: var(--turf-soft); }
     .kind { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
     .kind.turf { background: var(--turf-soft); color: var(--turf); }
     .kind.gold { background: color-mix(in srgb, var(--armband) 22%, transparent); color: color-mix(in srgb, var(--armband) 70%, var(--ink)); }
     .kind.red { background: var(--danger-soft); color: var(--danger); }
     .list-item.unread .kind { box-shadow: 0 0 0 2px var(--surface); }
     .sec { display: flex; flex-direction: column; gap: 8px; }
-    .sec-h { margin: 0; font: 700 var(--step--1)/1.2 var(--font-body); color: var(--muted); }
+    .sec-h { margin: 0; font: 600 var(--step--1)/1.2 var(--font-body); color: var(--muted); }
     .side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
-    .count { min-width: 24px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink);
+    .count { min-width: 24px; height: 22px; padding: 0 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink);
              font: 700 0.75rem/22px var(--font-body); text-align: center; }
     .group .chev { flex: none; color: var(--muted); transform: rotate(90deg); transition: transform 200ms var(--ease-out); }
     .group[aria-expanded='true'] .chev { transform: rotate(-90deg); }
-    .sub { margin: 6px 0 4px 18px; padding-left: 10px; border-left: 2px solid var(--line); }
+    .sub { margin: 8px 0 4px 20px; padding-left: 12px; border-left: 2px solid var(--line); }
     .list-item.unread strong::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--turf); margin-right: 8px; vertical-align: middle; }
   `,
 })

@@ -90,14 +90,14 @@ export class Reprimand {
     .dialog { position: absolute; inset: 0; z-index: 81; display: grid; place-items: center; padding: 24px; pointer-events: none; }
     .sheet {
       pointer-events: auto; position: relative; width: min(100%, 360px);
-      padding: 76px 24px 22px; border-radius: 18px; text-align: center;
+      padding: 76px 24px 24px; border-radius: 18px; text-align: center;
       background: var(--surface); border: 3px solid var(--danger);
       box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 18%, transparent), 0 24px 60px rgb(0 0 0 / 45%);
       animation: scold 520ms cubic-bezier(.36,.07,.19,.97) both;
     }
     /* il cartellino rosso alzato dall'arbitro */
     .red-card {
-      position: absolute; left: 50%; top: -58px; width: 78px; height: 108px; margin-left: -39px;
+      position: absolute; left: 50%; top: -58px; width: 78px; height: 108px; margin-left: -40px;
       border-radius: 9px; background: linear-gradient(160deg, #ff4b4b, #c41d1d 70%);
       box-shadow: 0 12px 24px rgb(0 0 0 / 35%), inset 0 0 0 2px rgb(255 255 255 / 25%);
       transform: rotate(-9deg); animation: raise 480ms var(--ease-spring) both;
@@ -106,9 +106,9 @@ export class Reprimand {
       margin: 0; color: var(--danger);
       font: 700 1.85rem/1.08 var(--font-display); letter-spacing: 0.005em; text-wrap: balance;
     }
-    .sub { margin: 14px 0 0; color: var(--muted); font-size: var(--step--1); }
+    .sub { margin: 16px 0 0; color: var(--muted); font-size: var(--step--1); }
     .ok {
-      margin-top: 18px; min-height: 46px; padding: 0 22px; border-radius: 999px; cursor: pointer;
+      margin-top: 20px; min-height: 46px; padding: 0 24px; border-radius: 999px; cursor: pointer;
       background: var(--danger); color: var(--danger-ink); border: 0; font: 600 var(--step-0)/1 var(--font-body);
     }
     /* giallo: colori dell'arbitro per il cartellino, bordo e pulsante con la fascia ambra del tema, testo in --ink */

@@ -199,7 +199,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
     .stabs { display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
     .srow { display: flex; justify-content: space-evenly; }
     .stabs button { flex: 0 0 auto; appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer;
-      padding: 10px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap; }
+      padding: 12px 12px 8px; min-height: 42px; color: var(--muted); font: 600 var(--step--1)/1.1 var(--font-body); white-space: nowrap; }
     .stabs button[aria-selected='true'] { color: var(--ink); border-bottom-color: var(--turf); }
     /* selettore a due voci, come nelle Pagelle */
     .seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
@@ -215,26 +215,26 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
     .card .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .tn { font: 700 var(--step-1)/1.1 var(--font-display); }
     .big { font: 800 var(--step-3)/1 var(--font-display); }
-    .link { border: 0; background: none; color: var(--turf); font-weight: 600; cursor: pointer; padding: 6px 0; }
-    .mini { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line);
+    .link { border: 0; background: none; color: var(--turf); font-weight: 600; cursor: pointer; padding: 8px 0; }
+    .mini { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line);
             border: 0; width: 100%; text-align: left; color: inherit; cursor: pointer; }
     .pos { width: 22px; text-align: center; font-weight: 800; color: var(--muted); flex: none; }
     .last { display: grid; grid-template-columns: 1fr; gap: 12px; }
     @media (min-width: 560px) { .last { grid-template-columns: 1fr 1fr; } }
-    .rules { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; }
+    .rules { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 8px; }
     .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-    .cat, .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .cat button, .row-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 14px; border: 0; text-align: left; color: inherit; cursor: pointer;
+    .cat, .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .cat button, .row-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 14px; border: 0; text-align: left; color: inherit; cursor: pointer;
       background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .cat .grow, .row-btn .grow, .rank summary .grow { min-width: 0; display: flex; flex-direction: column; }
     .cat strong, .row-btn strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .q { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
     .q strong { font: 800 var(--step-1)/1 var(--font-display); }
-    .q .delta { font: 800 0.75rem/1 var(--font-body); padding: 2px 5px; border-radius: 6px; background: var(--surface-2); }
+    .q .delta { font: 800 0.75rem/1 var(--font-body); padding: 2px 4px; border-radius: 6px; background: var(--surface-2); }
     .q .delta.up { background: var(--turf-soft); } .q .delta.down { background: color-mix(in srgb, var(--danger) 14%, transparent); }
     .up { color: var(--turf); } .down { color: var(--danger); }
-    .rank details { border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); padding: 0 10px; }
-    .rank summary { display: flex; align-items: center; gap: 10px; min-height: 52px; cursor: pointer; list-style: none; }
+    .rank details { border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); padding: 0 12px; }
+    .rank summary { display: flex; align-items: center; gap: 12px; min-height: 52px; cursor: pointer; list-style: none; }
     .rank summary::-webkit-details-marker { display: none; }
     .members { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 4px 0 8px; }
     .members button { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: inherit; cursor: pointer; min-width: 0; }
@@ -242,7 +242,7 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
     .av { position: relative; display: inline-grid; }
     .cap { position: absolute; right: -4px; bottom: -4px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
            background: var(--armband); color: var(--armband-ink); font: 800 0.68rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); }
-    .coef { flex: none; font: 700 0.78rem/1 var(--font-body); padding: 4px 6px; border-radius: 8px; background: var(--surface-2); color: var(--muted); }
+    .coef { flex: none; font: 700 0.78rem/1 var(--font-body); padding: 4px 8px; border-radius: 8px; background: var(--surface-2); color: var(--muted); }
     .coef.c125 { background: var(--turf-soft); color: var(--turf); }
     .coef.c150 { background: color-mix(in srgb, var(--armband) 30%, transparent); color: var(--armband-ink); }
   `,

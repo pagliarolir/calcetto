@@ -39,7 +39,8 @@ const FIG_MIN = 50;
         <section class="section" aria-labelledby="me-h">
           <header class="tab-head">
             <!-- titolo e chevron nello stesso blocco: lo chevron sta subito dopo il testo -->
-            <div class="me-title">
+            <div class="me-title" [class]="'me-title ' + (myState() ? 'state ' + myState() : '')">
+              @if (myState(); as st) { <app-icon class="st-ic" [name]="st === 'out' ? 'x' : st === 'reserve' ? 'clock' : 'check'" [size]="18" /> }
               <h2 id="me-h" appFitText>{{ myHeadline() }}</h2>
               @if (canChange()) {
                 <button type="button" class="chev-b" [class.pop]="popChev()" [class.up]="choiceOpen()" aria-controls="my-choice" [attr.aria-expanded]="choiceOpen()"
@@ -186,7 +187,7 @@ const FIG_MIN = 50;
   styles: `
     /* risposta appena data, in attesa del server */
     app-figurina.arriving { opacity: 0.55; transition: opacity 200ms; }
-    .spill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px;
+    .spill { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 8px; border-radius: 14px;
              font: 700 0.72rem/1 var(--font-body); white-space: nowrap; }
     .spill::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
     .spill.open { background: var(--turf-soft); color: var(--turf); }
@@ -199,6 +200,19 @@ const FIG_MIN = 50;
     .me-title > h2 { flex: 0 1 auto; min-width: 0; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .me-title > h2::before { content: ''; display: inline-block; vertical-align: -0.08em; width: 4px; height: 0.9em; margin-right: 10px; border-radius: 2px; background: var(--turf); }
     .tab-head > .spill { margin-left: auto; }
+    /* la propria risposta è il «momento» della pagina: una capsula piena col colore dello stato, chevron compreso */
+    .me-title.state { gap: 8px; min-height: 40px; padding: 4px 12px; border-radius: 20px; }
+    .me-title.state > h2 { font-size: var(--step-1) !important; flex: none; overflow: visible; }
+    .me-title.state > h2::before { content: none; }
+    .me-title.state .st-ic { flex: none; display: grid; }
+    .me-title.in { background: var(--turf); color: var(--turf-ink); }
+    .me-title.reserve { background: color-mix(in srgb, var(--armband) 40%, var(--surface)); color: var(--ink); }
+    .me-title.out { background: var(--danger-soft); color: var(--danger); }
+    .me-title.state .chev-b { border: 0; background: rgb(255 255 255 / 22%); color: inherit; }
+    .me-title.state:has(.chev-b) { padding-right: 4px; }
+    /* lo stato delle prenotazioni accanto resta sobrio: solo il pallino ha colore */
+    .spill.open { background: none; color: var(--muted); }
+    .spill.open::before { background: var(--turf); }
     /* chevron: riapre i pulsanti di risposta */
     .chev-b { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
       display: grid; place-items: center; cursor: pointer; position: relative; }
@@ -209,21 +223,21 @@ const FIG_MIN = 50;
     /* tendina dei pulsanti: si chiude verso l'alto e si riapre verso il basso */
     .choice-wrap { display: grid; grid-template-rows: 1fr; }
     .choice-wrap > .choice { min-height: 0; overflow: hidden; }
-    .choice-wrap.shut { grid-template-rows: 0fr; opacity: 0; margin-top: -10px; }
+    .choice-wrap.shut { grid-template-rows: 0fr; opacity: 0; margin-top: -12px; }
     @media (prefers-reduced-motion: no-preference) {
       .choice-wrap { transition: grid-template-rows 360ms ease-in-out, opacity 300ms ease-in-out, margin-top 360ms ease-in-out; }
-      .chev-b app-icon { transition: transform 260ms var(--ease-spring, ease); }
-      .chev-b.pop { animation: chev-pop 380ms var(--ease-spring, ease) both; }
+      .chev-b app-icon { transition: transform 260ms var(--ease); }
+      .chev-b.pop { animation: chev-pop 380ms var(--ease) both; }
       @keyframes chev-pop { from { transform: scale(0.3); opacity: 0; } to { transform: none; opacity: 1; } }
     }
-    .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 14px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
-    .info-pop ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .info-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 6; width: min(300px, 86vw); padding: 12px 16px; font-size: var(--step--1); box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
+    .info-pop ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
     /* le schede restano a portata di dito mentre si scorre l'elenco */
     /* meno spazio tra la propria risposta e le schede */
     .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-top: -8px; }
     /* scorre solo l'elenco dei giocatori: l'altezza è quella che resta sotto le schede (fitList) */
-    .list-panel { padding: 10px 6px 8px 0; margin-right: -6px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
-    .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .list-panel { padding: 12px 8px 8px 0; margin-right: -8px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+    .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
     /* titolari: card alte come quelle degli assenti (niente riempimento dello spazio: se avanza, resta vuoto) */
@@ -241,7 +255,7 @@ const FIG_MIN = 50;
     /* schede degli elenchi */
     /* le schede si dividono sempre la riga: niente scorrimento */
     /* leggibile in tutti i temi: in Figurina e Alto contrasto i bordi hanno il colore del testo */
-    .count { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+    .count { min-width: 22px; height: 20px; padding: 0 4px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 0.72rem; font-weight: 700; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
     /* quattro schede («sceglie il Leader»): nome piccolo e numero sotto */
     .list-panel { margin-top: -8px; }
     .silent { margin-top: 12px; }
@@ -306,6 +320,15 @@ export class BookingTab {
     if (me.list === 'reserve') return 'Sei riserva';
     if (me.list === 'pending') return 'Ci sei';
     return 'Non ci sei';
+  });
+
+  /** il «momento» della Lista: la propria risposta, colorata (dentro, riserva, fuori); senza risposta resta un titolo normale */
+  protected readonly myState = computed<'in' | 'reserve' | 'out' | null>(() => {
+    const me = this.store.mine();
+    if (!me) return null;
+    if (me.list === 'team' || me.list === 'pending') return 'in';
+    if (me.list === 'reserve') return 'reserve';
+    return 'out';
   });
 
   protected readonly presentHint = computed(() => {
@@ -486,7 +509,7 @@ export class BookingTab {
       if (!a) return;
       const b = el.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.2, 0.9, 0.25, 1)' });
+      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
     });
   }
   protected readonly effSort = computed(() => (this.sortOptions().some((o) => o.id === this.sortMode()) ? this.sortMode() : 'alpha'));

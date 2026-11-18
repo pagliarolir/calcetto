@@ -99,25 +99,25 @@ import { Avatar } from '../ui/avatar';
     h2 { font-size: var(--step-1); }
     .big { display: flex; flex-direction: column; align-items: flex-end; }
     .big strong { font: 800 var(--step-3)/1 var(--font-display); }
-    .budget, .bar { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--step--1); color: var(--muted); }
+    .budget, .bar { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: var(--step--1); color: var(--muted); }
     .budget strong, .bar strong { color: var(--ink); }
-    .bar { position: sticky; top: 0; z-index: 2; padding: 10px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 6px 14px -10px rgb(0 0 0 / 30%); }
+    .bar { position: sticky; top: 0; z-index: 2; padding: 12px 12px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 6px 14px -10px rgb(0 0 0 / 30%); }
     .bar .over strong { color: var(--danger); }
     .bar { align-items: center; }
     .zero { margin-left: auto; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px;
             font: 600 var(--step--1)/1.2 var(--font-body); cursor: pointer; }
     .zero:disabled { opacity: 0.4; cursor: not-allowed; }
     .up { color: var(--turf); font-weight: 700; } .down { color: var(--danger); font-weight: 700; }
-    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 0; text-align: left; color: inherit; cursor: pointer; }
+    ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; border: 0; background: none; padding: 0; text-align: left; color: inherit; cursor: pointer; }
     .who .grow { min-width: 0; display: flex; flex-direction: column; }
     .who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mine li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .mine li { padding: 8px 0; border-bottom: 1px solid var(--line); }
     .mine li:last-child { border-bottom: 0; }
     .av { position: relative; display: inline-grid; }
     .cap { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
            background: var(--armband); color: var(--armband-ink); font: 800 0.72rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); }
-    .pick li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+    .pick li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .pick li.sel { box-shadow: 0 0 0 2px var(--turf); background: var(--turf-soft); }
     .price { flex: none; min-width: 52px; height: 36px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
              font: 800 var(--step-0)/1 var(--font-display); cursor: pointer; }
@@ -125,7 +125,7 @@ import { Avatar } from '../ui/avatar';
     .price:disabled { opacity: 0.35; cursor: not-allowed; }
     .c { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1.5px dashed var(--armband); background: none; color: var(--armband-ink); font: 800 0.85rem/1 var(--font-display); cursor: pointer; }
     .c.on { border-style: solid; background: var(--armband); }
-    .actions { position: sticky; bottom: 0; padding: 10px 0 4px; background: var(--bg); }
+    .actions { position: sticky; bottom: 0; padding: 12px 0 4px; background: var(--bg); }
   `,
 })
 export class FlTeam {

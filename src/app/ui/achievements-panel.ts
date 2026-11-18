@@ -37,6 +37,7 @@ import { Sheet } from './sheet';
                   }
                 </span>
                 <span class="sname">{{ a.name }}</span>
+                <span class="snum" aria-hidden="true">{{ a.number }}</span>
               </button>
             </li>
           }
@@ -149,10 +150,20 @@ import { Sheet } from './sheet';
   styles: `
     .section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
     /* album: righe da 4, come le medaglie */
-    .album { list-style: none; margin: 0; padding: 14px 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px;
-             border-radius: 18px; background: linear-gradient(160deg, var(--surface), var(--surface-2)); box-shadow: inset 0 0 0 1px var(--line); }
+    /* l'album è il «momento» della pagina: una pagina da album di figurine sul verde del campo, con le caselle numerate */
+    .album { list-style: none; margin: 0; padding: 20px 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 8px;
+             border-radius: 18px; color: var(--hero-ink);
+             background: repeating-linear-gradient(180deg, rgb(255 255 255 / 4%) 0 44px, transparent 44px 88px), var(--hero-bg);
+             box-shadow: 0 6px 18px rgb(0 0 0 / 16%); }
+    .album .sticker { color: inherit; position: relative; }
+    .album .sticker:not(.got) .pic:not(.shadowed) { background: rgb(255 255 255 / 8%); box-shadow: none; outline: 2px dashed rgb(241 245 239 / 45%); outline-offset: -2px; }
+    .album .got .pic { outline: 0; }
+    .album .ph { color: rgb(241 245 239 / 75%); }
+    .album .sticker:not(.got) .sname { color: inherit; opacity: 0.8; }
+    .snum { position: absolute; top: -4px; left: calc(50% + 20px); min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px;
+            display: grid; place-items: center; font: 600 0.68rem/1 var(--font-display); background: var(--chalk, #f1f5ef); color: var(--turf); }
     .sticker { appearance: none; border: 0; background: none; color: var(--ink); cursor: pointer; width: 100%;
-               display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; font: inherit; min-width: 0; }
+               display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; font: inherit; min-width: 0; }
     .pic { position: relative; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; flex: none;
            background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--line); }
     .got .pic, .pic.got { background: radial-gradient(circle at 35% 30%, #fff8d6, #f2c94c 70%); box-shadow: 0 0 0 2px var(--armband), 0 6px 14px rgb(0 0 0 / 18%); }
@@ -174,7 +185,7 @@ import { Sheet } from './sheet';
     .sticker:not(.got) .sname { color: var(--muted); }
     /* classifica */
     .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-    .rank li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line); min-width: 0; }
+    .rank li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-top: 1px solid var(--line); min-width: 0; }
     .rank li:first-child { border-top: 0; }
     .rank .pos { position: static; width: 20px; text-align: center; color: var(--muted); font-weight: 700; background: none; box-shadow: none; }
     .who { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex: 1; color: inherit; text-decoration: none; font-weight: 600; }
@@ -185,10 +196,10 @@ import { Sheet } from './sheet';
     .file-btn { position: relative; justify-content: center; }
     /* dettaglio */
     .detail { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
-    .pic.big { width: 120px; height: 120px; margin-bottom: 6px; }
-    .mission { margin: 6px 0 0; }
+    .pic.big { width: 120px; height: 120px; margin-bottom: 8px; }
+    .mission { margin: 8px 0 0; }
     .secret { color: var(--muted); font-style: italic; }
-    .holders ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .holders ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .holders li { display: flex; align-items: center; gap: 8px; }
     .tools { border-top: 1px solid var(--line); padding-top: 12px; }
   `,

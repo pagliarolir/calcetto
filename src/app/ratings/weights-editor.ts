@@ -35,11 +35,11 @@ interface Row { attr: string; label: string; punta: number; centrale: number; es
   styles: `
     .wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
-    th, td { padding: 4px 3px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th, td { padding: 4px 4px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
     th:first-child, td:first-child { text-align: left; white-space: normal; }
     .num { width: 58px; min-height: 36px; padding: 2px 4px; text-align: center; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
     tfoot td { font-weight: 800; } .ok { color: var(--turf); } .ko { color: var(--danger); }
-    .btn { margin-top: 10px; }
+    .btn { margin-top: 12px; }
   `,
 })
 export class WeightsEditor {

@@ -96,19 +96,19 @@ import { MatchConfig } from '../core/match-config';
   `,
   styles: `
     /* sezioni ben staccate; titoli con la lineetta verde dei titoli di sezione */
-    .cfg { display: flex; flex-direction: column; gap: 22px; }
+    .cfg { display: flex; flex-direction: column; gap: 24px; }
     fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    legend { display: flex; align-items: center; gap: 4px; font: 600 var(--step-1)/1.2 var(--font-display); margin-bottom: 6px; padding: 0; }
-    legend > span { display: inline-flex; align-items: center; gap: 10px; }
+    legend { display: flex; align-items: center; gap: 4px; font: 600 var(--step-1)/1.2 var(--font-display); margin-bottom: 8px; padding: 0; }
+    legend > span { display: inline-flex; align-items: center; gap: 12px; }
     legend > span::before { content: ''; width: 4px; height: 0.9em; border-radius: 2px; background: var(--turf); flex: none; }
     /* minmax(0, …): i campi con l'ora non allargano la riga oltre lo schermo */
     .pair { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; }
     .pair .input { width: 100%; min-width: 0; }
     /* scelte su una riga sola, della stessa larghezza */
-    .one-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+    .one-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
     .one-row .chip { justify-content: center; padding-left: 4px; padding-right: 4px; white-space: nowrap; min-width: 0; }
     .one-row.duration { grid-auto-columns: auto; grid-template-columns: repeat(3, minmax(0, 1fr)) 72px; align-items: center; }
-    .kit-row { display: flex; flex-direction: column; gap: 6px; }
+    .kit-row { display: flex; flex-direction: column; gap: 8px; }
     .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
     .swatch { appearance: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 2px solid var(--line); padding: 0; }
     .swatch[aria-pressed='true'] { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--turf); }

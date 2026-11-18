@@ -164,21 +164,21 @@ interface Place { team: Team; slot: number | null }
   `,
   styles: `
     .fhead { margin-bottom: calc(0.5rem - 24px); }
-    .tpill { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 14px; font: 700 0.8rem/1 var(--font-body);
+    .tpill { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 14px; font: 700 0.8rem/1 var(--font-body);
              background: var(--kit-white); color: var(--kit-white-ink); box-shadow: inset 0 0 0 1.5px #14201a; }
     .tpill::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
     .tpill.black { background: var(--kit-black); color: var(--kit-black-ink); box-shadow: none; }
-    .mine { display: inline-flex; align-self: flex-start; padding: 10px 16px; border-radius: 999px; font: 700 var(--step-1)/1 var(--font-display);
+    .mine { display: inline-flex; align-self: flex-start; padding: 12px 16px; border-radius: 999px; font: 700 var(--step-1)/1 var(--font-display);
       background: var(--team-a); color: var(--team-a-ink); box-shadow: inset 0 0 0 1.5px var(--line); }
     .mine.black { background: var(--team-b); color: var(--team-b-ink); box-shadow: none; }
-    .spot .val { font: 800 0.68rem/1 var(--font-display); padding: 2px 5px; border-radius: 6px; background: rgb(0 0 0 / 45%); color: #fff; margin-top: 1px; }
+    .spot .val { font: 800 0.68rem/1 var(--font-display); padding: 2px 4px; border-radius: 6px; background: rgb(0 0 0 / 45%); color: #fff; margin-top: 1px; }
     .tv { position: absolute; left: 6px; top: 25%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 1px;
-          padding: 4px 7px; border-radius: 10px; background: rgb(255 255 255 / 88%); color: #14201a; font: 600 0.62rem/1.1 var(--font-body); z-index: 2; pointer-events: none; }
+          padding: 4px 8px; border-radius: 10px; background: rgb(255 255 255 / 88%); color: #14201a; font: 600 0.62rem/1.1 var(--font-body); z-index: 2; pointer-events: none; }
     .tv b { font: 800 1.05rem/1 var(--font-display); }
     .tv.black { top: 75%; background: rgb(20 32 26 / 88%); color: #fff; }
     /* badge del valore sulla foto, dal rosso al verde */
     .ph { position: relative; display: block; }
-    .ovb { position: absolute; right: -13px; top: -9px; min-width: 22px; height: 22px; padding: 0 3px; border-radius: 11px; display: grid; place-items: center;
+    .ovb { position: absolute; right: -13px; top: -9px; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 11px; display: grid; place-items: center;
            font: 800 0.7rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 36%); box-shadow: 0 0 0 2px #fff; }
     .ovb.static { position: static; box-shadow: none; }
     /* nomi interi, mai troncati: la scritta può essere più larga del posto, resta centrata */
@@ -196,12 +196,12 @@ interface Place { team: Team; slot: number | null }
     .spot { transition: opacity 200ms; } .pitch.rays-on .spot:not(.focus) { opacity: 0.18; }
     /* raggiera aperta: pallino e nome del giocatore toccato si nascondono (i raggi non li incrociano) */
     .spot .ovb, .spot .name, .spot .gkd { transition: opacity 160ms; } .spot.focus .ovb, .spot.focus .name, .spot.focus .gkd { opacity: 0; }
-    .shade { position: absolute; inset: 0; z-index: 4; background: rgb(0 0 0 / 55%); animation: fade-in 180ms ease-out both; }
+    .shade { position: absolute; inset: 0; z-index: 4; background: rgb(0 0 0 / 55%); animation: fade-in 180ms var(--ease) both; }
     .shade.closing { animation: fade-out 220ms ease-in both; animation-delay: calc(var(--n, 5) * 40ms); }
     .rays { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; overflow: visible; }
-    .rays line { stroke-linecap: round; opacity: 0; animation: op-in 200ms ease-out forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
+    .rays line { stroke-linecap: round; opacity: 0; animation: op-in 200ms var(--ease) forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
     .rays .under { stroke: rgb(0 0 0 / 45%); stroke-width: 5; } .rays .ray { stroke: #fff; stroke-width: 2.2; }
-    .rays .arc { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: var(--len) 999; stroke-dashoffset: var(--len); animation: ray-in 240ms ease-out forwards; }
+    .rays .arc { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: var(--len) 999; stroke-dashoffset: var(--len); animation: ray-in 240ms var(--ease) forwards; }
     .rays.closing line { opacity: 1; animation: op-out 130ms ease-in forwards; animation-delay: calc((var(--n) - 1 - var(--i)) * 45ms); }
     .rays.closing .arc { stroke-dashoffset: 0; animation: arc-back 170ms ease-in forwards; animation-delay: calc(var(--n, 5) * 45ms); }
     .rlabels { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
@@ -209,7 +209,7 @@ interface Place { team: Team; slot: number | null }
           color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 85%), 0 0 1px rgb(0 0 0 / 90%);
           /* alone scuro e morbido dietro il valore (niente riquadro): contrasto garantito qualunque cosa ci sia sotto */
           background: radial-gradient(closest-side, rgb(0 0 0 / 62%), rgb(0 0 0 / 38%) 60%, transparent); padding: 8px 12px; border-radius: 50%;
-          opacity: 0; animation: op-in 200ms ease-out forwards; animation-delay: calc(300ms + var(--i) * 70ms); }
+          opacity: 0; animation: op-in 200ms var(--ease) forwards; animation-delay: calc(300ms + var(--i) * 70ms); }
     .rl small { font: 700 0.66rem/1.1 var(--font-body); color: #fff; } .rl b { font-size: 1.2rem; color: #ffe27a; }
     .rlabels.closing .rl { opacity: 1; animation: op-out 130ms ease-in forwards; animation-delay: calc((var(--n) - 1 - var(--i)) * 45ms); }
     @keyframes op-in { to { opacity: 1; } } @keyframes op-out { to { opacity: 0; } }
@@ -229,15 +229,15 @@ interface Place { team: Team; slot: number | null }
     /* pallino del portiere sulla foto, in basso a destra */
     .gkd { position: absolute; right: -7px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
     .gkd.green { background: hsl(150 58% 40%); } .gkd.yellow { background: hsl(48 88% 52%); } .gkd.red { background: hsl(4 76% 50%); }
-    .bgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-    .bchip { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 4px 8px 4px 4px; border-radius: 22px; border: 1.5px solid var(--line);
+    .bgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .bchip { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 4px 8px 4px 4px; border-radius: 22px; border: 1.5px solid var(--line);
              background: var(--surface); color: var(--ink); font: 600 var(--step--1)/1.2 var(--font-body); cursor: pointer; }
     .bchip[aria-pressed='true'] { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); background: var(--turf-soft); }
     .bchip .ellipsis { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .acts .btn { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .acts .btn:only-child { grid-column: 1 / -1; }
     .pick { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-    .pick button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 4px 6px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1.2 var(--font-body); cursor: pointer; text-align: left; }
+    .pick button { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 8px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1.2 var(--font-body); cursor: pointer; text-align: left; }
     .pick button:hover { background: var(--surface-2); }
     .pitch {
       position: relative; aspect-ratio: 3 / 4.4; width: 100%; border-radius: var(--r-m); overflow: hidden;
@@ -254,7 +254,7 @@ interface Place { team: Team; slot: number | null }
     .spot {
       position: absolute; z-index: 1; transform: translate(-50%, -50%);
       appearance: none; border: 0; background: none; padding: 0; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 3px; width: 76px; color: #fff;
+      display: flex; flex-direction: column; align-items: center; gap: 4px; width: 76px; color: #fff;
     }
     .spot:disabled { cursor: default; }
     .disc {

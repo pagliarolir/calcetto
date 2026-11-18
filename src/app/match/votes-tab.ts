@@ -199,22 +199,22 @@ import { Sheet } from '../ui/sheet';
       min-height: 38px; padding: 0 12px; border-radius: 10px; font: 600 var(--step--1)/1 var(--font-body); white-space: nowrap;
     }
     .seg button[aria-selected='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
-    .pip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); margin-left: 6px; vertical-align: middle; }
+    .pip { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); margin-left: 8px; vertical-align: middle; }
 
     /* righe */
-    .group { display: flex; flex-direction: column; gap: 6px; }
+    .group { display: flex; flex-direction: column; gap: 8px; }
     .ghead { display: flex; align-items: center; gap: 8px; font-size: var(--step-1); }
     .dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); flex: none; }
     .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-    .rows li { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px; min-height: 58px; border-top: 1px solid var(--line); min-width: 0; }
+    .rows li { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 12px; min-height: 58px; border-top: 1px solid var(--line); min-width: 0; }
     .rows li:first-child { border-top: 0; }
     .rows li.voting { flex-direction: column; align-items: stretch; gap: 0; padding-bottom: 2px; }
-    .line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .line { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .rows.tight { border: 0; border-radius: 0; margin-top: 8px; }
     .rows.tight li { min-height: 40px; padding: 4px 0; }
     .name { font-weight: 600; }
     .pos { width: 20px; text-align: center; color: var(--muted); font-weight: 700; }
-    .mvp { display: inline-block; margin-left: 6px; font-size: 0.72rem; font-weight: 700; color: var(--armband-ink); background: var(--armband); padding: 1px 7px; border-radius: 999px; vertical-align: middle; }
+    .mvp { display: inline-block; margin-left: 8px; font-size: 0.72rem; font-weight: 700; color: var(--armband-ink); background: var(--armband); padding: 1px 8px; border-radius: 999px; vertical-align: middle; }
 
     /* il voto: distintivo colorato come nelle pagelle */
     .rate {
@@ -228,17 +228,17 @@ import { Sheet } from '../ui/sheet';
     .rate:not(.touched) { opacity: 0.85; }
     .top { background: #1d5fd1; } .good { background: #1f7a4a; } .ok { background: #4f7a12; } .meh { background: #b45309; } .bad { background: #b93a26; } .none { background: var(--surface-2); color: var(--muted); }
 
-    .vcount { display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 9px;
+    .vcount { display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 4px; margin-left: 8px; border-radius: 9px;
               background: var(--surface-2); color: var(--muted); font: 700 0.7rem/1 var(--font-body); }
     .seg button[aria-selected='true'] .vcount { background: var(--turf); color: var(--turf-ink); }
     .seg button:disabled { opacity: 0.4; cursor: not-allowed; }
     .av { position: relative; display: inline-grid; flex: none; border-radius: 50%; }
     .av.is-mvp { box-shadow: 0 0 0 2px var(--armband); }
-    .mvp-dot { position: absolute; right: -10px; bottom: -6px; height: 20px; min-width: 30px; padding: 0 6px; border-radius: 10px; display: grid; place-items: center;
+    .mvp-dot { position: absolute; right: -10px; bottom: -6px; height: 20px; min-width: 30px; padding: 0 8px; border-radius: 10px; display: grid; place-items: center;
                background: var(--armband); color: var(--armband-ink); font: 800 0.72rem/1 var(--font-display); box-shadow: 0 0 0 2px var(--surface); white-space: nowrap; }
     .warn-text { color: var(--danger); font-weight: 600; }
     .mvp-card {
-      display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; min-height: 64px; padding: 10px 14px;
+      display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer; min-height: 64px; padding: 12px 16px;
       border-radius: 16px; border: 1.5px solid color-mix(in srgb, var(--armband) 60%, var(--line)); background: color-mix(in srgb, var(--armband) 12%, var(--surface));
       color: var(--ink); font: inherit;
     }
@@ -247,7 +247,7 @@ import { Sheet } from '../ui/sheet';
     .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
     .pick-p {
       appearance: none; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 14px; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; font: 600 var(--step--1)/1.1 var(--font-body); min-width: 0;
+      display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; font: 600 var(--step--1)/1.1 var(--font-body); min-width: 0;
     }
     .pick-p span { max-width: 100%; }
     .pick-p[aria-pressed='true'] { border-color: var(--armband); background: color-mix(in srgb, var(--armband) 18%, var(--surface)); }
@@ -262,7 +262,7 @@ import { Sheet } from '../ui/sheet';
     .confirm { position: sticky; bottom: 8px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 6px 24px rgb(20 32 25 / 16%); }
 
 
-    .voter summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 36px; }
+    .voter summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; min-height: 36px; }
     .voter summary::-webkit-details-marker { display: none; }
 
   `,
