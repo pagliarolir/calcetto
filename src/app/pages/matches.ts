@@ -173,11 +173,11 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
     .score { font-size: var(--step-1); font-weight: 700; }
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .period { position: relative; flex: 0 1 auto; }
-    .period select { min-height: 40px; padding-top: 6px; padding-bottom: 6px; font-weight: 600; max-width: 170px; }
-    .lead-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -6px; }
-    .pinned .list-item { padding-top: 10px; padding-bottom: 10px; }
+    .period select { min-height: 40px; padding-top: 8px; padding-bottom: 8px; font-weight: 600; max-width: 170px; }
+    .lead-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -8px; }
+    .pinned .list-item { padding-top: 12px; padding-bottom: 12px; }
     .pair { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; }
-    .kits { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+    .kits { display: inline-flex; gap: 4px; margin-left: 8px; vertical-align: middle; }
     .kits i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); }
   `,
 })

@@ -36,18 +36,18 @@ import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input
     }
     :host(:focus-visible) .thumb { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--focus); }
     .track {
-      position: absolute; left: 0; right: 0; top: 50%; height: 10px; margin-top: -5px; border-radius: 999px;
+      position: absolute; left: 0; right: 0; top: 50%; height: 10px; margin-top: -4px; border-radius: 999px;
       background: linear-gradient(90deg, #c0392b 0%, #e05a1f 22%, #f0a31a 40%, #f5d020 52%, #a6c837 68%, #3fa04a 84%, #1f7a4a 100%);
       box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
     }
     /* segno del 6, il voto di partenza */
     .tick { position: absolute; top: -3px; width: 2px; height: 16px; margin-left: -1px; border-radius: 1px; background: rgb(0 0 0 / 25%); }
     .thumb {
-      position: absolute; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%;
+      position: absolute; top: 50%; width: 28px; height: 28px; margin: -16px 0 0 -16px; border-radius: 50%;
       background: #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 35%), 0 0 0 1px rgb(0 0 0 / 8%);
-      transition: left 90ms ease-out, transform 140ms ease-out;
+      transition: left 90ms var(--ease), transform 140ms var(--ease);
     }
-    .thumb.dragging { transform: scale(1.18); transition: transform 140ms ease-out; }
+    .thumb.dragging { transform: scale(1.18); transition: transform 140ms var(--ease); }
   `,
 })
 export class VoteSlider {

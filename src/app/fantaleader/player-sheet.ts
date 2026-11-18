@@ -103,27 +103,27 @@ import { Sheet } from '../ui/sheet';
     .head h2 { font-size: var(--step-1); }
     .x { border: 0; background: var(--surface-2); color: var(--muted); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; flex: none; }
     .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .prices div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+    .prices div { display: flex; flex-direction: column; gap: 2px; padding: 12px 12px; border-radius: 12px; background: var(--surface-2); }
     .prices strong { font: 800 var(--step-2)/1 var(--font-display); }
     .prices .up { color: var(--turf); } .prices .down { color: var(--danger); }
     .prices small { font-size: 0.7em; }
     .desc { margin: 0; line-height: 1.45; font-style: italic; color: var(--muted); }
     h3 { font-size: var(--step-0); margin: 0; }
-    .skill { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; background: var(--turf-soft); }
+    .skill { display: flex; gap: 12px; align-items: flex-start; padding: 8px 12px; border-radius: 12px; background: var(--turf-soft); }
     .skill.neg { background: color-mix(in srgb, var(--danger) 12%, transparent); }
     .skill.off { opacity: 0.6; }
     .skill p { margin: 2px 0 0; }
     .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
     .skill.neg .sign { background: var(--danger); color: var(--danger-ink); }
-    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .grid div { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px; background: var(--surface-2); text-align: center; }
     .grid strong { font: 800 var(--step-1)/1.1 var(--font-display); }
     .day { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; }
     .day summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; list-style: none; }
     .day summary::-webkit-details-marker { display: none; }
-    .day ul { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--step--1); }
-    .day li { display: flex; justify-content: space-between; gap: 10px; }
-    .tag { margin-left: 6px; }
+    .day ul { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: var(--step--1); }
+    .day li { display: flex; justify-content: space-between; gap: 12px; }
+    .tag { margin-left: 8px; }
   `,
 })
 export class FlPlayerSheet {

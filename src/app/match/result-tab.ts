@@ -197,16 +197,16 @@ type Field = keyof Line;
     }
   `,
   styles: `
-    .split-why { margin: 6px 0 0; text-align: center; }
+    .split-why { margin: 8px 0 0; text-align: center; }
     .big { font-size: var(--step-4); }
-    .meter { display: flex; gap: 6px; }
+    .meter { display: flex; gap: 8px; }
     .meter span { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); }
     .meter span.on { background: var(--turf); }
     .choice.three { grid-template-columns: 1fr 1fr 1fr; }
-    .score-in { display: flex; align-items: flex-end; justify-content: center; gap: 18px; }
+    .score-in { display: flex; align-items: flex-end; justify-content: center; gap: 20px; }
     .score-in .stack { align-items: center; gap: 4px; }
     .dash { font-size: var(--step-3); padding-bottom: 2px; }
-    .fold summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; min-height: 40px; }
+    .fold summary { display: flex; align-items: center; gap: 12px; cursor: pointer; list-style: none; min-height: 40px; }
     .fold summary::-webkit-details-marker { display: none; }
     .fold summary app-icon { transform: rotate(90deg); transition: transform 200ms; }
     .fold[open] summary app-icon { transform: rotate(-90deg); }
@@ -218,28 +218,28 @@ type Field = keyof Line;
                 display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: 0 0 0 1px var(--line), 0 2px 6px rgb(0 0 0 / 12%); }
     .info-btn[aria-expanded='true'] { color: var(--turf); box-shadow: 0 0 0 2px var(--turf), 0 2px 6px rgb(0 0 0 / 12%); }
     .info-pop {
-      position: absolute; top: 28px; right: -8px; z-index: 4; width: min(270px, calc(100% - 16px)); padding: 12px 14px; border-radius: 14px;
+      position: absolute; top: 28px; right: -8px; z-index: 4; width: min(270px, calc(100% - 16px)); padding: 12px 16px; border-radius: 14px;
       background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px rgb(0 0 0 / 22%), 0 0 0 1px var(--line); font-size: var(--step--1);
-      display: flex; flex-direction: column; gap: 6px; text-align: left;
+      display: flex; flex-direction: column; gap: 8px; text-align: left;
     }
     .info-pop::before { content: ''; position: absolute; top: -6px; right: 16px; width: 12px; height: 12px; background: var(--surface); transform: rotate(45deg); box-shadow: -1px -1px 0 var(--line); }
     .info-pop p { margin: 0; }
-    .info-pop ul { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+    .info-pop ul { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
     .info-pop .ok { color: var(--turf); font-weight: 800; }
     .info-pop .ko { color: var(--danger); font-weight: 800; }
     /* punteggio centrato tra le due maglie, sempre su una riga */
     .score-mid h2, .score-mid .big { white-space: nowrap; }
-    .scoreline { display: flex; align-items: center; justify-content: center; gap: 14px; }
-    .score-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .scoreline { display: flex; align-items: center; justify-content: center; gap: 16px; }
+    .score-mid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     /* formazioni complete, una colonna per squadra */
-    .rosters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .roster { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px; }
-    .rhead { display: flex; align-items: center; gap: 6px; font-size: var(--step-0); margin: 0 4px 6px; }
+    .rosters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .roster { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 8px; }
+    .rhead { display: flex; align-items: center; gap: 8px; font-size: var(--step-0); margin: 0 4px 8px; }
     .roster.right .rhead { justify-content: flex-end; }
     .dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 25%); flex: none; }
     .roster ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
     .pl { appearance: none; border: 0; background: none; color: var(--ink); font: inherit; width: 100%; min-height: 40px; padding: 4px; border-radius: 10px;
-          display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 6px; align-items: center; text-align: left; cursor: default; }
+          display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; cursor: default; }
     .pl app-avatar { grid-row: 1 / 3; }
     .pname { font-weight: 600; font-size: var(--step--1); min-width: 0; }
     .marks { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 0; }
@@ -261,9 +261,9 @@ type Field = keyof Line;
     .sc-head { display: flex; align-items: center; gap: 12px; }
     .sc-row { display: flex; align-items: center; gap: 12px; min-height: 48px; border-top: 1px solid var(--line); }
     .sc-ic { width: 24px; display: grid; place-items: center; }
-    .scorer { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+    .scorer { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
     .scorer.mine .grow { font-weight: 700; }
-    .scorer .tag { margin-left: 6px; font-size: 0.7rem; }
+    .scorer .tag { margin-left: 8px; font-size: 0.7rem; }
     .readonly { text-align: right; }
     .cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .cell .stepper button { width: 30px; height: 30px; font-size: 1rem; }

@@ -35,7 +35,7 @@ import { fmtWhen } from '../core/format';
     }
   `,
   styles: `
-    .strip { display: flex; flex-wrap: wrap; gap: 6px; }
+    .strip { display: flex; flex-wrap: wrap; gap: 8px; }
     .slot { position: relative; }
     .st { width: 34px; height: 34px; padding: 0; border: 0; cursor: pointer; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
           background: radial-gradient(circle at 35% 30%, #fff8d6, #f2c94c 70%); box-shadow: 0 0 0 2px var(--armband), 0 3px 8px rgb(0 0 0 / 15%); }
@@ -43,14 +43,14 @@ import { fmtWhen } from '../core/format';
     .st img, .big img { width: 100%; height: 100%; object-fit: contain; }
     .st i, .big i { font-style: normal; color: var(--armband-ink); font-size: 0.95rem; }
     /* fumetto ancorato sotto lo sticker */
-    .pop { position: absolute; top: calc(100% + 10px); left: -8px; z-index: 30; width: min(250px, 78vw); padding: 12px 14px; border-radius: 14px;
+    .pop { position: absolute; top: calc(100% + 10px); left: -8px; z-index: 30; width: min(250px, 78vw); padding: 12px 16px; border-radius: 14px;
            background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px rgb(0 0 0 / 22%), 0 0 0 1px var(--line);
-           display: flex; flex-direction: column; gap: 6px; font-size: var(--step--1); text-align: left; }
+           display: flex; flex-direction: column; gap: 8px; font-size: var(--step--1); text-align: left; }
     .pop.flip { left: auto; right: -8px; }
     .pop::before { content: ''; position: absolute; top: -6px; left: 20px; width: 12px; height: 12px; background: var(--surface); transform: rotate(45deg); box-shadow: -1px -1px 0 var(--line); }
     .pop.flip::before { left: auto; right: 20px; }
     .pop p { margin: 0; line-height: 1.4; }
-    .head { display: flex; align-items: center; gap: 10px; }
+    .head { display: flex; align-items: center; gap: 12px; }
     .head strong { font: 700 var(--step-0)/1.2 var(--font-display); }
     .big { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
            background: radial-gradient(circle at 35% 30%, #fff8d6, #f2c94c 70%); box-shadow: 0 0 0 2px var(--armband); }

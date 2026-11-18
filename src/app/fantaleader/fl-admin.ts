@@ -143,20 +143,20 @@ import { Sheet } from '../ui/sheet';
     </dialog>
   `,
   styles: `
-    :host { display: flex; flex-direction: column; gap: 14px; }
+    :host { display: flex; flex-direction: column; gap: 16px; }
     h3 { font-size: var(--step-0); margin: 0; }
-    .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-    .chips li { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 4px; border-radius: 999px; background: var(--surface-2); font-size: var(--step--1); }
+    .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .chips li { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 999px; background: var(--surface-2); font-size: var(--step--1); }
     .rm { border: 0; background: none; color: var(--muted); cursor: pointer; width: 24px; height: 24px; }
-    .facts, .rows, .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-    .facts li { display: flex; justify-content: space-between; gap: 10px; font-size: var(--step--1); }
+    .facts, .rows, .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .facts li { display: flex; justify-content: space-between; gap: 12px; font-size: var(--step--1); }
     .facts li.warn strong { color: var(--danger); }
-    .rows li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .rows li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
     .rows li:last-child { border-bottom: 0; }
     .rows .grow { min-width: 0; display: flex; flex-direction: column; }
     .input.sm { width: 130px; flex: none; min-height: 36px; padding: 4px 8px; }
     .skill { border-top: 1px solid var(--line); }
-    .skill summary { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; list-style: none; }
+    .skill summary { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; cursor: pointer; list-style: none; }
     .skill summary::-webkit-details-marker { display: none; }
     .sign { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--turf); color: var(--turf-ink); }
     .sign.neg { background: var(--danger); color: var(--danger-ink); }
@@ -164,7 +164,7 @@ import { Sheet } from '../ui/sheet';
     .nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
     .check { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }
     .log li { font-size: var(--step--1); }
-    .skills { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; max-height: 240px; overflow-y: auto; }
+    .skills { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; max-height: 240px; overflow-y: auto; }
   `,
 })
 export class FlAdmin implements OnInit {

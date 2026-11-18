@@ -84,9 +84,9 @@ import { Icon } from '../ui/icon';
   styles: `
     .chat { display: flex; flex-direction: column; gap: 12px; }
     .msgs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-    .day { align-self: center; font-size: var(--step--1); color: var(--muted); padding: 10px 0 4px; }
+    .day { align-self: center; font-size: var(--step--1); color: var(--muted); padding: 12px 0 4px; }
     .row { display: flex; align-items: flex-start; gap: 8px; }
-    .row.first { margin-top: 6px; }
+    .row.first { margin-top: 8px; }
     .row.mine { justify-content: flex-end; }
     .av-space { width: 30px; flex: none; }
     .msg { max-width: 78%; padding: 8px 12px; border-radius: 16px 16px 16px 4px; background: var(--surface); border: 1px solid var(--line); }
@@ -105,7 +105,7 @@ import { Icon } from '../ui/icon';
                       background: transparent; overflow: hidden; animation: none; }
     dialog.msg-menu::backdrop { background: var(--backdrop); }
     .lift { position: absolute; max-width: none; margin: 0; box-shadow: 0 10px 30px rgb(0 0 0 / 30%); }
-    .acts { position: absolute; width: 220px; display: flex; flex-direction: column; padding: 6px; border-radius: var(--r-m);
+    .acts { position: absolute; width: 220px; display: flex; flex-direction: column; padding: 8px; border-radius: var(--r-m);
             background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px rgb(0 0 0 / 30%); border: 1px solid var(--line); }
     .acts button { appearance: none; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border: 0; border-radius: var(--r-s);
                    background: none; color: inherit; font: 500 var(--step-0)/1 var(--font-body); text-align: left; cursor: pointer; }

@@ -55,7 +55,7 @@ import { Avatar } from './avatar';
   styles: `
     :host {
       display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 60px;
-      padding: 8px 8px 8px 6px; border-radius: 16px;
+      padding: 8px 8px 8px 8px; border-radius: 16px;
       background: var(--surface); border: 1px solid var(--line);
     }
     :host(.me) { border-color: var(--turf); box-shadow: inset 0 0 0 1px var(--turf); background: linear-gradient(var(--turf-soft), var(--turf-soft)) padding-box; }
@@ -65,7 +65,7 @@ import { Avatar } from './avatar';
     .hole { display: block; width: 40px; height: 40px; border-radius: 50%; border: 2px dashed var(--line); }
     /* il numero del posto, agganciato alla foto come quello sulla maglia */
     .num {
-      position: absolute; right: -6px; bottom: -4px; min-width: 22px; height: 22px; padding: 0 5px;
+      position: absolute; right: -6px; bottom: -4px; min-width: 22px; height: 22px; padding: 0 4px;
       display: grid; place-items: center; border-radius: 11px;
       background: var(--ink); color: var(--surface); box-shadow: 0 0 0 2px var(--surface);
       font: 700 0.8rem/1 var(--font-display); letter-spacing: 0.02em;
@@ -75,7 +75,7 @@ import { Avatar } from './avatar';
     :host(.me) .num { background: var(--turf); color: var(--turf-ink); box-shadow: 0 0 0 2px var(--turf-soft); }
     /* la fascia da capitano */
     .armband {
-      position: absolute; left: -7px; top: -5px; height: 18px; padding: 0 5px; border-radius: 4px;
+      position: absolute; left: -7px; top: -5px; height: 18px; padding: 0 4px; border-radius: 4px;
       display: grid; place-items: center; transform: rotate(-12deg);
       background: var(--armband); color: var(--armband-ink); box-shadow: 0 0 0 2px var(--surface);
       font: 800 0.72rem/1 var(--font-display);
@@ -91,7 +91,7 @@ import { Avatar } from './avatar';
     /* layout: foto a sinistra; a destra il nome sopra, sotto la freccia di forma e la valutazione */
     /* tre colonne: foto | nome e, sotto, freccia di forma | valutazione (colonna a parte, pallino in basso) */
     /* foto a sinistra; il nome prende tutta la riga; sotto, forma a sinistra e valutazione nell'angolo a destra */
-    :host { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 6px; row-gap: 3px; align-items: center; align-content: center; }
+    :host { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 8px; row-gap: 4px; align-items: center; align-content: center; }
     .pic { grid-row: 1 / 3; margin-right: 8px; }
     .txt { grid-column: 2 / 4; grid-row: 1; min-width: 0; }
     /* la forma parte esattamente dove inizia il nome: niente spazio a sinistra del simbolo */
@@ -104,7 +104,7 @@ import { Avatar } from './avatar';
     .frm.eq { color: var(--muted); font: 800 1.15rem/1 var(--font-body); }
     .ovr { grid-column: 3; grid-row: 2; align-self: center; justify-self: end; flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
            font: 800 0.85rem/1 var(--font-display); color: #fff; background: hsl(var(--h) 72% 38%); }
-    .nrow { display: flex; align-items: center; gap: 3px; min-width: 0; }
+    .nrow { display: flex; align-items: center; gap: 4px; min-width: 0; }
     /* stato di forma (ultime due giornate): freccia da ↑ a ↓; «=» se l'ultima è pareggiata o non giocata */
     .form { width: 15px; height: 15px; flex: none; transition: transform 200ms; }
     .form.idle { display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--muted); font: 800 0.72rem/1 var(--font-body); }
@@ -123,10 +123,10 @@ import { Avatar } from './avatar';
     :host(.ta) .num, :host(.tb) .num { background: var(--tci); color: var(--tc); box-shadow: 0 0 0 2px var(--tc); }
     :host(.ta) .pic app-avatar, :host(.tb) .pic app-avatar, :host(.ta) .armband, :host(.tb) .armband { box-shadow: 0 0 0 2px var(--tc); }
     /* elenco che deve stare tutto nello schermo (.fit, booking-tab fitCards): figurina più bassa, stessa larghezza */
-    :host-context(.fit) { min-height: 0; height: var(--fig-h); padding-top: 3px; padding-bottom: 3px; row-gap: 1px; }
+    :host-context(.fit) { min-height: 0; height: var(--fig-h); padding-top: 4px; padding-bottom: 4px; row-gap: 1px; }
     :host-context(.fit) .pic, :host-context(.fit) .pic app-avatar, :host-context(.fit) .hole { width: 34px !important; height: 34px !important; }
     :host-context(.fit) .pic app-avatar { font-size: 12px !important; }
-    :host-context(.fit) .pic { margin-right: 6px; }
+    :host-context(.fit) .pic { margin-right: 8px; }
     :host-context(.fit) .name { font-size: 0.95rem; line-height: 1.15; }
     :host-context(.fit) .frm { height: 20px; }
     :host-context(.fit) .ovr { width: 22px; height: 22px; font-size: 0.75rem; }

@@ -50,8 +50,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .row3 { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .tbl { display: flex; flex-direction: column; gap: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-    .trow { display: flex; align-items: center; gap: 10px; }
+    .tbl { display: flex; flex-direction: column; gap: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .trow { display: flex; align-items: center; gap: 12px; }
     .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; }
     @keyframes sk { from { background-position: 100% 0; } to { background-position: 0 0; } }
     @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }

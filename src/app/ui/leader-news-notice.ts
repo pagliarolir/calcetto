@@ -31,7 +31,7 @@ import { Avatar } from './avatar';
   `,
   styles: `
     :host { display: contents; }
-    article { display: flex; flex-direction: column; gap: 10px; }
+    article { display: flex; flex-direction: column; gap: 12px; }
     article + article { border-top: 1px dashed var(--line); padding-top: 12px; }
     article p { margin: 0; font: 500 var(--step-0)/1.45 var(--font-body); white-space: pre-line; overflow-wrap: anywhere; }
     .sign { display: flex; align-items: center; gap: 8px; font-size: var(--step--1); }

@@ -319,53 +319,53 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     .me { display: flex; align-items: center; gap: 16px; }
     /* schede del profilo: icona sopra, nome sotto */
-    .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .theme { appearance: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: var(--r-m);
+    .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .theme { appearance: none; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--r-m);
              border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 44px; }
     .theme.on { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
     .theme.custom { width: 100%; }
-    .text-ed { gap: 14px; }
-    .rng { display: flex; flex-direction: column; gap: 6px; }
+    .text-ed { gap: 16px; }
+    .rng { display: flex; flex-direction: column; gap: 8px; }
     .rl { display: flex; align-items: center; gap: 8px; font-weight: 600; }
     .rng input[type='range'] { width: 100%; min-height: 44px; accent-color: var(--turf); }
-    .ends { display: flex; justify-content: space-between; margin-top: -6px; } .ends .big { font-size: 1.3rem; }
-    .sample { margin: 0; padding: 10px 12px; border-radius: var(--r-m); background: var(--surface-2); }
+    .ends { display: flex; justify-content: space-between; margin-top: -8px; } .ends .big { font-size: 1.3rem; }
+    .sample { margin: 0; padding: 12px 12px; border-radius: var(--r-m); background: var(--surface-2); }
     .custom-ed { gap: 16px; }
     .lab { font: 700 var(--step--1)/1.2 var(--font-body); }
     .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--r-m); background: var(--surface-2); }
     .seg2 button { appearance: none; border: 0; min-height: 44px; border-radius: calc(var(--r-m) - 4px); background: transparent; color: var(--muted);
-                   font: 700 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+                   font: 700 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
     .seg2 button[aria-checked='true'] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 14%); }
-    .sw { display: flex; flex-wrap: wrap; gap: 10px; }
+    .sw { display: flex; flex-wrap: wrap; gap: 12px; }
     .dot { width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center; color: #fff;
            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent); }
     .dot[aria-checked='true'], .dot.on { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ink); }
     .dot.other { background: conic-gradient(#e53935, #fbc02d, #43a047, #1e88e5, #8e24aa, #e53935); position: relative; }
-    .auto { appearance: none; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
-            font: 700 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+    .auto { appearance: none; min-height: 44px; padding: 0 16px; border-radius: 22px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+            font: 700 var(--step--1)/1 var(--font-body); display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
     .auto[aria-checked='true'] { border-color: var(--turf); box-shadow: 0 0 0 2px var(--turf); }
-    .checks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 8px; }
     .chk { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 99px; font: 700 0.75rem/1.2 var(--font-body);
            background: var(--turf-soft); color: var(--ink); }
     .chk.aaa { box-shadow: inset 0 0 0 1.5px var(--turf); }
     .prev { display: grid; grid-template-rows: 18px 1fr; height: 58px; border-radius: 8px; overflow: hidden; border: 1px solid rgb(0 0 0 / 12%); }
     .ph { display: block; }
-    .pr { display: flex; gap: 5px; align-items: center; padding: 6px; }
+    .pr { display: flex; gap: 4px; align-items: center; padding: 8px; }
     .pr i { display: block; width: 24px; height: 11px; border-radius: 4px; } .pr i.grow { flex: 1; }
     /* anteprime dei temi neumorphism: la barra lunga sporge (Rilievo) o è scavata (Rientranza) */
     .prev.neu .pr i.grow { background: transparent !important; box-shadow: 2px 2px 4px #a9b4c4, -2px -2px 4px #ffffff; }
     .prev.neu.in .pr i.grow { box-shadow: inset 2px 2px 4px #a9b4c4, inset -2px -2px 4px #ffffff; }
     .prev.neu.dark .pr i.grow { box-shadow: 2px 2px 4px #15181d, -2px -2px 4px #333a44; }
     .prev.neu.dark.in .pr i.grow { box-shadow: inset 2px 2px 4px #15181d, inset -2px -2px 4px #333a44; }
-    .tn { display: flex; align-items: center; gap: 6px; } .tn .ok { margin-left: auto; color: var(--turf); }
-    .lead-area { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border-radius: var(--r-m); text-decoration: none; color: var(--ink);
+    .tn { display: flex; align-items: center; gap: 8px; } .tn .ok { margin-left: auto; color: var(--turf); }
+    .lead-area { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; border-radius: var(--r-m); text-decoration: none; color: var(--ink);
                  background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .lead-area > app-icon:first-child { color: var(--turf); }
     .lead-area .grow { display: flex; flex-direction: column; gap: 2px; }
-    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 3px; border-radius: 14px; background: var(--surface-2); }
+    .ptabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
     .ptabs button {
       appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 12px;
-      min-height: 44px; padding: 0 6px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+      min-height: 44px; padding: 0 8px; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 8px;
       font: 600 0.8rem/1 var(--font-body); transition: background 160ms, color 160ms;
     }
     .ptabs button[aria-selected='true'] { background: var(--surface); color: var(--turf); box-shadow: 0 1px 3px rgb(20 32 25 / 14%); }
@@ -380,7 +380,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
     /* su iPhone il campo data ha una larghezza propria: lo si accorcia e lo si lascia restringere */
     .opt input[type='date'] { -webkit-appearance: none; appearance: none; display: block; max-width: 190px; }
     .toggles { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-    .toggles li { padding: 10px 0; border-top: 1px solid var(--line); }
+    .toggles li { padding: 12px 0; border-top: 1px solid var(--line); }
     .toggles li:first-child { border-top: 0; padding-top: 0; }
     .toggles .switch { align-items: center; gap: 12px; }
     /* alto quanto il campo (48 px): l'interruttore resta centrato sul campo */

@@ -109,8 +109,8 @@ interface Row { id: string; name: string; color: string; vals: Record<Key, numbe
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-    .who { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip-p { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 4px 0 10px; border-radius: 999px; background: var(--surface-2);
+    .who { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip-p { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 4px 0 12px; border-radius: 999px; background: var(--surface-2);
               font: 600 var(--step--1)/1 var(--font-body); color: var(--ink); max-width: 100%; }
     .chip-p:not(:has(.rm)) { padding-right: 12px; }
     .chip-p .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -124,37 +124,37 @@ interface Row { id: string; name: string; color: string; vals: Record<Key, numbe
     /* uno contro uno: valori ai lati, ruolo al centro, barre che crescono verso l'esterno */
     .duel thead th { font: 700 var(--step--1)/1.2 var(--font-body); color: var(--ink); padding: 0 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .duel thead th.l { text-align: left; } .duel thead th.r { text-align: right; }
-    .duel thead .dot { margin: 0 6px; vertical-align: 0; }
+    .duel thead .dot { margin: 0 8px; vertical-align: 0; }
     .duel th[scope='row'] { width: 52px; text-align: center; font: 700 var(--step--1)/1 var(--font-body); color: var(--muted); }
     .duel thead th:nth-child(2) { width: 52px; }
-    .duel td { padding: 5px 0; }
+    .duel td { padding: 4px 0; }
     .duel .c { display: flex; align-items: center; gap: 8px; }
     .duel .bar { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); display: flex; overflow: hidden; }
     .duel td.l .bar { justify-content: flex-end; }
     .duel .bar i { display: block; height: 100%; border-radius: 4px; }
     .duel strong { width: 2.2em; text-align: center; font-size: 1.05rem; color: var(--muted); font-weight: 700; }
     .duel strong.win { color: var(--ink); font-weight: 800; }
-    .duel tr.total td, .duel tr.total th { border-top: 1px solid var(--line); padding-top: 9px; }
+    .duel tr.total td, .duel tr.total th { border-top: 1px solid var(--line); padding-top: 8px; }
     .duel tr.total strong { font-size: 1.2rem; }
     /* tabelle: il migliore di ogni ruolo è evidenziato */
     .mx { font-size: var(--step--1); }
-    .mx th, .mx td { padding: 7px 5px; border-bottom: 1px solid var(--line); }
+    .mx th, .mx td { padding: 8px 4px; border-bottom: 1px solid var(--line); }
     .mx thead th { color: var(--muted); font-weight: 600; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mx td { text-align: center; color: var(--muted); font-weight: 600; font-size: 1rem; }
     /* pillola del migliore: sempre dentro la cella, staccata dalle linee (anche con il testo grande) */
     .mx .v { display: inline-block; min-width: 2.1em; max-width: 100%; padding: 2px 4px; border-radius: 999px; line-height: 1.4; }
     .mx .v.win { color: var(--ink); font-weight: 800; background: var(--turf-soft); }
     .mx tbody tr:last-child th, .mx tbody tr:last-child td { border-bottom: 0; }
-    .mx .dot { margin-right: 6px; }
+    .mx .dot { margin-right: 8px; }
     .cols thead th:first-child, .cols tbody th { width: 46px; text-align: left; color: var(--muted); font-weight: 700; }
     .cols thead th { color: var(--ink); }
     .cols tr.total th, .cols tr.total td { border-top: 1px solid var(--line); }
     .grid thead th:first-child { width: 30%; }
     .grid tbody th { text-align: left; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .grid .total { border-left: 1px solid var(--line); }
-    .grid td.total { padding-left: 7px; }
+    .grid td.total { padding-left: 8px; }
     /* colonne strette: la pillola prende la cella (meno i margini), non di più */
-    .grid td { padding-left: 3px; padding-right: 3px; }
+    .grid td { padding-left: 4px; padding-right: 4px; }
     .grid .v { min-width: 0; width: 100%; padding: 2px 0; }
   `,
 })

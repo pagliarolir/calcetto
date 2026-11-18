@@ -157,15 +157,15 @@ interface PlayerSeen {
     /* parte alta ferma, il resto scorre (nel Profilo c'è solo il resto, sotto l'intestazione del Profilo) */
     :host { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
     /* meno margine ai lati: più spazio ai grafici */
-    main.scroll-area > .page { padding-left: 10px; padding-right: 10px; }
+    main.scroll-area > .page { padding-left: 8px; padding-right: 8px; }
     .phead { position: relative; padding: 12px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
     .scroll-area.embedded { overflow: visible; }
     /* dentro il Profilo il margine in alto c'è già: niente doppio spazio sotto le schede */
     .scroll-area.embedded > .page { padding-top: 0; }
     /* titolo dei valori con l'interruttore del confronto a destra */
-    .vhead { display: flex; align-items: center; gap: 8px; margin-bottom: -6px; }
+    .vhead { display: flex; align-items: center; gap: 8px; margin-bottom: -8px; }
     .vhead h2 { margin: 0; font-size: var(--step-1); }
-    .cmp-btn { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 14px; border-radius: 999px;
+    .cmp-btn { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 16px; border-radius: 999px;
                border: 1.5px solid var(--line); background: var(--surface); color: var(--turf); font: 700 var(--step--1)/1 var(--font-body); cursor: pointer;
                transition: background 200ms, color 200ms; }
     .cmp-btn::after { content: ''; position: absolute; inset: -6px -2px; }
@@ -176,15 +176,15 @@ interface PlayerSeen {
     @media (prefers-reduced-motion: no-preference) {
       .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
       .flip.flip-out { animation: flip-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
-      .flip.flip-in { animation: flip-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+      .flip.flip-in { animation: flip-in 260ms var(--ease); }
       @keyframes flip-out { from { transform: perspective(1400px) rotateY(0); } to { transform: perspective(1400px) rotateY(90deg); opacity: 0.6; } }
       @keyframes flip-in { from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.6; } to { transform: perspective(1400px) rotateY(0); opacity: 1; } }
     }
     .phead .id app-avatar { flex: none; }
     .lead-menu { position: absolute; top: 8px; right: 8px; z-index: 5; }
     .more { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; }
-    .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 6px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
-    .menu button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
+    .menu { position: absolute; right: 0; top: 50px; min-width: 230px; padding: 8px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 30px rgb(0 0 0 / 22%); }
+    .menu button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-s); background: none; color: var(--ink); font: 600 var(--step-0)/1 var(--font-body); cursor: pointer; text-align: left; }
     .menu button:hover { background: var(--surface-2); }
     .id { display: flex; align-items: center; gap: 16px; }
     hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; width: 100%; }
