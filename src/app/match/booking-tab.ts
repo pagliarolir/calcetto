@@ -40,7 +40,7 @@ const FIG_MIN = 50;
           <header class="tab-head">
             <!-- titolo e chevron nello stesso blocco: lo chevron sta subito dopo il testo -->
             <div class="me-title" [class]="'me-title ' + (myState() ? 'state ' + myState() : '')">
-              @if (myState(); as st) { <app-icon class="st-ic" [name]="st === 'out' ? 'x' : st === 'reserve' ? 'clock' : 'check'" [size]="18" /> }
+              @if (myState(); as st) { <app-icon class="st-ic" [name]="st === 'out' ? 'x' : st === 'reserve' ? 'clock' : 'check'" [size]="16" /> }
               <h2 id="me-h" appFitText>{{ myHeadline() }}</h2>
               @if (canChange()) {
                 <button type="button" class="chev-b" [class.pop]="popChev()" [class.up]="choiceOpen()" aria-controls="my-choice" [attr.aria-expanded]="choiceOpen()"
@@ -201,14 +201,15 @@ const FIG_MIN = 50;
     .me-title > h2::before { content: ''; display: inline-block; vertical-align: -0.08em; width: 4px; height: 0.9em; margin-right: 10px; border-radius: 2px; background: var(--turf); }
     .tab-head > .spill { margin-left: auto; }
     /* la propria risposta è il «momento» della pagina: una capsula piena col colore dello stato, chevron compreso */
-    .me-title.state { gap: 8px; min-height: 40px; padding: 4px 12px; border-radius: 20px; }
-    .me-title.state > h2 { font-size: var(--step-1) !important; flex: none; overflow: visible; }
+    /* capsula un po' più grande della pillola a destra, non di più */
+    .me-title.state { gap: 8px; min-height: 36px; padding: 4px 12px; border-radius: 18px; }
+    .me-title.state > h2 { font-size: var(--step-0) !important; flex: none; overflow: visible; }
     .me-title.state > h2::before { content: none; }
     .me-title.state .st-ic { flex: none; display: grid; }
     .me-title.in { background: var(--turf); color: var(--turf-ink); }
     .me-title.reserve { background: color-mix(in srgb, var(--armband) 40%, var(--surface)); color: var(--ink); }
     .me-title.out { background: var(--danger-soft); color: var(--danger); }
-    .me-title.state .chev-b { border: 0; background: rgb(255 255 255 / 22%); color: inherit; }
+    .me-title.state .chev-b { width: 28px; height: 28px; border: 0; background: rgb(255 255 255 / 22%); color: inherit; }
     .me-title.state:has(.chev-b) { padding-right: 4px; }
     /* lo stato delle prenotazioni accanto resta sobrio: solo il pallino ha colore */
     .spill.open { background: none; color: var(--muted); }
