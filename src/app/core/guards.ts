@@ -45,6 +45,9 @@ export const paymentsGuard: CanActivateFn = async () => {
   const pay = inject(Payments);
   const router = inject(Router);
   await s.whenReady();
+  // già visti in questa sessione: si entra subito e il controllo riparte in sottofondo (come il resto dell'app);
+  // se nel frattempo il Leader li chiude, la voce sparisce e il server rifiuta comunque i dati
+  if (pay.visible()) { void pay.checkVisible(); return true; }
   // solo un «no» del server rimanda alla home; senza risposta si entra e la pagina mostra il suo errore
   return (await pay.checkVisible()) === false ? router.parseUrl('/') : true;
 };
