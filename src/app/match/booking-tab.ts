@@ -222,9 +222,10 @@ const FIG_MIN = 50;
     .chev-b.up app-icon { transform: rotate(-90deg); }
     .chev-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     /* tendina dei pulsanti: si chiude verso l'alto e si riapre verso il basso */
-    .choice-wrap { display: grid; grid-template-rows: 1fr; }
-    .choice-wrap > .choice { min-height: 0; overflow: hidden; }
-    .choice-wrap.shut { grid-template-rows: 0fr; opacity: 0; margin-top: -12px; }
+    /* stesso trucco per i pulsanti: 12 px tutto attorno per le ombre, compensati dai margini */
+    .choice-wrap { display: grid; grid-template-rows: 1fr; margin: -12px -12px -12px; }
+    .choice-wrap > .choice { min-height: 0; overflow: hidden; padding: 12px; }
+    .choice-wrap.shut { grid-template-rows: 0fr; opacity: 0; margin-top: -24px; }
     @media (prefers-reduced-motion: no-preference) {
       .choice-wrap { transition: grid-template-rows 360ms ease-in-out, opacity 300ms ease-in-out, margin-top 360ms ease-in-out; }
       .chev-b app-icon { transition: transform 260ms var(--ease); }
@@ -237,7 +238,9 @@ const FIG_MIN = 50;
     /* meno spazio tra la propria risposta e le schede */
     .ui-tabs.lists { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-top: -8px; }
     /* scorre solo l'elenco dei giocatori: l'altezza è quella che resta sotto le schede (fitList) */
-    .list-panel { padding: 12px 8px 8px 0; margin-right: -8px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+    /* margine interno ai lati (compensato dal margine negativo): le ombre delle figurine, soprattutto nei temi
+       in rilievo, non vengono tagliate dal riquadro che scorre */
+    .list-panel { padding: 12px 12px 8px; margin-inline: -12px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
     .board { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .board { gap: 8px; }
     .board li { display: grid; min-width: 0; position: relative; }
@@ -609,7 +612,7 @@ export class BookingTab {
     // (anche durante l'animazione) restano della stessa altezza, cambia solo lo spazio libero in fondo
     const wrap = host.querySelector('.choice-wrap') as HTMLElement | null;
     const choice = wrap?.querySelector('.choice') as HTMLElement | null;
-    const hidden = wrap && choice ? Math.max(0, choice.scrollHeight - wrap.getBoundingClientRect().height - (parseFloat(getComputedStyle(wrap).marginTop) || 0)) : 0;
+    const hidden = wrap && choice ? Math.max(0, choice.scrollHeight - wrap.getBoundingClientRect().height - ((parseFloat(getComputedStyle(wrap).marginTop) || 0) + 12)) : 0;
     this.fitCards(panel, Math.max(240, sc.clientHeight - top - 6 - hidden));
   }
 
