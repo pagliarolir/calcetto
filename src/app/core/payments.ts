@@ -74,22 +74,56 @@ export class Payments {
   /** ultimi dati della pagina (solo in memoria: dentro ci sono IBAN di altri, non si salvano sul telefono) */
   readonly data = signal<PayOverview | null>(null);
 
-  private visCheck: { uid: string; at: number; p: Promise<boolean> } | null = null;
-  /** se l'utente vede i Pagamenti (anteprima: Leader ed elenco); richieste ravvicinate fanno una sola chiamata */
-  async checkVisible(): Promise<boolean> {
+  private visCheck: { uid: string; at: number; p: Promise<boolean | null> } | null = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private retries = 0;
+
+  constructor() {
+    // tornando nell'app (da un'altra applicazione o dal telefono in standby) si ricontrolla: copre accessi scaduti e reti tornate
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.session.uid()) void this.checkVisible(); });
+  }
+
+  /**
+   * Se l'utente vede i Pagamenti (Leader, elenco o aperti a tutti); richieste ravvicinate fanno una sola chiamata.
+   * true/false = risposta del server; null = il server non ha risposto (rete, accesso da rinnovare): in quel caso la
+   * voce resta com'era, l'app riprova da sola (3, 10, 30, 60 s) e la nasconde solo davanti a un «no» vero.
+   */
+  async checkVisible(): Promise<boolean | null> {
     const uid = this.session.uid();
-    if (!uid) { this.visible.set(false); this.visCheck = null; this.data.set(null); return false; }
+    if (!uid) { this.visible.set(false); this.visCheck = null; this.data.set(null); this.stopRetry(); return false; }
     if (this.visCheck && this.visCheck.uid === uid && Date.now() - this.visCheck.at < 30_000) return this.visCheck.p;
-    const p = (async () => {
-      const res = await this.sb.rpc('pay_visible');
-      // finché la migrazione non è applicata la funzione non c'è: niente scheda
-      const v = !res.error && res.data === true;
+    const p = (async (): Promise<boolean | null> => {
+      let res = await this.sb.rpc('pay_visible');
+      if (res.error) {
+        // spesso è l'accesso scaduto mentre l'app era in sottofondo: lo si rinnova e si riprova subito una volta
+        await this.sb.auth.getSession().catch(() => null);
+        res = await this.sb.rpc('pay_visible');
+      }
+      if (res.error) {
+        this.visCheck = null;
+        this.scheduleRetry();
+        return null;
+      }
+      this.stopRetry();
+      const v = res.data === true;
       this.visible.set(v);
-      if (res.error) this.visCheck = null;
       return v;
     })();
     this.visCheck = { uid, at: Date.now(), p };
     return p;
+  }
+
+  private scheduleRetry(): void {
+    if (this.retryTimer) return;
+    const wait = [3, 10, 30, 60][Math.min(this.retries, 3)] * 1000;
+    this.retries++;
+    this.retryTimer = setTimeout(() => { this.retryTimer = null; if (this.session.uid()) void this.checkVisible(); }, wait);
+  }
+
+  private stopRetry(): void {
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+    this.retries = 0;
   }
 
   async load(): Promise<PayOverview> {
