@@ -38,7 +38,7 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
   template: `
     <div class="page-head">
       <div class="head-in">
-      <h1 class="sr-only">Il tuo profilo</h1>
+      <header class="titlebar"><h1>Profilo</h1></header>
       <div class="me-box">
         <div class="me-id">
           <div class="me-av" [class.pun]="!!session.punishment()">
