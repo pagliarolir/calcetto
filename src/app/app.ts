@@ -45,9 +45,6 @@ import { Prefetch } from './core/prefetch';
           <a [routerLink]="t.path" [attr.aria-current]="isActive(t.key) ? 'page' : null">
             <span class="ico">
               <app-icon [name]="t.icon" />
-              @if (t.path === '/avvisi' && unread.count() > 0) {
-                <span class="badge">{{ unread.count() > 9 ? '9+' : unread.count() }}</span>
-              }
             </span>
             <span>{{ t.label }}</span>
           </a>
@@ -195,12 +192,11 @@ export class App {
   });
 
   protected readonly tabs = computed(() => [
-    // di norma 5 voci (linee guida Apple e Google); Fanta e Conti solo per chi è in anteprima. Gestione è nel Profilo
+    // di norma 5 voci (linee guida Apple e Google); Fanta e Conti solo per chi è in anteprima. Gestione è nel Profilo, gli Avvisi nella campanella in alto (ui/top-actions.ts)
     { path: this.next.id() ? `/partita/${this.next.id()}` : '/', key: '/', label: 'Partita', icon: 'pitch' },
     { path: '/classifica', key: '/classifica', label: 'Classifica', icon: 'table' },
     ...(FANTA_ENABLED && this.fl.visible() ? [{ path: '/fantaleader', key: '/fantaleader', label: 'Fanta', icon: 'trophy' }] : []),
     ...(this.pay.visible() ? [{ path: '/pagamenti', key: '/pagamenti', label: 'Conti', icon: 'wallet' }] : []),
-    { path: '/avvisi', key: '/avvisi', label: 'Avvisi', icon: 'bell' },
     { path: '/profilo', key: '/profilo', label: 'Profilo', icon: 'user' },
   ]);
 

@@ -11,6 +11,7 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
+import { TopActions } from '../ui/top-actions';
 import { Icon } from '../ui/icon';
 import { FitText } from '../ui/fit-text';
 import { InfoTip } from '../ui/info-tip';
@@ -51,7 +52,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
  */
 @Component({
   selector: 'app-payments-page',
-  imports: [FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
+  imports: [TopActions, FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page stack-l pay-page">
@@ -66,6 +67,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
           <app-icon name="wallet" [size]="18" /> Dati di pagamento
           @if (pay.data() && !hasMyMethods()) { <span class="dot" aria-hidden="true"></span><span class="sr-only">(da aggiungere)</span> }
         </button>
+        <app-top-actions />
       </header>
 
       @if (!pay.data(); as _) {

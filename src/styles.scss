@@ -350,7 +350,10 @@ a { color: inherit; }
    Sezione (pagine della barra in basso): parte alta fissa .page-head con .titlebar (titolo e al massimo un'azione), sotto le schede.
    Dettaglio (pagine aperte da un'altra): .detail-bar con <app-back> (e l'eventuale ⋯ a destra), sotto il titolo. */
 .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
-.titlebar > h1 { margin: 0; min-width: 0; }
+.titlebar > h1 { margin: 0 auto 0 0; min-width: 0; }
+/* la «i» sta attaccata al titolo che spiega, con un minimo di stacco */
+.titlebar > h1:has(+ app-info-tip) { margin-right: 0; }
+.titlebar > h1 + app-info-tip { margin: 0 auto 0 -8px; }
 .detail-bar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: -12px 0 -8px -8px; }
 .back-btn {
   appearance: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 8px; border: 0; border-radius: var(--r-s);
