@@ -82,7 +82,7 @@ import { Sheet } from '../ui/sheet';
                 <div class="slide" [attr.inert]="pick() ? '' : null">
                   <ul class="days">
                     @for (p of points(); track p.match_id) {
-                      <li><button type="button" class="day" (click)="pick.set(p)">
+                      <li><button type="button" class="day" (click)="openDay(p)">
                         <span class="grow two"><span>{{ p.matches ? day(p.matches.starts_at) : '' }}</span>
                           @if (!p.played || p.status === 'provisional') { <small class="muted">{{ !p.played ? 'Non ha giocato' : 'Provvisorio' }}</small> }</span>
                         <strong class="num">{{ fmt(p.total) }}</strong>
@@ -93,9 +93,9 @@ import { Sheet } from '../ui/sheet';
                     }
                   </ul>
                 </div>
-                <div class="slide" [attr.inert]="pick() ? null : ''">
-                  @if (pick(); as p) {
-                    <article class="pd">
+                <div class="slide dstack" [attr.inert]="pick() ? null : ''">
+                  @for (p of points(); track p.match_id) {
+                    <article class="pd" [class.on]="shown() === p.match_id" [attr.aria-hidden]="shown() !== p.match_id">
                       <header class="pd-head">
                         <button type="button" class="pd-back" (click)="pick.set(null)" aria-label="Torna alle giornate"><app-icon name="back" [size]="20" /></button>
                         <div class="grow">
@@ -137,7 +137,7 @@ import { Sheet } from '../ui/sheet';
         <nav class="sheet-tabs" role="tablist" aria-label="Sezioni della scheda">
           @for (t of tabs; track t.key) {
             <button type="button" role="tab" [id]="'fls-tab-' + t.key" [attr.aria-selected]="tab() === t.key" (click)="setTab(t.key)">
-              <span class="ico"><app-icon [name]="t.icon" [size]="20" /></span>
+              <span class="ico"><app-icon [name]="t.icon" /></span>
               <span>{{ t.label }}</span>
             </button>
           }
@@ -159,13 +159,14 @@ import { Sheet } from '../ui/sheet';
     .pane { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; visibility: hidden; }
     .pane.on { visibility: visible; }
     /* barra delle schede come quella dell'app: icone grigie, la scelta in verde con la capsula */
+    /* stessa altezza e stessa posizione delle icone della barra dell'app (--tabbar-total, --tabbar-pad) */
     .sheet-tabs {
-      position: sticky; bottom: 0; z-index: 2; flex: none; display: flex; margin: 0 -16px;
-      padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--surface); border-top: 1px solid var(--line);
+      position: sticky; bottom: 0; z-index: 2; flex: none; display: flex; margin: 0 -16px; box-sizing: border-box;
+      height: var(--tabbar-total); padding-bottom: var(--tabbar-pad); background: var(--surface); border-top: 1px solid var(--line);
     }
     .sheet-tabs button {
-      flex: 1; padding: 8px 4px 4px; border: 0; background: none; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      flex: 1; padding: 12px 4px 0; border: 0; background: none; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;
       color: var(--muted); font: 600 0.72rem/1.2 var(--font-body);
       user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     }
@@ -175,20 +176,21 @@ import { Sheet } from '../ui/sheet';
     .sheet-tabs button:focus-visible { outline: none; }
     .sheet-tabs button:focus-visible .ico { box-shadow: 0 0 0 3px var(--focus); }
     /* skill: bonus in verde, malus in rosso, ognuna nel suo riquadro sfumato */
+    :host { --fl-good: #2e9e55; --fl-bad: #d2353a; }
     .skills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .skills li {
       display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--r-m); color: var(--ink);
-      background: linear-gradient(135deg, color-mix(in srgb, var(--turf) 22%, var(--surface)), color-mix(in srgb, var(--turf) 6%, var(--surface)));
-      border: 1px solid color-mix(in srgb, var(--turf) 30%, var(--surface));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--fl-good) 22%, var(--surface)), color-mix(in srgb, var(--fl-good) 6%, var(--surface)));
+      border: 1px solid color-mix(in srgb, var(--fl-good) 35%, var(--surface));
     }
     .skills li.neg {
-      background: linear-gradient(135deg, color-mix(in srgb, var(--danger) 20%, var(--surface)), color-mix(in srgb, var(--danger) 5%, var(--surface)));
-      border-color: color-mix(in srgb, var(--danger) 30%, var(--surface));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--fl-bad) 20%, var(--surface)), color-mix(in srgb, var(--fl-bad) 5%, var(--surface)));
+      border-color: color-mix(in srgb, var(--fl-bad) 35%, var(--surface));
     }
     .skills li.off { opacity: 0.6; }
     .skills p { margin: 4px 0 0; color: var(--ink); opacity: 0.85; }
-    .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--turf); color: var(--turf-ink); }
-    .neg .sign { background: var(--danger); color: var(--danger-ink); }
+    .sign { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #1f7a3f; color: #fff; }
+    .neg .sign { background: #b3262b; color: #fff; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .grid div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 8px; border-radius: 12px; background: var(--surface-2); text-align: center; }
     .grid strong { font: 600 var(--step-1)/1.1 var(--font-display); }
@@ -198,6 +200,10 @@ import { Sheet } from '../ui/sheet';
     .slide { min-width: 0; transition: translate 320ms var(--ease); }
     .slider.detail .slide { translate: calc(-100% - 8px) 0; }
     .slide + .slide { margin-left: 8px; }
+    /* tutti i dettagli nella stessa cella: l'altezza non cambia aprendo o chiudendo una giornata */
+    .dstack { display: grid; }
+    .dstack > .pd { grid-area: 1 / 1; visibility: hidden; }
+    .dstack > .pd.on { visibility: visible; }
     @media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
     .days { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .day { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 4px 12px;
@@ -217,8 +223,8 @@ import { Sheet } from '../ui/sheet';
     .pd-rows li { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 40px; padding: 4px 12px; font-size: var(--step--1); }
     .pd-rows li + li { border-top: 1px solid var(--line); }
     .pd-rows .num { font-weight: 600; }
-    .pd-rows .plus { color: color-mix(in srgb, var(--turf) 70%, var(--ink)); }
-    .pd-rows .minus { color: var(--danger); }
+    .pd-rows .plus { color: color-mix(in srgb, var(--fl-good) 65%, var(--ink)); }
+    .pd-rows .minus { color: color-mix(in srgb, var(--fl-bad) 70%, var(--ink)); }
   `,
 })
 export class FlPlayerSheet {
@@ -236,6 +242,8 @@ export class FlPlayerSheet {
   protected readonly loaded = signal(false);
   /** giornata aperta nel dettaglio dei Punti */
   protected readonly pick = signal<FlPoints | null>(null);
+  /** dettaglio visibile: resta l'ultimo aperto anche mentre si scorre indietro */
+  protected readonly shown = signal<string | null>(null);
   protected readonly points = signal<FlPoints[]>([]);
   protected readonly stats = signal<StatsRow | null>(null);
   private readonly seen = new Map<string, { points: FlPoints[]; stats: StatsRow | null }>();
@@ -275,6 +283,11 @@ export class FlPlayerSheet {
   protected dayLong(iso: string): string {
     const d = fmtDayLong(iso);
     return d.charAt(0).toUpperCase() + d.slice(1);
+  }
+
+  protected openDay(p: FlPoints): void {
+    this.shown.set(p.match_id);
+    this.pick.set(p);
   }
 
   protected setTab(k: 'skill' | 'stats' | 'points'): void {
