@@ -27,12 +27,13 @@ interface Section { id: SectionId; label: string; rows: GroupRow[] }
   template: `
     <div class="page-head">
       <div class="head-in">
-        <div class="detail-bar"><app-back fallback="/" /></div>
-        <header class="titlebar">
-          <h1>{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
+        <!-- si apre dalla campanella del Profilo: niente titolo, solo «Indietro» e l'azione -->
+        <div class="detail-bar">
+          <app-back fallback="/profilo" />
+          <h1 class="sr-only">{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
           @if (tab() === 'avvisi' && hasUnread()) { <button class="btn small" (click)="readAll()">Segna tutti come letti</button> }
           @if (tab() === 'info' && session.isLeader() && !editing()) { <button class="btn small" (click)="startEdit()">Modifica</button> }
-        </header>
+        </div>
         <div class="ui-seg" role="tablist" aria-label="Avvisi e informazioni">
           <button role="tab" [attr.aria-selected]="tab() === 'avvisi'" (click)="selectTab('avvisi')"><app-icon name="bell" [size]="18" /> Avvisi</button>
           <button role="tab" [attr.aria-selected]="tab() === 'info'" (click)="selectTab('info')"><app-icon name="info" [size]="18" /> Info</button>

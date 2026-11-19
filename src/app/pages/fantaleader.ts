@@ -14,7 +14,6 @@ import { FlPlayerSheet } from '../fantaleader/player-sheet';
 import { FlTeam } from '../fantaleader/team-builder';
 import { Avatar } from '../ui/avatar';
 import { Skeleton } from '../ui/skeleton';
-import { TopActions } from '../ui/top-actions';
 import { Icon } from '../ui/icon';
 import { InfoTip } from '../ui/info-tip';
 
@@ -22,12 +21,12 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
 
 @Component({
   selector: 'app-fantaleader-page',
-  imports: [TopActions, FormsModule, Avatar, Skeleton, FlTeam, FlPlayerSheet, FlAdmin, Empty, Icon, InfoTip],
+  imports: [FormsModule, Avatar, Skeleton, FlTeam, FlPlayerSheet, FlAdmin, Empty, Icon, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
       <div class="head-in">
-        <header class="titlebar"><h1>FantaLeader</h1><app-top-actions /></header>
+        <header class="titlebar"><h1>FantaLeader</h1></header>
         <nav class="stabs" role="tablist" aria-label="FantaLeader">
           @for (t of tabs(); track t.id) {
             <button role="tab" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>

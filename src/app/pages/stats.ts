@@ -13,7 +13,6 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
-import { TopActions } from '../ui/top-actions';
 import { Icon } from '../ui/icon';
 import { AchievementsPanel } from '../ui/achievements-panel';
 import { Confirm } from '../core/confirm';
@@ -73,7 +72,7 @@ const RECORDS: Record[] = [
 
 @Component({
   selector: 'app-stats',
-  imports: [TopActions, SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, Compare, InfoTip],
+  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, AchievementsPanel, Skeleton, Compare, InfoTip],
   host: { '(window:resize)': 'onResize()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -90,7 +89,6 @@ const RECORDS: Record[] = [
               </select>
             </label>
           }
-          <app-top-actions />
         </div>
         @if (tab() !== 'punti' && tab() !== 'obiettivi' && period() === 'custom') {
           <div class="row">
