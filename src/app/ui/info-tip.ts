@@ -35,7 +35,7 @@ const EDGE = 8;  // margine dai bordi dello schermo
     .info-i { width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; background: none; color: var(--muted); display: grid; place-items: center; cursor: pointer; padding: 0; }
     /* area di tocco di 44 px */
     .info-i { position: relative; } .info-i::after { content: ''; position: absolute; inset: -6px; }
-    .info-i[aria-expanded='true'] { color: var(--turf); background: var(--turf-soft); }
+    .info-i[aria-expanded='true'] { color: var(--turf); }
     /* variante cartellino rosso (punizione sulla foto del Profilo): lo stesso del rimprovero, in piccolo */
     .info-i.card, .info-i.card[aria-expanded='true'] { background: none; }
     .mini-card { display: block; width: 20px; height: 28px; border-radius: 4px; transform: rotate(-9deg);

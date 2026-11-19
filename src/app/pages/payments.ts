@@ -11,7 +11,6 @@ import { Session } from '../core/session';
 import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { Avatar } from '../ui/avatar';
-import { TopActions } from '../ui/top-actions';
 import { Icon } from '../ui/icon';
 import { FitText } from '../ui/fit-text';
 import { InfoTip } from '../ui/info-tip';
@@ -52,7 +51,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
  */
 @Component({
   selector: 'app-payments-page',
-  imports: [TopActions, FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
+  imports: [FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page stack-l pay-page">
@@ -67,7 +66,6 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
           <app-icon name="wallet" [size]="18" /> Dati di pagamento
           @if (pay.data() && !hasMyMethods()) { <span class="dot" aria-hidden="true"></span><span class="sr-only">(da aggiungere)</span> }
         </button>
-        <app-top-actions />
       </header>
 
       @if (!pay.data(); as _) {
@@ -359,13 +357,17 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
   styles: `
     /* la pagina riempie almeno lo schermo: il pulsante tondo sta sempre in basso, anche con poco contenuto */
     :host { display: flex; flex-direction: column; flex: 1 0 auto; }
+    /* titolo alla stessa altezza delle sezioni con la parte alta fissa (.page-head: 12 px) */
+    .pay-page { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
     .pay-page { flex: 1 0 auto; display: flex; flex-direction: column; width: 100%; box-sizing: border-box; }
     .pay-page > .fab-dock { margin-top: auto; }
     .titlebar { gap: 4px; justify-content: flex-start; flex-wrap: nowrap; }
     .titlebar h1 { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .titlebar app-info-tip { flex: none; }
     .titlebar .push { margin-left: auto; }
-    .data-btn { position: relative; gap: 8px; white-space: nowrap; flex: none; min-height: 44px; }
+    /* bassa come il titolo delle altre sezioni; l'area di tocco resta 44 px */
+    .data-btn { position: relative; gap: 8px; white-space: nowrap; flex: none; min-height: 32px; padding: 0 12px; }
+    .data-btn::after { content: ''; position: absolute; inset: -6px 0; }
     /* schermi stretti: l'etichetta va su due righe e il titolo resta intero */
     @media (max-width: 380px) { .data-btn { white-space: normal; max-width: 8.5em; line-height: 1.1; text-align: left; } }
     .data-btn .dot { position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--bg); }
@@ -380,6 +382,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
       background: var(--turf); color: var(--turf-ink); box-shadow: 0 6px 18px rgb(0 0 0 / 28%), 0 0 0 3px var(--bg); }
     .fab:active { filter: brightness(0.92); }
     .fab:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+    /* stessi bordi delle liste delle altre sezioni anche nei temi a bordo spesso */
+    :host-context([data-theme='figurina']) .panel, :host-context([data-theme='contrasto']) .panel { border-width: 1px; box-shadow: 0 1px 2px rgb(20 32 25 / 5%); }
     .balance { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px; }
     .balance b { font-size: calc(var(--step-2) * 1.25); color: var(--ink); }
     .balance.owe b { color: var(--danger); }
