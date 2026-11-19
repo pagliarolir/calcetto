@@ -13,6 +13,7 @@ import { errorMessage } from '../core/supabase';
 import { Toasts } from '../core/toast';
 import { AppNotification } from '../core/models';
 import { Unread } from '../core/unread';
+import { Back } from '../ui/back';
 import { Icon } from '../ui/icon';
 
 type SectionId = 'mine' | 'today' | 'yesterday' | 'week' | 'older';
@@ -21,11 +22,12 @@ interface Section { id: SectionId; label: string; rows: GroupRow[] }
 
 @Component({
   selector: 'app-inbox',
-  imports: [Icon, FormsModule, Empty, Skeleton, NgTemplateOutlet],
+  imports: [Back, Icon, FormsModule, Empty, Skeleton, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
       <div class="head-in">
+        <div class="detail-bar"><app-back fallback="/" /></div>
         <header class="titlebar">
           <h1>{{ tab() === 'info' ? 'Info' : 'Avvisi' }}</h1>
           @if (tab() === 'avvisi' && hasUnread()) { <button class="btn small" (click)="readAll()">Segna tutti come letti</button> }

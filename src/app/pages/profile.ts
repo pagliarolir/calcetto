@@ -5,6 +5,7 @@ import { hasPalette, isNeu, TEXT_FONTS, Theme, ThemeChoice } from '../core/theme
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { InfoTip } from '../ui/info-tip';
+import { TopActions } from '../ui/top-actions';
 import { Icon } from '../ui/icon';
 import { toSquareJpeg } from '../core/image';
 import { fmtWhen } from '../core/format';
@@ -33,12 +34,12 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
 
 @Component({
   selector: 'app-profile',
-  imports: [SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage, InfoTip],
+  imports: [TopActions, SwipeTabs, Sheet, FormsModule, RouterLink, Avatar, Icon, PlayerPage, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-head">
       <div class="head-in">
-      <header class="titlebar"><h1>Profilo</h1></header>
+      <header class="titlebar"><h1>Profilo</h1><app-top-actions /></header>
       <div class="me-box">
         <div class="me-id">
           <div class="me-av" [class.pun]="!!session.punishment()">

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { SharedReads } from '../core/shared-reads';
+import { TopActions } from '../ui/top-actions';
 import { Skeleton } from '../ui/skeleton';
 import { Empty } from '../ui/empty';
 import { FormsModule } from '@angular/forms';
@@ -24,7 +25,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
 
 @Component({
   selector: 'app-matches',
-  imports: [RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
+  imports: [TopActions, RouterLink, FormsModule, MatchConfigForm, ApplyDialog, Empty, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <!-- parte alta fissa: titolo, periodo e la prossima partita; sotto scorrono le altre -->
@@ -38,6 +39,7 @@ type Period = 'all' | 'next' | 'month' | 'quarter' | 'year';
               @for (p of periods; track p.id) { <option [value]="p.id">{{ p.label }}</option> }
             </select>
           </label>
+          <app-top-actions />
         </header>
         @if (session.isLeader() && panel() === 'none' && !apply()) {
           <div class="lead-acts">

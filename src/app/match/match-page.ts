@@ -5,6 +5,7 @@ import { IsActiveMatchOptions, NavigationEnd, Router, RouterLink, RouterLinkActi
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { fmtCountdown, fmtDayLong, fmtDayNum, fmtMonthShort, fmtTime, fmtWeekday, mapsUrl, titleCase } from '../core/format';
+import { TopActions } from '../ui/top-actions';
 import { Icon } from '../ui/icon';
 import { kit } from '../core/kits';
 import { Branding } from '../core/branding';
@@ -16,7 +17,7 @@ import { haptic } from '../core/haptics';
 
 @Component({
   selector: 'app-match-page',
-  imports: [SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
+  imports: [TopActions, SwipeTabs, RouterOutlet, RouterLink, RouterLinkActive, Icon, MatchSkeleton],
   host: {
     '[style.--team-a]': 'kitA().color', '[style.--team-a-ink]': 'kitA().ink',
     '[style.--team-b]': 'kitB().color', '[style.--team-b-ink]': 'kitB().ink',
@@ -61,6 +62,7 @@ import { haptic } from '../core/haptics';
                   </a>
                 }
               </div>
+              <span class="top-acts"><app-top-actions class="hero" /></span>
               <a class="cal-link" routerLink="/partite" aria-label="Tutte le partite" title="Tutte le partite"><app-icon name="calendar" [size]="18" /></a>
             </div>
           </div>
@@ -127,6 +129,9 @@ import { haptic } from '../core/haptics';
     /* icona calendario: porta all'elenco delle partite */
     /* in alto a destra, fuori dalla colonna: le righe sotto (indirizzo) usano tutta la larghezza */
     .ticket.with-cal { position: relative; }
+    /* in alto a destra la campanella degli avvisi, sotto il calendario: il titolo resta largo come prima */
+    .top-acts { position: absolute; top: 0; right: 0; display: flex; }
+    .ticket.with-cal .cal-link { top: 44px; }
     .ticket.with-cal .tmain h1, .ticket.with-cal .tmain .flags { padding-right: 40px; }
     /* stessa misura dell'icona di ordinamento (32 px); l'area di tocco resta 44 px con il margine invisibile */
     .cal-link { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
