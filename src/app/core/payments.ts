@@ -55,13 +55,14 @@ export function ibanGroups(iban: string): string {
 }
 
 /**
- * Partite per cui si può dividere il campo: la prossima e le ultime giocate, 6 in tutto; quelle di più di
- * 3 giorni fa solo per il Leader (il server lo controlla comunque). Le usano la tendina della spesa e
- * «Dividi il campo» nel Risultato, così le due cose non si contraddicono.
+ * Partite della tendina della spesa: la prossima (solo da due ore prima dell'inizio) e le ultime giocate,
+ * 6 in tutto; quelle di più di 3 giorni fa solo per il Leader (il server lo controlla comunque).
  */
 export function fieldChoices<T extends Match>(all: T[], boss: boolean, now = Date.now()): T[] {
   const ok = all.filter((m) => m.status !== 'cancelled');
-  const next = ok.filter((m) => Date.parse(m.starts_at) >= now).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
+  // la prossima partita compare solo da due ore prima dell'inizio (scelta del proprietario)
+  const next = ok.filter((m) => Date.parse(m.starts_at) >= now && Date.parse(m.starts_at) - 2 * 3600e3 <= now)
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
   const past = ok.filter((m) => Date.parse(m.starts_at) < now && (boss || Date.parse(m.starts_at) >= now - 3 * 864e5))
     .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
   return [...(next ? [next] : []), ...past].slice(0, 6);

@@ -17,15 +17,13 @@ import { Ball, Boot, KitShirt } from '../ui/match-marks';
 import { InfoTip } from '../ui/info-tip';
 import { Icon } from '../ui/icon';
 import { Sheet } from '../ui/sheet';
-import { RouterLink } from '@angular/router';
-import { fieldChoices, Payments } from '../core/payments';
 
 interface Line { goals: number; assists: number; own_goals: number }
 type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [Sheet, FormsModule, RouterLink, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
+  imports: [Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
@@ -97,16 +95,6 @@ type Field = keyof Line;
               </div>
             }
 
-            <!-- Pagamenti (solo per chi li vede): la spesa del campo già pronta, con questa partita e chi ha giocato -->
-            @if (pay.visible() && store.t()?.ended && splitState(); as st) {
-              @if (st === 'ok') {
-                <a class="btn block split-btn" routerLink="/pagamenti" [queryParams]="{ spesa: m.id }"><app-icon name="wallet" [size]="18" /> Dividi il campo</a>
-              } @else {
-                <!-- solo le partite che si possono scegliere tra le spese (fieldChoices): le altre restano spente -->
-                <button type="button" class="btn block split-btn" disabled aria-describedby="split-why"><app-icon name="wallet" [size]="18" /> Dividi il campo</button>
-                <p id="split-why" class="small muted split-why">{{ st === 'done' ? 'Il campo di questa partita è già nei Conti.' : st === 'old' ? 'Nelle spese ci sono solo le ultime 6 partite.' : 'Sono passati più di 3 giorni: ora può dividerlo solo il Leader.' }}</p>
-              }
-            }
           </section>
 
           <!-- Formazioni con gol (pallone bianco), autogol (pallone rosso) e assist (scarpino) -->
@@ -155,11 +143,11 @@ type Field = keyof Line;
           <ng-template #entry>
                   <div class="score-in">
                     <div class="stack"><span class="small muted">{{ teamLabel().white }}</span>
-                      <div class="stepper"><button (click)="wg.set(dec(wg()))" [attr.aria-label]="teamLabel().white + ' meno'">−</button><output>{{ wg() }}</output><button (click)="wg.set(wg() + 1)" [attr.aria-label]="teamLabel().white + ' più'">+</button></div>
+                      <div class="stepper"><button (click)="wg.set(dec(wg()))" [attr.aria-label]="teamLabel().white + ' meno'"><app-icon name="minus" [size]="18" /></button><output>{{ wg() }}</output><button (click)="wg.set(wg() + 1)" [attr.aria-label]="teamLabel().white + ' più'"><app-icon name="plus" [size]="18" /></button></div>
                     </div>
                     <span class="num dash">–</span>
                     <div class="stack"><span class="small muted">{{ teamLabel().black }}</span>
-                      <div class="stepper"><button (click)="bg.set(dec(bg()))" [attr.aria-label]="teamLabel().black + ' meno'">−</button><output>{{ bg() }}</output><button (click)="bg.set(bg() + 1)" [attr.aria-label]="teamLabel().black + ' più'">+</button></div>
+                      <div class="stepper"><button (click)="bg.set(dec(bg()))" [attr.aria-label]="teamLabel().black + ' meno'"><app-icon name="minus" [size]="18" /></button><output>{{ bg() }}</output><button (click)="bg.set(bg() + 1)" [attr.aria-label]="teamLabel().black + ' più'"><app-icon name="plus" [size]="18" /></button></div>
                     </div>
                   </div>
                 <button class="btn primary" [disabled]="busy()" (click)="submit()">Salva {{ previewText() }}</button>
@@ -181,9 +169,9 @@ type Field = keyof Line;
                   </span>
                   <span class="grow">{{ f.label }}</span>
                   <div class="stepper">
-                    <button (click)="bump(id, f.key, -1)" [disabled]="val(id, f.key) === 0" [attr.aria-label]="f.label + ' meno'">−</button>
+                    <button (click)="bump(id, f.key, -1)" [disabled]="val(id, f.key) === 0" [attr.aria-label]="f.label + ' meno'"><app-icon name="minus" [size]="16" /></button>
                     <output>{{ val(id, f.key) }}</output>
-                    <button (click)="bump(id, f.key, 1)" [disabled]="!canAdd(id, f.key)" [attr.aria-label]="f.label + ' più'">+</button>
+                    <button (click)="bump(id, f.key, 1)" [disabled]="!canAdd(id, f.key)" [attr.aria-label]="f.label + ' più'"><app-icon name="plus" [size]="16" /></button>
                   </div>
                 </div>
               }
@@ -200,7 +188,6 @@ type Field = keyof Line;
     }
   `,
   styles: `
-    .split-why { margin: 8px 0 0; text-align: center; }
     .big { font-size: var(--step-4); }
     .meter { display: flex; gap: 8px; }
     .meter span { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); }
@@ -285,7 +272,6 @@ type Field = keyof Line;
 })
 export class ResultTab {
   protected readonly store = inject(MatchStore);
-  protected readonly pay = inject(Payments);
   protected readonly session = inject(Session);
   private readonly api = inject(Api);
   private readonly shared = inject(SharedReads);
@@ -395,21 +381,7 @@ export class ResultTab {
     return out;
   });
 
-  /** «Dividi il campo»: ok se la partita è tra quelle della tendina delle spese e il campo non è ancora nei Conti */
-  protected readonly splitState = signal<'ok' | 'done' | 'late' | 'old' | null>(null);
-  private async checkSplit(id: string): Promise<void> {
-    try {
-      const boss = this.pay.data()?.boss ?? this.session.isLeader();
-      const [all, done] = await Promise.all([this.shared.recentMatches(30), this.pay.fieldMatches([id])]);
-      this.splitState.set(done.has(id) ? 'done' : fieldChoices(all, boss).some((m) => m.id === id) ? 'ok' : boss ? 'old' : 'late');
-    } catch { this.splitState.set(null); }
-  }
-
   constructor() {
-    effect(() => {
-      const id = this.store.match()?.id, ended = !!this.store.t()?.ended, vis = this.pay.visible();
-      if (id && ended && vis) untracked(() => void this.checkSplit(id));
-    });
     effect(() => {
       this.store.scorers();
       untracked(() => this.fromStore());

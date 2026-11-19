@@ -778,7 +778,7 @@ export class PaymentsPage implements OnInit {
     queueMicrotask(() => { const d = this.expDlg()?.nativeElement; if (d && !d.open) d.showModal(); });
     if (!this.pastMatches().length) {
       try {
-        // stesse partite di «Dividi il campo» nel Risultato (fieldChoices)
+        // la prossima partita solo da due ore prima, poi le ultime giocate (fieldChoices)
         this.pastMatches.set(fieldChoices(await this.shared.recentMatches(30), !!this.pay.data()?.boss));
       } catch { /* senza partite si inserisce a mano */ }
     }
