@@ -26,7 +26,9 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
   template: `
     <div class="page-head">
       <div class="head-in">
-        <header class="titlebar"><h1>FantaLeader</h1></header>
+        <header class="titlebar"><h1>FantaLeader</h1>
+          @if (fl.loaded() && fl.settings(); as st) { <app-info-tip label="Mercato e prossima giornata" [lines]="infoLines()" /> }
+        </header>
         <nav class="stabs" role="tablist" aria-label="FantaLeader">
           @for (t of tabs(); track t.id) {
             <button role="tab" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">{{ t.label }}</button>
@@ -56,21 +58,6 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
               } @else if (st.market_open) {
                 <button class="btn primary block" (click)="select('squadra')"><app-icon name="plus" [size]="18" /> Crea la tua fantasquadra</button>
               }
-              <div class="market" [class.open]="st.market_open">
-                <app-icon [name]="st.market_open ? 'unlock' : 'lock'" [size]="18" />
-                <span class="grow">{{ st.market_open ? 'Mercato aperto' : 'Mercato chiuso' }}@if (st.market_changed_at) { <span class="muted"> dal {{ when(st.market_changed_at) }}</span> }</span>
-                <app-info-tip [lines]="st.market_open
-                  ? ['Puoi creare o cambiare la tua fantasquadra: ' + st.team_size + ' giocatori, ' + st.budget + ' euroLeader e un capitano.']
-                  : ['Le fantasquadre sono bloccate finché il Leader non riapre il mercato.']" />
-              </div>
-              @if (next(); as m) {
-                <div class="market">
-                  <app-icon name="calendar" [size]="18" />
-                  <span class="grow">Prossima giornata <span class="muted">{{ when(m.starts_at) }}</span></span>
-                  <app-info-tip [lines]="['I punti arrivano quando il risultato è omologato.', 'Diventano definitivi alla chiusura delle pagelle.']" />
-                </div>
-              }
-
               @if (fl.lastRound(); as lr) {
                 <section class="section">
                   <header><h2>Ultima giornata</h2><span class="small muted">{{ day(lr.starts_at) }}</span></header>
@@ -219,10 +206,6 @@ type Tab = 'home' | 'squadra' | 'giocatori' | 'classifiche' | 'gestione';
       background: var(--chalk, #f4f7f2); color: var(--on-chalk); }
     .hero-card .score strong { font: 600 var(--step-3)/1 var(--font-display); }
     .hero-card .score small { font-size: 0.7rem; }
-    .market { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 4px 0 16px; border-radius: var(--r-m); background: var(--surface-2); color: var(--ink); }
-    .market > app-icon { color: var(--muted); }
-    .market.open > app-icon { color: var(--turf); }
-    .market .grow { min-width: 0; }
     .link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; border: 0; background: none; color: color-mix(in srgb, var(--turf) 70%, var(--ink)); font: 600 var(--step--1)/1 var(--font-body); cursor: pointer; padding: 0; }
     .link app-icon { display: grid; }
     .section > header { align-items: center; }
@@ -272,6 +255,18 @@ export class FantaLeaderPage implements OnInit {
   protected readonly fmt = fmtPts;
   protected readonly when = fmtWhen;
   protected readonly next = signal<Match | null>(null);
+  /** la «i» accanto al titolo: stato del mercato e prossima giornata */
+  protected readonly infoLines = computed(() => {
+    const st = this.fl.settings();
+    if (!st) return [];
+    const since = st.market_changed_at ? ' dal ' + this.when(st.market_changed_at) : '';
+    const out = st.market_open
+      ? ['Mercato aperto' + since + ': puoi creare o cambiare la tua fantasquadra (' + st.team_size + ' giocatori, ' + st.budget + ' euroLeader e un capitano).']
+      : ['Mercato chiuso' + since + ': le fantasquadre restano bloccate finché il Leader non lo riapre.'];
+    const m = this.next();
+    if (m) out.push('Prossima giornata ' + this.when(m.starts_at) + '. I punti arrivano quando il risultato è omologato e diventano definitivi alla chiusura delle pagelle.');
+    return out;
+  });
   protected q = '';
   /** la scheda Giocatori si apre ordinata per quota attuale */
   protected sortBy: 'price' | 'initial' | 'pos' | 'name' = 'price';

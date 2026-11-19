@@ -232,13 +232,11 @@ export class MatchPage {
   protected async openSort(e: Event): Promise<void> {
     if (this.sortAt()) { this.sortAt.set(null); return; }
     const btn = e.currentTarget as HTMLElement;
-    // da un'altra scheda: prima si torna alla Lista, poi il menu si apre appena l'elenco è pronto
+    // da un'altra scheda le frecce valgono come «Lista»: si torna all'elenco, il menu non si apre (scelta del proprietario)
     if (!this.listSort.active()) {
       const m = this.store.match();
-      if (!m) return;
-      await this.router.navigate(['/partita', m.id]);
-      for (let i = 0; i < 40 && !this.listSort.active(); i++) await new Promise((r) => setTimeout(r, 50));
-      if (!this.listSort.active()) return;
+      if (m) await this.router.navigate(['/partita', m.id]);
+      return;
     }
     const r = btn.getBoundingClientRect();
     this.sortAt.set({ top: Math.round(r.bottom + 6), left: Math.round(Math.max(8, Math.min(r.left - 40, innerWidth - 228))) });
