@@ -380,7 +380,14 @@ type ProfileTab = 'dati' | 'stats' | 'foto' | 'notifiche' | 'aspetto' | 'sicurez
                  background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
     .lead-area > app-icon:first-child { color: var(--turf); }
     .lead-area .grow { display: flex; flex-direction: column; gap: 2px; }
-    .me-box { display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: var(--r-m, 16px); background: var(--surface-2); }
+    .me-box { display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: var(--r-m, 16px); background: var(--surface-2); box-shadow: 0 2px 8px rgb(20 32 25 / 10%); }
+    /* temi scuri: niente ombra grande, basta un filo (unslop) */
+    :host-context([data-theme='notturno']) .me-box, :host-context([data-theme='tramonto']) .me-box { box-shadow: 0 0 0 1px var(--line); }
+    @media (prefers-color-scheme: dark) { :host-context(html:not([data-theme])) .me-box, :host-context([data-theme='automatico']) .me-box { box-shadow: 0 0 0 1px var(--line); } }
+    /* neumorphism: il riquadro esce dal fondo come gli altri */
+    :host-context([data-theme='rilievo']) .me-box { box-shadow: var(--neu-out); }
+    :host-context([data-theme='rientranza']) .me-box { box-shadow: var(--neu-in); }
+    .me-av app-avatar { border-radius: 50%; box-shadow: 0 2px 6px rgb(20 32 25 / 18%); }
     .me-id { flex: none; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .me-av { position: relative; flex: none; display: grid; }
     .me-name { margin: 0; max-width: 100%; overflow: hidden; text-align: center; overflow-wrap: anywhere; text-wrap: balance;
