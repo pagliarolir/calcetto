@@ -257,22 +257,33 @@ export class InboxPage implements OnInit {
     if (this.loaded()) this.cache.set('notifications', list, true);
   });
 
+  /** subito a schermo, poi al server; se il server rifiuta, il contatore torna giusto con la rilettura */
   protected async readAll(): Promise<void> {
-    await this.api.markAllRead();
+    const before = this.items();
     this.items.update((l) => l.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
-    await this.unread.refresh();
+    this.unread.count.set(0);
+    try {
+      await this.api.markAllRead();
+    } catch (e) {
+      this.items.set(before);
+      this.toasts.error(errorMessage(e));
+    }
+    await this.unread.refresh().catch(() => undefined);
   }
 
   /** aprirne uno segna letto solo quello */
   protected async open(n: AppNotification): Promise<void> {
-    if (!n.read_at) await this.markRead([n.id]);
+    // si va subito alla pagina: la lettura si segna in sottofondo
+    if (!n.read_at) void this.markRead([n.id]);
     if (n.url) await this.router.navigateByUrl(n.url);
   }
 
   private async markRead(ids: number[]): Promise<void> {
     const set = new Set(ids);
     const now = new Date().toISOString();
+    const fresh = this.items().filter((n) => set.has(n.id) && !n.read_at).length;
     this.items.update((l) => l.map((n) => (set.has(n.id) && !n.read_at ? { ...n, read_at: now } : n)));
+    this.unread.count.update((c) => Math.max(0, c - fresh));
     await this.api.markRead(ids).catch(() => undefined);
     await this.unread.refresh();
   }
