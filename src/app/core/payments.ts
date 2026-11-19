@@ -149,13 +149,32 @@ export class Payments {
     must(await this.sb.rpc('pay_delete_expense', { p_id: id }));
     await this.load();
   }
+  /**
+   * Il server registra, poi i conti si rileggono in sottofondo: l'esito si vede subito.
+   * Se vale subito (Leader per altri o chi riceve, `from` presente) il debito scende già a schermo.
+   */
   async markPaid(to: string, cents: number, method: PayMethod, from: string | null = null): Promise<void> {
     must(await this.sb.rpc('pay_mark_paid', { p_to: to, p_amount_cents: cents, p_method: method, p_from: from }));
-    await this.load();
+    const d = this.data();
+    if (d && from) {
+      const transfers = d.transfers
+        .map((t) => (t.from_id === from && t.to_id === to ? { ...t, amount_cents: t.amount_cents - cents } : t))
+        .filter((t) => t.amount_cents > 0);
+      this.data.set({ ...d, transfers });
+    }
+    void this.load().catch(() => undefined);
   }
+  /** conferma o rifiuto: la riga sparisce subito; se il server rifiuta, torna con la rilettura */
   async decide(id: number, ok: boolean): Promise<void> {
-    must(await this.sb.rpc('pay_decide', { p_id: id, p_ok: ok }));
-    await this.load();
+    const d = this.data();
+    if (d) this.data.set({ ...d, pending: d.pending.filter((s) => s.id !== id) });
+    try {
+      must(await this.sb.rpc('pay_decide', { p_id: id, p_ok: ok }));
+    } catch (e) {
+      await this.load().catch(() => undefined);
+      throw e;
+    }
+    void this.load().catch(() => undefined);
   }
   async saveMethods(paypal: string, iban: string, holder: string): Promise<void> {
     must(await this.sb.rpc('pay_save_methods', { p_paypal: paypal, p_iban: iban, p_holder: holder }));
