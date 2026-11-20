@@ -29,7 +29,7 @@ import { haptic } from '../core/haptics';
         <a class="btn" routerLink="/">Vai alla prossima partita</a>
       </main>
     } @else if (!store.loading() && store.match(); as m) {
-      <header class="hero">
+      <header class="hero" [class.calm]="calm()">
           <!-- intestazione a biglietto: calendario, data, orario e luogo; sotto le squadre -->
           <div class="hero-in v-b">
             <div class="ticket with-cal">
@@ -123,6 +123,8 @@ import { haptic } from '../core/haptics';
       /* fissa in cima: scorre solo il contenuto sotto (.scroll-area) */
       flex: none; z-index: 2;
     }
+    .hero.calm { color: var(--ink); background: var(--surface-2); }
+    .hero.calm .cal-link, .hero.calm .mini, .hero.calm .status { background: color-mix(in srgb, var(--ink) 8%, transparent); }
     .hero-in { max-width: 640px; margin: 0 auto; padding: 8px 16px 4px; display: flex; flex-direction: column; gap: 2px; }
     /* icona calendario: porta all'elenco delle partite */
     /* in alto a destra, fuori dalla colonna: le righe sotto (indirizzo) usano tutta la larghezza */
@@ -294,6 +296,8 @@ export class MatchPage {
   // ------------------------------------------------ strumenti del Leader (rotta «strumenti»)
   private readonly session = inject(Session);
   protected readonly tools = computed(() => this.url().split('?')[0].split('/')[3] === 'strumenti');
+  /** in Squadre il colore è del campo: l'intestazione resta neutra (un solo colore forte per schermata) */
+  protected readonly calm = computed(() => this.url().split('?')[0].split('/')[3] === 'squadre');
   protected readonly canTools = computed(() => {
     const m = this.store.match();
     return this.session.isLeader() && !!m && m.status === 'scheduled' && !this.store.t()?.started;

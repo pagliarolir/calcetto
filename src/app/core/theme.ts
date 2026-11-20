@@ -13,7 +13,7 @@ export const hasPalette = (c: ThemeChoice): boolean => c !== 'contrasto' && c !=
 /** colore della barra del telefono per ogni tema (come l'intestazione); «:dark» = variante scura dei neumorphism */
 const BAR: Record<string, string> = {
   gesso: '#1B6A43', notturno: '#0F1A14', figurina: '#C81E36', azzurro: '#0B4EA2', tramonto: '#1E1219', contrasto: '#000000',
-  rilievo: '#1B6A43', 'rilievo:dark': '#1C2026', rientranza: '#1B6A43', 'rientranza:dark': '#1C2026',
+  rilievo: '#1B6A43', 'rilievo:dark': '#1B221D', rientranza: '#1B6A43', 'rientranza:dark': '#1B221D',
 };
 const KEY_NEU = 'gdl-neu';                  // base chiara o scura dei temi neumorphism
 const KEY_PAL = 'gdl-palette';              // colore della tavolozza scelto per ogni tema ('' = originale)
