@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { SharedReads } from '../core/shared-reads';
 import { haptic } from '../core/haptics';
@@ -23,7 +24,7 @@ type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
+  imports: [RouterLink, Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
@@ -107,8 +108,8 @@ type Field = keyof Line;
                     <ul>
                       @for (id of rosterOf(t); track id) {
                         <li>
-                          <button class="pl" [class.mine]="id === session.uid()" [class.can]="editable(id)" [disabled]="!editable(id)" (click)="openScorer(id)"
-                                  [attr.aria-label]="session.name(id) + ': ' + (summary(val(id, 'goals'), val(id, 'assists'), val(id, 'own_goals')) || 'nessun gol') + (editable(id) ? '. Tocca per modificare' : '')">
+                          <!-- chi si può modificare apre i marcatori, gli altri portano alla scheda del giocatore -->
+                          <ng-template #plBody>
                             <app-avatar [userId]="id" [team]="t" [size]="26" />
                             <span class="pname ellipsis">{{ session.name(id) }}</span>
                             <span class="marks">
@@ -120,7 +121,19 @@ type Field = keyof Line;
                               @if (val(id, 'assists') > 3) { <span class="times">×{{ val(id, 'assists') }}</span> }
                               @if (lockedByLeader(id) && !session.isLeader()) { <app-icon name="lock" [size]="12" class="lk" /> }
                             </span>
-                          </button>
+                          </ng-template>
+                          @if (editable(id)) {
+                            <button class="pl can" [class.mine]="id === session.uid()" (click)="openScorer(id)"
+                                    [attr.aria-label]="session.name(id) + ': ' + (summary(val(id, 'goals'), val(id, 'assists'), val(id, 'own_goals')) || 'nessun gol') + '. Tocca per modificare'">
+                              <ng-container [ngTemplateOutlet]="plBody" />
+                            </button>
+                          } @else {
+                            <a class="pl" [class.mine]="id === session.uid()" [routerLink]="['/giocatore', id]"
+                               [attr.aria-label]="session.name(id) + ': ' + (summary(val(id, 'goals'), val(id, 'assists'), val(id, 'own_goals')) || 'nessun gol')">
+                              <ng-container [ngTemplateOutlet]="plBody" />
+                            </a>
+                          }
+                          
                         </li>
                       }
                     </ul>
@@ -242,7 +255,10 @@ type Field = keyof Line;
     .pname { font-weight: 600; font-size: var(--step--1); min-width: 0; }
     .marks { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-height: 0; }
     .marks:empty { display: none; }
-    .pl.can { cursor: pointer; }
+    a.pl { text-decoration: none; box-sizing: border-box; }
+    .pl.can, a.pl { cursor: pointer; }
+    a.pl:hover { background: var(--surface-2); }
+    a.pl:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
     .pl.can:hover { background: var(--surface-2); }
     .pl.mine .pname { color: var(--turf); }
     .pl:disabled { opacity: 1; }

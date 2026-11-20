@@ -86,6 +86,11 @@ import { Avatar } from './avatar';
     .pcard.red { background: #e3262f; }
     .txt { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
     .name { font-weight: 700; color: inherit; text-decoration: none; font-size: var(--step-0); }
+    /* foto e nome portano alla scheda: il collegamento copre tutta la figurina */
+    :host { position: relative; }
+    a.name::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+    a.name:focus-visible { outline: none; }
+    a.name:focus-visible::after { outline: 2px solid var(--turf); outline-offset: 2px; }
     .sub { font-size: 0.75rem; color: var(--muted); }
     /* valutazione generale: cerchio pieno dal rosso (50 o meno) al verde intenso (85 o più), testo bianco */
     /* layout: foto a sinistra; a destra il nome sopra, sotto la freccia di forma e la valutazione */

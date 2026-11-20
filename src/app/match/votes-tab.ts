@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, untracked, viewChild } from '@angular/core';
 import { haptic } from '../core/haptics';
 import { Api } from '../core/api';
@@ -30,7 +31,7 @@ interface VotesSeen {
 
 @Component({
   selector: 'app-votes-tab',
-  imports: [Sheet, Avatar, VoteSlider, Icon, Skeleton],
+  imports: [RouterLink, Sheet, Avatar, VoteSlider, Icon, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -75,8 +76,8 @@ interface VotesSeen {
                       @for (id of g.ids; track id) {
                         <li class="voting">
                           <div class="line">
-                            <app-avatar [userId]="id" [team]="team(id)" [size]="38" />
-                            <span class="grow ellipsis name">{{ session.name(id) }}</span>
+                            <a class="plink grow" [routerLink]="['/giocatore', id]"><app-avatar [userId]="id" [team]="team(id)" [size]="38" />
+                            <span class="grow ellipsis name">{{ session.name(id) }}</span></a>
                             <span [class]="'rate static ' + tone(score(id))" [class.touched]="scores().has(id)" aria-hidden="true">{{ fmt(score(id)) }}</span>
                           </div>
                           <app-vote-slider [value]="score(id)" (valueChange)="setScore(id, $event)" [label]="'Voto a ' + session.name(id)" />
@@ -114,8 +115,7 @@ interface VotesSeen {
                               <span class="mvp-dot" [attr.aria-label]="'Migliore in campo, ' + p.mvp_votes + (p.mvp_votes === 1 ? ' voto' : ' voti')">★ {{ p.mvp_votes }}</span>
                             }
                           </span>
-                          <span class="grow ellipsis name">{{ session.name(p.user_id) }}
-                          </span>
+                          <a class="grow ellipsis name plink stretch" [routerLink]="['/giocatore', p.user_id]">{{ session.name(p.user_id) }}</a>
                           <span [class]="'rate static ' + tone(p.avg)">{{ p.avg !== null ? p.avg.toFixed(2).replace('.', ',') : '–' }}</span>
                         </li>
                       }
@@ -135,7 +135,7 @@ interface VotesSeen {
                   @for (v of myGiven(); track v.id) {
                     <li>
                       <app-avatar [userId]="v.id" [team]="team(v.id)" [size]="38" />
-                      <span class="grow ellipsis name">{{ session.name(v.id) }}
+                      <span class="grow ellipsis name"><a class="plink stretch" [routerLink]="['/giocatore', v.id]">{{ session.name(v.id) }}</a>
                         @if (v.mvp) { <span class="mvp">★ il tuo migliore</span> }
                       </span>
                       <span [class]="'rate static ' + tone(v.score)">{{ fmt(v.score) }}</span>
@@ -157,7 +157,7 @@ interface VotesSeen {
                     </summary>
                     <ul class="rows tight">
                       @for (pv of votesBy(v); track pv.target_id) {
-                        <li><span class="grow ellipsis">{{ session.name(pv.target_id) }}</span><span [class]="'rate static small ' + tone(pv.score)">{{ fmt(pv.score) }}</span></li>
+                        <li><a class="grow ellipsis plink stretch" [routerLink]="['/giocatore', pv.target_id]">{{ session.name(pv.target_id) }}</a><span [class]="'rate static small ' + tone(pv.score)">{{ fmt(pv.score) }}</span></li>
                       }
                     </ul>
                   </details>
