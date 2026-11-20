@@ -191,8 +191,8 @@
    ===================================================================== */
 :root:is([data-theme='rilievo'], [data-theme='rientranza']) {
   color-scheme: light;
-  --bg: #e3ebe6; --surface: #e3ebe6; --surface-2: #d7e1da; --ink: #202723; --muted: #4e5851; --line: #c1cfc6;
-  --turf: #1b6a43; --turf-ink: #ffffff; --turf-soft: #d3e3dc; --chalk: #f4f8f5; --armband: #f2b705; --armband-ink: #2b2000;
+  --bg: #e4e9f0; --surface: #e4e9f0; --surface-2: #d8dfe8; --ink: #1c2633; --muted: #4a5666; --line: #c3ccd8;
+  --turf: #1b6a43; --turf-ink: #ffffff; --turf-soft: #d3e3dc; --chalk: #f4f7fa; --armband: #f2b705; --armband-ink: #2b2000;
   --kit-white: #fafaf7; --kit-white-ink: #13201a; --kit-black: #1a1c20; --kit-black-ink: #f4f4f1;
   --danger: #b92f27; --danger-ink: #ffffff; --danger-soft: #f3e0e0; --focus: #1b6a43; --backdrop: rgb(20 28 40 / 45%);
   --font-body: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif;
@@ -200,7 +200,7 @@
   --r-s: 10px; --r-m: 16px; --r-l: 24px;
   --hero-bg: linear-gradient(160deg, #1f7a4d 0%, #145235 100%); --hero-ink: #ffffff;
   /* luce e ombra */
-  --neu-hi: #ffffff; --neu-lo: #a6b8ad;
+  --neu-hi: #ffffff; --neu-lo: #a9b4c4;
   --neu-out: 6px 6px 14px var(--neu-lo), -6px -6px 14px var(--neu-hi);
   --neu-out-s: 3px 3px 7px var(--neu-lo), -3px -3px 7px var(--neu-hi);
   --neu-in: inset 6px 6px 12px var(--neu-lo), inset -6px -6px 12px var(--neu-hi);
@@ -208,12 +208,12 @@
 }
 :root:is([data-theme='rilievo'], [data-theme='rientranza'])[data-base='dark'] {
   color-scheme: dark;
-  --bg: #242c27; --surface: #242c27; --surface-2: #2b342e; --ink: #e6ece8; --muted: #a6b0a9; --line: #38443c;
-  --turf: #72d18f; --turf-ink: #0b1a10; --turf-soft: #2f4a3a; --chalk: #eef4f0; --armband: #ffb547; --armband-ink: #1e1400;
+  --bg: #252a31; --surface: #252a31; --surface-2: #2c323a; --ink: #e6ebf1; --muted: #a3aebb; --line: #3a414b;
+  --turf: #72d18f; --turf-ink: #0b1a10; --turf-soft: #2f4a3a; --chalk: #eef3f8; --armband: #ffb547; --armband-ink: #1e1400;
   --kit-white: #eceee9; --kit-white-ink: #13201a; --kit-black: #050607; --kit-black-ink: #eceee9;
   --danger: #ff7a6e; --danger-ink: #1a0605; --danger-soft: #45282a; --focus: #72d18f; --backdrop: rgb(0 0 0 / 60%);
-  --hero-bg: linear-gradient(160deg, #252e28 0%, #1b221d 100%); --hero-ink: #ffffff;
-  --neu-hi: #313d35; --neu-lo: #141916;
+  --hero-bg: linear-gradient(160deg, #262c33 0%, #1c2026 100%); --hero-ink: #ffffff;
+  --neu-hi: #333a44; --neu-lo: #15181d;
 }
 /* controlli: sempre in rilievo (si capisce che si toccano); premuti o scelti, scavati */
 :root:is([data-theme='rilievo'], [data-theme='rientranza']) {
@@ -751,8 +751,7 @@ dialog.sheet > .x-close + * { margin-right: 40px; }
   min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; display: inline-grid; place-items: center;
   font: 700 0.72rem/1 var(--font-body); background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
 }
-/* la scheda scelta ha già la lineetta: il numero resta neutro (un accento in meno) */
-[aria-selected='true'] > .ui-count { box-shadow: 0 0 0 1.5px var(--ink); }
+[aria-selected='true'] > .ui-count { background: var(--turf); color: var(--turf-ink); box-shadow: none; }
 /* Selettore: scegliere un'opzione. Pillola con l'opzione scelta in chiaro */
 .ui-seg { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
 .ui-seg > button {
