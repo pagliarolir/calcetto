@@ -14,7 +14,7 @@
       if (nb === 'dark') key = t + ':dark';
     }
     var bar = { gesso: '#1B6A43', notturno: '#0F1A14', figurina: '#C81E36', azzurro: '#0B4EA2', tramonto: '#1E1219', contrasto: '#000000',
-                rilievo: '#1B6A43', 'rilievo:dark': '#1C2026', rientranza: '#1B6A43', 'rientranza:dark': '#1C2026' }[key];
+                rilievo: '#1B6A43', 'rilievo:dark': '#1B221D', rientranza: '#1B6A43', 'rientranza:dark': '#1B221D' }[key];
     /* tavolozza scelta per il tema: colori già calcolati dall'app (contrasti garantiti) */
     var pv = (JSON.parse(localStorage.getItem('gdl-palette-vars') || '{}') || {})[key];
     if (pv && t !== 'custom') {
