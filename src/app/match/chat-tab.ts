@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injector, OnDestroy, signal, untracked, viewChild } from '@angular/core';
 import { onForeground } from '../core/foreground';
 import { Empty } from '../ui/empty';
@@ -21,7 +22,7 @@ import { Cache } from '../core/cache';
 /** Chat di partita: aperta dalla creazione della partita fino a 24 ore dopo la fine. */
 @Component({
   selector: 'app-chat-tab',
-  imports: [FormsModule, Avatar, Empty, Icon, Skeleton],
+  imports: [RouterLink, FormsModule, Avatar, Empty, Icon, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -38,7 +39,7 @@ import { Cache } from '../core/cache';
             @if (newDay(i)) { <li class="day">{{ day(msg.created_at) }}</li> }
             <li class="row" [class.mine]="msg.user_id === session.uid()" [class.first]="!sameAuthor(i)">
               @if (msg.user_id !== session.uid()) {
-                @if (!sameAuthor(i)) { <app-avatar [userId]="msg.user_id" [size]="30" /> } @else { <span class="av-space" aria-hidden="true"></span> }
+                @if (!sameAuthor(i)) { <a class="plink" [routerLink]="['/giocatore', msg.user_id]" [attr.aria-label]="'Scheda di ' + session.name(msg.user_id)"><app-avatar [userId]="msg.user_id" [size]="30" /></a> } @else { <span class="av-space" aria-hidden="true"></span> }
               }
               <!-- pressione lunga, clic destro o Invio: menu Copia / Elimina -->
               <div class="msg enter-fade" [class.mine]="msg.user_id === session.uid()" [class.held]="menu()?.msg?.id === msg.id" [class.sending]="msg.state === 'sending'"

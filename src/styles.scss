@@ -769,3 +769,10 @@ dialog.sheet > .x-close + * { margin-right: 40px; }
 :is(.wd, .info-i, .sort-b, .more) { padding: 0; }
 :is(.ovr, .frm, .wd, .x-close > span, .info-i, .sort-b, .more) :is(app-icon, svg) { display: block; margin: 0 auto; }
 
+
+/* collegamento alla scheda del giocatore (foto o nome): stesso aspetto del testo intorno */
+a.plink { color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: inherit; min-width: 0; border-radius: 8px; -webkit-tap-highlight-color: transparent; }
+a.plink:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
+/* «stirato»: il nome copre tutta la riga (la riga deve avere position: relative) */
+a.plink.stretch::after { content: ''; position: absolute; inset: 0; }
+li:has(a.plink.stretch) { position: relative; }

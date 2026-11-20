@@ -151,8 +151,8 @@ const RECORDS: Record[] = [
               @for (r of lpTable(); track r.user_id; let i = $index) {
                 <li [class.me]="r.user_id === session.uid()" [class.top]="i < 3 && r.total > 0">
                   <span class="pos num">{{ i + 1 }}</span>
-                  <app-avatar [userId]="r.user_id" [size]="34" />
-                  <span class="grow"><a [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a><br />
+                  <a class="plink" [routerLink]="['/giocatore', r.user_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="r.user_id" [size]="34" /></a>
+                  <span class="grow"><a class="plink" [routerLink]="['/giocatore', r.user_id]">{{ session.name(r.user_id) }}</a><br />
                     <span class="small muted">{{ r.awards === 1 ? '1 assegnazione' : r.awards + ' assegnazioni' }}</span></span>
                   <span class="pts num" [class.neg]="r.total < 0">{{ signed(r.total) }}</span>
                 </li>
@@ -169,7 +169,7 @@ const RECORDS: Record[] = [
                 <li>
                   <span class="pts num" [class.neg]="e.points < 0">{{ signed(e.points) }}</span>
                   <span class="grow">
-                    <strong>{{ session.name(e.user_id) }}</strong>: {{ e.reason }}<br />
+                    <a class="plink" [routerLink]="['/giocatore', e.user_id]"><strong>{{ session.name(e.user_id) }}</strong></a>: {{ e.reason }}<br />
                     <span class="small muted">{{ e.created_by ? session.name(e.created_by) + ', ' : '' }}{{ whenFull(e.created_at) }}</span>
                   </span>
                   @if (session.isLeader()) {
@@ -290,8 +290,8 @@ const RECORDS: Record[] = [
               <summary><h3>Coppie più affiatate</h3><app-info-tip label="Cosa conta" [lines]="['Le coppie che hanno giocato più partite nella stessa squadra.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <ol class="pairs">
                 @for (x of topTogether(); track x.a_id + x.b_id) {
-                  <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
-                    <span class="grow">{{ session.name(x.a_id) }} e {{ session.name(x.b_id) }}</span>
+                  <li><span class="duo"><a class="plink" [routerLink]="['/giocatore', x.a_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="x.a_id" [size]="24" /></a><a class="plink" [routerLink]="['/giocatore', x.b_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="x.b_id" [size]="24" /></a></span>
+                    <span class="grow"><a class="plink" [routerLink]="['/giocatore', x.a_id]">{{ session.name(x.a_id) }}</a> e <a class="plink" [routerLink]="['/giocatore', x.b_id]">{{ session.name(x.b_id) }}</a></span>
                     <span class="small"><strong>{{ x.together }}</strong> insieme, {{ pct(x.together_wins, x.together) }} vinte</span></li>
                 }
               </ol>
@@ -300,8 +300,8 @@ const RECORDS: Record[] = [
               <summary><h3>Grandi rivalità</h3><app-info-tip label="Cosa conta" [lines]="['Le coppie che si sono affrontate più volte da avversari.']" /><app-icon name="chevron" [size]="18" class="chev" /></summary>
               <ol class="pairs">
                 @for (x of topAgainst(); track x.a_id + x.b_id) {
-                  <li><span class="duo"><app-avatar [userId]="x.a_id" [size]="24" /><app-avatar [userId]="x.b_id" [size]="24" /></span>
-                    <span class="grow">{{ session.name(x.a_id) }} contro {{ session.name(x.b_id) }}</span>
+                  <li><span class="duo"><a class="plink" [routerLink]="['/giocatore', x.a_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="x.a_id" [size]="24" /></a><a class="plink" [routerLink]="['/giocatore', x.b_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="x.b_id" [size]="24" /></a></span>
+                    <span class="grow"><a class="plink" [routerLink]="['/giocatore', x.a_id]">{{ session.name(x.a_id) }}</a> contro <a class="plink" [routerLink]="['/giocatore', x.b_id]">{{ session.name(x.b_id) }}</a></span>
                     <span class="small"><strong>{{ x.against }}</strong> sfide, {{ x.a_wins }}-{{ x.against_draws }}-{{ x.b_wins }}</span></li>
                 }
               </ol>
@@ -331,7 +331,7 @@ const RECORDS: Record[] = [
               <ul class="bars">
                 @for (x of mates(); track x.other) {
                   <li>
-                    <span class="who"><app-avatar [userId]="x.other" [size]="24" />{{ session.name(x.other) }}</span>
+                    <a class="who plink" [routerLink]="['/giocatore', x.other]"><app-avatar [userId]="x.other" [size]="24" />{{ session.name(x.other) }}</a>
                     <span class="bar" aria-hidden="true"><i [style.width.%]="share(x.wins, x.games)"></i></span>
                     <span class="small"><strong>{{ pct(x.wins, x.games) }}</strong> {{ x.wins }} su {{ x.games }}</span>
                   </li>
@@ -341,7 +341,7 @@ const RECORDS: Record[] = [
               <ul class="bars">
                 @for (x of rivals(); track x.other) {
                   <li>
-                    <span class="who"><app-avatar [userId]="x.other" [size]="24" />{{ session.name(x.other) }}</span>
+                    <a class="who plink" [routerLink]="['/giocatore', x.other]"><app-avatar [userId]="x.other" [size]="24" />{{ session.name(x.other) }}</a>
                     <span class="bar rival" aria-hidden="true"><i [style.width.%]="share(x.wins, x.games)"></i></span>
                     <span class="small"><strong>{{ x.wins }}-{{ x.draws }}-{{ x.losses }}</strong> in {{ x.games }}</span>
                   </li>

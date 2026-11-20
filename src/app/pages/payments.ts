@@ -1,3 +1,4 @@
+import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, OnInit, signal, viewChild } from '@angular/core';
 import { SharedReads } from '../core/shared-reads';
 import { FormsModule } from '@angular/forms';
@@ -51,7 +52,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
  */
 @Component({
   selector: 'app-payments-page',
-  imports: [FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
+  imports: [RouterLink, FormsModule, Avatar, FitText, Icon, InfoTip, PayMark, Sheet, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page stack-l pay-page">
@@ -83,7 +84,7 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
             <ul class="list panel flush">
               @for (s of toConfirm(); track s.id) {
                 <li class="list-item confirm">
-                  <div class="row"><app-avatar [userId]="s.from_id" [size]="36" />
+                  <div class="row"><a class="plink" [routerLink]="['/giocatore', s.from_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="s.from_id" [size]="36" /></a>
                     <span class="grow"><b>{{ session.name(s.from_id) }}</b> dice di {{ s.to_id === me() ? 'averti' : 'aver dato a ' + session.name(s.to_id) }}
                       dato <b>{{ eur(s.amount_cents) }}</b> <span class="how sym" role="img" [attr.aria-label]="'con ' + methodLabel(s.method)" [title]="methodLabel(s.method)"><app-pay-mark [method]="s.method" [size]="18" /></span></span></div>
                   <div class="row acts">
@@ -101,8 +102,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
             <h2 id="h-pay">Da pagare</h2>
             @for (t of myDebts(); track t.to_id) {
               <div class="debt drow">
-                <app-avatar [userId]="t.to_id" [size]="28" />
-                <span class="dinfo"><span class="dname">{{ session.name(t.to_id) }}</span><b class="num amt owe">{{ eur(t.amount_cents) }}</b></span>
+                <a class="plink" [routerLink]="['/giocatore', t.to_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="t.to_id" [size]="28" /></a>
+                <span class="dinfo"><a class="dname plink" [routerLink]="['/giocatore', t.to_id]">{{ session.name(t.to_id) }}</a><b class="num amt owe">{{ eur(t.amount_cents) }}</b></span>
                 @if (waiting(t.to_id)) {
                   <span class="wait" role="img" aria-label="In attesa di conferma" title="In attesa di conferma"><app-icon name="clock" [size]="20" /></span>
                 } @else {
@@ -121,8 +122,8 @@ type Fold = 'tutti' | 'spese' | 'storico' | 'visibilita';
             }
             @for (t of myCredits(); track t.from_id) {
               <div class="debt drow">
-                <app-avatar [userId]="t.from_id" [size]="28" />
-                <span class="dinfo"><span class="dname-l"><span class="dname">{{ session.name(t.from_id) }}</span>
+                <a class="plink" [routerLink]="['/giocatore', t.from_id]" tabindex="-1" aria-hidden="true"><app-avatar [userId]="t.from_id" [size]="28" /></a>
+                <span class="dinfo"><span class="dname-l"><a class="dname plink" [routerLink]="['/giocatore', t.from_id]">{{ session.name(t.from_id) }}</a>
                     <button type="button" class="bell" [class.off]="!afterOne()" (click)="remind(t)" [attr.aria-label]="'Manda un promemoria a ' + session.name(t.from_id)" [title]="afterOne() ? 'Manda un promemoria' : 'Promemoria dalle 13'"><app-icon name="bell" [size]="16" /></button></span>
                   <b class="num amt get">{{ eur(t.amount_cents) }}</b></span>
                 <button type="button" class="pay-btn get" (click)="openReceive(t)" [attr.aria-label]="'Segna che ' + session.name(t.from_id) + ' ti ha pagato'" title="Segna ricevuto"><app-icon name="check" [size]="18" /></button>
