@@ -32,5 +32,21 @@
     "!/**/*.*",
     "!/**/*__*",
     "!/**/*__*/**"
+  ],
+  "dataGroups": [
+    {
+      "name": "foto",
+      "urls": [
+        "https://*.supabase.co/storage/v1/object/sign/avatars/**",
+        "https://*.supabase.co/storage/v1/object/public/branding/**"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 300,
+        "maxAge": "7d",
+        "timeout": "10s",
+        "cacheOpaqueResponses": true
+      }
+    }
   ]
 }
