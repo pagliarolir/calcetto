@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { onForeground } from './foreground';
 import { Match } from './models';
+import { Cache } from './cache';
 import { Session } from './session';
 import { Supabase } from './supabase';
 
@@ -72,6 +73,7 @@ export function fieldChoices<T extends Match>(all: T[], boss: boolean, now = Dat
 export class Payments {
   private readonly sb = inject(Supabase).client;
   private readonly session = inject(Session);
+  private readonly cache = inject(Cache);
   readonly visible = signal(false);
   /** ultimi dati della pagina (solo in memoria: dentro ci sono IBAN di altri, non si salvano sul telefono) */
   readonly data = signal<PayOverview | null>(null);
@@ -94,6 +96,8 @@ export class Payments {
     const uid = this.session.uid();
     if (!uid) { this.visible.set(false); this.visCheck = null; this.data.set(null); this.stopRetry(); return false; }
     if (this.visCheck && this.visCheck.uid === uid && Date.now() - this.visCheck.at < 30_000) return this.visCheck.p;
+    // la voce «Conti» compare subito, come l'ultima volta (aperti a tutti: senza ricordo si mostra); il server poi conferma
+    if (!this.visible() && this.cache.get<boolean>('vis-pay') !== false) this.visible.set(true);
     const p = (async (): Promise<boolean | null> => {
       let res = await this.sb.rpc('pay_visible');
       if (res.error) {
@@ -109,6 +113,7 @@ export class Payments {
       this.stopRetry();
       const v = res.data === true;
       this.visible.set(v);
+      this.cache.set('vis-pay', v, true);
       return v;
     })();
     this.visCheck = { uid, at: Date.now(), p };
