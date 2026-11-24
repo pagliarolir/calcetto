@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Cache } from './cache';
 import { Session } from './session';
 import { Supabase } from './supabase';
 
@@ -118,6 +119,7 @@ export class FantaLeader {
     return this.skills().filter((s) => ids.has(s.id)).sort((a, b) => (a.kind === b.kind ? a.id - b.id : a.kind === 'pos' ? -1 : 1));
   }
 
+  private readonly flCache = inject(Cache);
   private visCheck: { uid: string; at: number; p: Promise<boolean> } | null = null;
   /** se l'utente vede il FantaLeader; più richieste ravvicinate (barra, scaricamento in anticipo, guardia) fanno una sola chiamata */
   async checkVisible(): Promise<boolean> {
@@ -126,10 +128,15 @@ export class FantaLeader {
     // solo Bobbo: per tutti gli altri (Leader compreso) niente chiamata e niente voce
     if (!isBobbo(this.session.profile())) { this.visible.set(false); return false; }
     if (this.visCheck && this.visCheck.uid === uid && Date.now() - this.visCheck.at < 30_000) return this.visCheck.p;
+    // la voce «Fanta» compare subito se l'ultima volta il server l'aveva concessa (ricordo separato per utente); poi si conferma
+    if (!this.visible() && this.flCache.get<boolean>('vis-fl') === true) this.visible.set(true);
     const p = (async () => {
       const res = await this.sb.rpc('fl_visible');
       const v = !res.error && res.data === true;
+      // un errore di rete non toglie la voce già mostrata: decide solo una risposta vera del server
+      if (res.error && this.visible()) return true;
       this.visible.set(v);
+      if (!res.error) this.flCache.set('vis-fl', v, true);
       if (res.error) this.visCheck = null;
       return v;
     })();
