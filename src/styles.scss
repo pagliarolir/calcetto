@@ -646,6 +646,14 @@ router-outlet + * { display: block; animation: page-in 160ms var(--ease) both; }
 .avatar { overflow: hidden; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar.has-photo { background: var(--surface-2); }
+/* foto in arrivo: scheletro come quello delle pagine (ui/skeleton.ts), un gradino più scuro per vedersi anche sui riquadri; poi la foto compare con una dissolvenza */
+.avatar.loading { --sk-a: color-mix(in srgb, var(--surface-2) 92%, var(--ink)); --sk-b: color-mix(in srgb, var(--surface-2) 84%, var(--ink));
+  background: linear-gradient(90deg, var(--sk-a) 25%, var(--sk-b) 40%, var(--sk-a) 55%);
+  background-size: 300% 100%; animation: av-sk 1.3s ease-in-out infinite; }
+.avatar.loading img { opacity: 0; }
+.avatar img { transition: opacity 200ms var(--ease); }
+@keyframes av-sk { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .avatar.loading { animation: none; } .avatar img { transition: none; } }
 /* sigle: un colore tenue per giocatore (le squadre in campo tengono i loro colori) */
 .avatar:not(.has-photo):not(.white):not(.black) { background: hsl(var(--av-h, 150) 42% 87%); color: hsl(var(--av-h, 150) 45% 24%); }
 @media (prefers-color-scheme: dark) {

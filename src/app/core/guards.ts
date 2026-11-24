@@ -35,6 +35,8 @@ export const fantaLeaderGuard: CanActivateFn = async () => {
   const fl = inject(FantaLeader);
   const router = inject(Router);
   if (!FANTA_ENABLED) return router.parseUrl('/');
+  // voce già mostrata (anche dal ricordo dell'ultima volta): si entra subito, il controllo continua in sottofondo
+  if (fl.visible()) { void fl.checkVisible().then((v) => { if (!v) void router.navigateByUrl('/'); }); return true; }
   await s.whenReady();
   return (await fl.checkVisible()) ? true : router.parseUrl('/');
 };
