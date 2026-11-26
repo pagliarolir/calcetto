@@ -1,4 +1,3 @@
-import { Roll } from '../ui/roll';
 import { RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { SharedReads } from '../core/shared-reads';
@@ -25,7 +24,7 @@ type Field = keyof Line;
 
 @Component({
   selector: 'app-result-tab',
-  imports: [Roll, RouterLink, Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
+  imports: [RouterLink, Sheet, FormsModule, Avatar, Ball, Boot, KitShirt, Icon, NgTemplateOutlet, InfoTip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:click)': 'closeInfo()', '(document:keydown.escape)': 'closeInfo()' },
   template: `
@@ -157,11 +156,11 @@ type Field = keyof Line;
           <ng-template #entry>
                   <div class="score-in">
                     <div class="stack"><span class="small muted">{{ teamLabel().white }}</span>
-                      <div class="stepper"><button (click)="wg.set(dec(wg()))" [attr.aria-label]="teamLabel().white + ' meno'"><app-icon name="minus" [size]="18" /></button><output><app-roll [value]="wg()" /></output><button (click)="wg.set(wg() + 1)" [attr.aria-label]="teamLabel().white + ' più'"><app-icon name="plus" [size]="18" /></button></div>
+                      <div class="stepper"><button (click)="wg.set(dec(wg()))" [attr.aria-label]="teamLabel().white + ' meno'"><app-icon name="minus" [size]="18" /></button><output>{{ wg() }}</output><button (click)="wg.set(wg() + 1)" [attr.aria-label]="teamLabel().white + ' più'"><app-icon name="plus" [size]="18" /></button></div>
                     </div>
                     <span class="num dash">–</span>
                     <div class="stack"><span class="small muted">{{ teamLabel().black }}</span>
-                      <div class="stepper"><button (click)="bg.set(dec(bg()))" [attr.aria-label]="teamLabel().black + ' meno'"><app-icon name="minus" [size]="18" /></button><output><app-roll [value]="bg()" /></output><button (click)="bg.set(bg() + 1)" [attr.aria-label]="teamLabel().black + ' più'"><app-icon name="plus" [size]="18" /></button></div>
+                      <div class="stepper"><button (click)="bg.set(dec(bg()))" [attr.aria-label]="teamLabel().black + ' meno'"><app-icon name="minus" [size]="18" /></button><output>{{ bg() }}</output><button (click)="bg.set(bg() + 1)" [attr.aria-label]="teamLabel().black + ' più'"><app-icon name="plus" [size]="18" /></button></div>
                     </div>
                   </div>
                 <button class="btn primary" [disabled]="busy()" (click)="submit()">Salva {{ previewText() }}</button>
@@ -184,7 +183,7 @@ type Field = keyof Line;
                   <span class="grow">{{ f.label }}</span>
                   <div class="stepper">
                     <button (click)="bump(id, f.key, -1)" [disabled]="val(id, f.key) === 0" [attr.aria-label]="f.label + ' meno'"><app-icon name="minus" [size]="16" /></button>
-                    <output><app-roll [value]="val(id, f.key)" /></output>
+                    <output>{{ val(id, f.key) }}</output>
                     <button (click)="bump(id, f.key, 1)" [disabled]="!canAdd(id, f.key)" [attr.aria-label]="f.label + ' più'"><app-icon name="plus" [size]="16" /></button>
                   </div>
                 </div>

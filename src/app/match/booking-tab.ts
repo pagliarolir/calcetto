@@ -1,5 +1,4 @@
 import { EASE, motionNow, motionOk } from '../core/motion';
-import { Roll } from '../ui/roll';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { formOf, overallOf, Ratings } from '../core/ratings';
@@ -32,7 +31,7 @@ const FIG_MIN = 50;
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Roll, Figurina, FormsModule, Icon, FitText, Empty],
+  imports: [Figurina, FormsModule, Icon, FitText, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -104,7 +103,7 @@ const FIG_MIN = 50;
         <div class="ui-tabs lists" [class.four]="listTabs().length > 3" role="tablist" aria-label="Elenchi dei giocatori">
           @for (l of listTabs(); track l.id) {
             <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="setListTab(l.id)">
-              <span class="tl">{{ l.label }}</span> <span class="ui-count num"><app-roll [value]="l.count" /></span>
+              <span class="tl">{{ l.label }}</span> <span class="ui-count num">{{ l.count }}</span>
             </button>
           }
         </div>
