@@ -5,6 +5,7 @@ import { Ratings } from './ratings';
 import { FANTA_ENABLED, FantaLeader } from './fantaleader';
 import { Payments } from './payments';
 import { Session } from './session';
+import { loadMotion, motionOk } from './motion';
 
 /**
  * Precaricamento: dopo l'avvio, quando l'app è libera, scarica i dati delle altre sezioni
@@ -29,6 +30,8 @@ export class Prefetch {
   }
 
   private async run(): Promise<void> {
+    // GSAP per le animazioni (core/motion.ts): pronto prima del primo tocco, fuori dal pacchetto iniziale
+    if (motionOk()) void loadMotion();
     await this.session.whenReady();
     if (!this.session.uid()) return;
     const y = new Date().getFullYear();

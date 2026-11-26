@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, computed, effect, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -12,6 +12,8 @@ import { ScrollMemory } from './core/scroll-memory';
 import { Refresher } from './core/refresher';
 import { Theme } from './core/theme';
 import { FANTA_ENABLED, FantaLeader } from './core/fantaleader';
+import { SmoothScroll } from './core/smooth-scroll';
+import { TabInk } from './core/tab-ink';
 import { Payments } from './core/payments';
 import { PullRefresh } from './ui/pull-refresh';
 import { AchievementBanner } from './ui/achievement-banner';
@@ -201,6 +203,8 @@ export class App {
   ]);
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+  private readonly smooth = inject(SmoothScroll);
+  private readonly tabInk = inject(TabInk);
 
   constructor() {
     // dopo il primo disegno, quando l'app è libera: dati delle altre sezioni in anticipo
@@ -209,6 +213,8 @@ export class App {
     // FantaLeader: solo Bobbo, quindi serve il proprio profilo (nome e soprannome) prima di chiedere
     effect(() => { if (this.session.uid() && this.session.profile()) void this.fl.checkVisible(); else this.fl.visible.set(false); });
     effect(() => { if (this.session.uid()) void this.pay.checkVisible(); else this.pay.visible.set(false); });
+    // scorrimento morbido con mouse e trackpad (Lenis) e lineetta delle schede che scivola (GSAP): dopo il primo disegno
+    afterNextRender(() => { this.smooth.start(); this.tabInk.start(); });
     // logo dell'app (icona e manifest): anche prima dell'accesso
     void this.branding.load();
     // rete di sicurezza: se un browser facesse comunque scorrere la colonna, torna subito a posto

@@ -784,3 +784,12 @@ a.plink:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; }
 /* «stirato»: il nome copre tutta la riga (la riga deve avere position: relative) */
 a.plink.stretch::after { content: ''; position: absolute; inset: 0; }
 li:has(a.plink.stretch) { position: relative; }
+
+/* lineetta delle schede che scivola (core/tab-ink.ts): una per gruppo, sostituisce quella fissa della scheda scelta */
+.has-ink { position: relative; }
+.tab-ink { position: absolute; left: 0; bottom: 0; width: 0; height: 3px; border-radius: 3px 3px 0 0; pointer-events: none; will-change: transform; }
+.tab-ink.ink-turf { background: var(--turf); }
+.tab-ink.ink-chalk { background: var(--chalk); }
+.ui-tabs.has-ink > button[aria-selected='true'] { border-bottom-color: transparent; }
+.ui-tabs.has-ink > button:focus-visible { border-bottom-color: var(--focus); }
+.tabs.off > .tab-ink { opacity: 0 !important; }
