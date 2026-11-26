@@ -62,6 +62,12 @@ PWA Angular 21 + Supabase per la partita settimanale. Leggi `README.md` per l'ar
 
 ## Regole del frontend
 
+- Fonti di design di default (scelta del proprietario, valida in tutti i suoi progetti):
+  - **GSAP** (https://github.com/greensock/gsap) per le animazioni nuove. Le regole qui sotto restano: niente View Transitions né `transform` sul cambio pagina, flip degli strumenti solo su `.scroll-area`, mai al primo disegno, spente con «riduci movimento». Le animazioni esistenti con `element.animate()` passano a GSAP nella ripassata dell'interfaccia, non a pezzi.
+  - **Lenis** (https://github.com/darkroomengineering/lenis) per lo scorrimento morbido, montato su `.app-scroller` (opzione `wrapper`), mai sulla finestra: il documento non scorre mai e `scrollAppTo` di `core/scroller.ts` resta l'unico modo per scorrere da codice.
+  - **21st.dev** (https://21st.dev) come prima fonte di componenti e idee. I componenti sono React: si rifanno come componenti Angular standalone con gli stili e i colori del progetto, testi in italiano, animazioni con GSAP, niente dipendenze nuove senza chiedere.
+  - Lo stile attuale resta quello di riferimento: niente restyle generali non richiesti.
+
 - Unslop (decisione del proprietario): OGNI modifica visibile si controlla con il metodo di [unslop](https://github.com/heydamir/unslop) prima di mostrarla o pubblicarla, in tutti i temi (non solo Automatico). L'app è già disegnata: si corregge, non si reinventa (palette, caratteri e struttura restano). Criteri:
   - niente bagliori o gradienti colorati (radiali, a due tinte), niente ombre grandi nei temi scuri: la profondità viene dai gradini di superficie e da un filo; le intestazioni sono una sfumatura dello stesso colore;
   - un solo «momento» colorato per schermata, il resto sobrio. Momenti scelti dal proprietario: Lista = la propria risposta (capsula); Squadre = il campo; Strumenti = la tendina aperta; Risultato = il campetto col punteggio; Partite = la prossima partita; Obiettivi = l'album. Chat, Pagelle, Generale, Record, Coppie, Punti: nessun momento;
