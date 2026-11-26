@@ -1,3 +1,4 @@
+import { pageFlip } from '../core/motion';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { MatchSkeleton } from '../ui/match-skeleton';
 import { Skeleton } from '../ui/skeleton';
@@ -74,7 +75,7 @@ import { haptic } from '../core/haptics';
             }
           </div>
         }
-        <nav class="tabs" [class.off]="tools()" aria-label="Sezioni della partita">
+        <nav class="tabs" data-ink [class.off]="tools()" aria-label="Sezioni della partita">
           @if (finished()) {
             <a routerLink="risultato" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Risultato</a>
             <a routerLink="voti" routerLinkActive="on" [attr.aria-disabled]="tools() || null" [attr.tabindex]="tools() ? -1 : null">Pagelle</a>
@@ -104,7 +105,7 @@ import { haptic } from '../core/haptics';
         </nav>
       </header>
       <main class="scroll-area" appSwipeTabs (swipe)="swipeTab($event)">
-        <div class="page below-header flip" [class.flip-out]="flipping() === 'out'" [class.flip-in]="flipping() === 'in'">
+        <div class="page below-header flip" #flipEl>
           <router-outlet />
         </div>
       </main>
@@ -179,6 +180,8 @@ import { haptic } from '../core/haptics';
     .tabs .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--armband); }
     .tabs.off a { opacity: 0.4; pointer-events: none; }
     .tabs.off a.on::after { opacity: 0; }
+    /* la lineetta è una sola e scivola (core/tab-ink.ts): niente lineette fisse sotto le schede */
+    .tabs[data-ink] a.on::after, .tabs[data-ink] .tab-group.on::after { content: none; }
     /* «Lista» + frecce: un'unica scheda (la lineetta sotto va da «Lista» alle frecce) */
     .tab-group { flex: none; position: relative; display: inline-flex; align-items: flex-end; }
     .tab-group > a { padding-right: 0; }
@@ -210,14 +213,7 @@ import { haptic } from '../core/haptics';
     .tools-btn:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
     .tools-btn app-icon { display: grid; place-items: center; transition: transform 300ms var(--ease-spring); }
     .tools-btn[aria-pressed='true'] app-icon { transform: rotate(-45deg); }
-    /* «flip» della pagina sull'asse verticale, con profondità: solo dentro l'area che scorre (la barra non si muove) */
-    @media (prefers-reduced-motion: no-preference) {
-      .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
-      .flip.flip-out { animation: flip-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
-      .flip.flip-in { animation: flip-in 260ms var(--ease); }
-      @keyframes flip-out { from { transform: perspective(1400px) rotateY(0); } to { transform: perspective(1400px) rotateY(90deg); opacity: 0.6; } }
-      @keyframes flip-in { from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.6; } to { transform: perspective(1400px) rotateY(0); opacity: 1; } }
-    }
+    /* «flip» della pagina: con GSAP (core/motion.ts pageFlip), solo dentro l'area che scorre */
   `,
 })
 export class MatchPage {
@@ -299,6 +295,7 @@ export class MatchPage {
     return this.session.isLeader() && !!m && m.status === 'scheduled' && !this.store.t()?.started;
   });
   protected readonly flipping = signal<'out' | 'in' | null>(null);
+  private readonly flipEl = viewChild<ElementRef<HTMLElement>>('flipEl');
   /** scheda da cui si sono aperti gli strumenti: richiudendoli si torna lì */
   private toolsFrom = '';
 
@@ -309,11 +306,9 @@ export class MatchPage {
     const opening = !this.tools();
     if (opening) this.toolsFrom = this.router.url.split('?')[0].split('/')[3] ?? '';
     const target = ['/partita', m.id, ...(opening ? ['strumenti'] : this.toolsFrom ? [this.toolsFrom] : [])];
-    const motion = matchMedia('(prefers-reduced-motion: no-preference)').matches;
-    if (motion) { this.flipping.set('out'); await new Promise((r) => setTimeout(r, 180)); }
-    await this.router.navigate(target);
-    if (motion) { this.flipping.set('in'); setTimeout(() => this.flipping.set(null), 270); }
-    else this.flipping.set(null);
+    this.flipping.set('out');
+    try { await pageFlip(this.flipEl()?.nativeElement, () => this.router.navigate(target)); }
+    finally { this.flipping.set(null); }
   }
 
   /** scorrimento di lato: scheda accanto (Lista, Squadre, Chat; a partita finita Risultato, Pagelle, Chat) */

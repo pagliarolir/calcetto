@@ -1,3 +1,5 @@
+import { EASE, motionNow, motionOk } from '../core/motion';
+import { Roll } from '../ui/roll';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, signal } from '@angular/core';
 import { formOf, overallOf, Ratings } from '../core/ratings';
@@ -30,7 +32,7 @@ const FIG_MIN = 50;
 
 @Component({
   selector: 'app-booking-tab',
-  imports: [Figurina, FormsModule, Icon, FitText, Empty],
+  imports: [Roll, Figurina, FormsModule, Icon, FitText, Empty],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (store.match(); as m) {
@@ -102,7 +104,7 @@ const FIG_MIN = 50;
         <div class="ui-tabs lists" [class.four]="listTabs().length > 3" role="tablist" aria-label="Elenchi dei giocatori">
           @for (l of listTabs(); track l.id) {
             <button role="tab" [attr.aria-selected]="listTab() === l.id" (click)="setListTab(l.id)">
-              <span class="tl">{{ l.label }}</span> <span class="ui-count num">{{ l.count }}</span>
+              <span class="tl">{{ l.label }}</span> <span class="ui-count num"><app-roll [value]="l.count" /></span>
             </button>
           }
         </div>
@@ -489,7 +491,7 @@ export class BookingTab {
   }
 
   /**
-   * Cambia ordine: le figurine scivolano nella nuova posizione (tecnica FLIP: si misura prima e dopo e si anima lo
+   * Cambia ordine: le figurine scivolano nella nuova posizione con GSAP Flip (si misura prima e dopo e si anima lo
    * spostamento). Niente View Transitions: le loro copie stanno sopra tutta la pagina e finivano sopra l'intestazione
    * della partita invece di restare dentro l'area che scorre. Toccare il modo già attivo non fa nulla.
    */
@@ -497,24 +499,16 @@ export class BookingTab {
     if (id === this.effSort()) return;
     try { localStorage.setItem(BookingTab.SORT_KEY, id); } catch { /* resta solo per questa visita */ }
     void this.listRouter.navigate([], { relativeTo: this.listRoute, replaceUrl: true, queryParamsHandling: 'merge', queryParams: { ordine: id === 'alpha' ? null : id } });
-    const before = this.flipRects();
+    const m = motionOk() ? motionNow() : null;
+    const targets = () => (this.hostEl.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flip]');
+    const state = m?.Flip.getState(targets());
     this.sortMode.set(id);
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    afterNextRender(() => this.flipPlay(before), { injector: this.injector });
-  }
-  private flipRects(): Map<string, DOMRect> {
-    const out = new Map<string, DOMRect>();
-    (this.hostEl.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flip]').forEach((el) => out.set(el.dataset['flip']!, el.getBoundingClientRect()));
-    return out;
-  }
-  private flipPlay(before: Map<string, DOMRect>): void {
-    (this.hostEl.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flip]').forEach((el) => {
-      const a = before.get(el.dataset['flip']!);
-      if (!a) return;
-      const b = el.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
-    });
+    if (!m || !state) return;
+    afterNextRender(() => {
+      const els = targets();
+      m.Flip.from(state, { targets: els, duration: 0.32, ease: EASE, stagger: 0.012, absolute: false, simple: true, prune: true,
+        onComplete: () => m.gsap.set(els, { clearProps: 'transform' }) });
+    }, { injector: this.injector });
   }
   protected readonly effSort = computed(() => (this.sortOptions().some((o) => o.id === this.sortMode()) ? this.sortMode() : 'alpha'));
   /** ordina una lista secondo il modo scelto (predefinito: alfabetico) */

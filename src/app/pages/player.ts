@@ -1,4 +1,5 @@
 import { scrollAppTo } from '../core/scroller';
+import { pageFlip } from '../core/motion';
 import { SharedReads } from '../core/shared-reads';
 import { Ratings } from '../core/ratings';
 import { Compare } from '../ratings/compare';
@@ -78,7 +79,7 @@ interface PlayerSeen {
         </header>
       }
       <!-- il resto scorre: è lo stesso blocco della scheda Stats del Profilo -->
-      <main class="scroll-area" [class.embedded]="embedded()"><div class="page stack-l flip" [class.flip-out]="flipping() === 'out'" [class.flip-in]="flipping() === 'in'">
+      <main class="scroll-area" [class.embedded]="embedded()"><div class="page stack-l flip" #flipEl>
         <!-- «Confronta»: la pagina si gira (come gli strumenti del Leader) e mostra il confronto; ritoccando si torna alla scheda -->
         @if (hasCard()) {
           <div class="vhead">
@@ -173,14 +174,7 @@ interface PlayerSeen {
     .cmp-btn[aria-pressed='true'] { background: var(--turf); border-color: var(--turf); color: var(--turf-ink); }
     .cmp-btn app-icon { display: grid; place-items: center; transition: transform 300ms var(--ease-spring); }
     .cmp-btn[aria-pressed='true'] app-icon { transform: rotate(180deg); }
-    /* «flip» come gli strumenti del Leader: solo il contenuto che scorre, spento con «riduci movimento» */
-    @media (prefers-reduced-motion: no-preference) {
-      .flip.flip-out, .flip.flip-in { transform-origin: 50% 30%; backface-visibility: hidden; }
-      .flip.flip-out { animation: flip-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
-      .flip.flip-in { animation: flip-in 260ms var(--ease); }
-      @keyframes flip-out { from { transform: perspective(1400px) rotateY(0); } to { transform: perspective(1400px) rotateY(90deg); opacity: 0.6; } }
-      @keyframes flip-in { from { transform: perspective(1400px) rotateY(-90deg); opacity: 0.6; } to { transform: perspective(1400px) rotateY(0); opacity: 1; } }
-    }
+    /* «flip» come gli strumenti del Leader: GSAP (core/motion.ts pageFlip), solo il contenuto che scorre */
     .phead .id app-avatar { flex: none; }
     .lead-menu { position: absolute; top: 8px; right: 8px; z-index: 5; }
     .more { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); cursor: pointer; display: grid; place-items: center; }
@@ -207,16 +201,18 @@ export class PlayerPage {
   /** confronto aperto (nell'indirizzo: «Indietro» lo ritrova) */
   protected readonly cmp = signal(new URLSearchParams(location.search).get('confronto') === '1');
   protected readonly flipping = signal<'out' | 'in' | null>(null);
+  private readonly flipEl = viewChild<ElementRef<HTMLElement>>('flipEl');
   private readonly cmpRouter = inject(Router);
   protected async toggleCmp(): Promise<void> {
     if (this.flipping()) return;
-    const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (motion) { this.flipping.set('out'); await new Promise((r) => setTimeout(r, 180)); }
-    this.cmp.update((v) => !v);
-    void this.cmpRouter.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { confronto: this.cmp() ? '1' : null, con: null } });
-    scrollAppTo('start', 'auto');
-    if (motion) { this.flipping.set('in'); setTimeout(() => this.flipping.set(null), 270); }
-    else this.flipping.set(null);
+    this.flipping.set('out');
+    try {
+      await pageFlip(this.flipEl()?.nativeElement, () => {
+        this.cmp.update((v) => !v);
+        void this.cmpRouter.navigate([], { replaceUrl: true, queryParamsHandling: 'merge', queryParams: { confronto: this.cmp() ? '1' : null, con: null } });
+        scrollAppTo('start', 'auto');
+      });
+    } finally { this.flipping.set(null); }
   }
   /** nel Profilo (scheda Stats): solo la parte sotto l'intestazione */
   readonly embedded = input(false);
