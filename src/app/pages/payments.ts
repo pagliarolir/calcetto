@@ -590,10 +590,14 @@ export class PaymentsPage implements OnInit {
   protected readonly whoOpen = signal(false);
   /** formazione della partita scelta: finché la scelta è quella, il riassunto dice «Chi ha giocato il giorno …» */
   protected readonly matchLineup = signal<{ ids: Set<string>; day: string; future?: boolean } | null>(null);
-  /** chi può aver pagato: con una partita scelta, solo chi era in campo */
+  /**
+   * chi può aver pagato: chiunque del gruppo, anche chi non era in campo (scelta del proprietario: capita che uno
+   * anticipi il campo senza giocare). Chi ha giocato resta il default per le quote; chi ha pagato fuori formazione
+   * non ha quota e riceve quella di tutti. Prima chi era in campo, poi gli altri.
+   */
   protected readonly payerOptions = computed(() => {
-    const ml = this.matchLineup();
-    return ml ? this.session.activeMembers().filter((m) => ml.ids.has(m.id)) : this.session.activeMembers();
+    const ml = this.matchLineup(), all = this.session.activeMembers();
+    return ml ? [...all.filter((m) => ml.ids.has(m.id)), ...all.filter((m) => !ml.ids.has(m.id))] : all;
   });
   /** riassunto chiuso: «10 su 14: Alberto, Checco e altri 8» */
   protected readonly pickedText = computed(() => {
@@ -809,8 +813,8 @@ export class PaymentsPage implements OnInit {
         const ids = new Set(rows.map((r) => r.user_id));
         this.eUsers.set(new Set(ids));
         this.matchLineup.set({ ids, day: fmtDate(m?.starts_at ?? ''), future: !!m && Date.parse(m.starts_at) > Date.now() });
-        // chi ha pagato il campo è tra chi ha giocato: se non c'era, si propone il primo dell'elenco
-        if (!ids.has(this.ePayer())) this.ePayer.set(this.payerOptions()[0]?.id ?? this.ePayer());
+        // chi ha pagato resta quello scelto (di solito chi scrive), anche se non ha giocato
+        if (!this.ePayer()) this.ePayer.set(this.me() ?? this.payerOptions()[0]?.id ?? '');
       }
     } catch { /* si scelgono a mano */ }
   }
